@@ -45,7 +45,10 @@ build_distributable() {
   local dest_app="$2"
   echo "Building distributable for $(basename "$dest_app") with JDK: $jdk_home"
   (cd "$ROOT_DIR" && bash gradlew --stop >/dev/null 2>&1 || true)
-  (cd "$ROOT_DIR" && bash gradlew -Dorg.gradle.java.home="$jdk_home" \
+  (cd "$ROOT_DIR" && \
+    GRADLE_OPTS="-Dorg.gradle.java.home=${jdk_home}" \
+    PATH="${jdk_home}/bin:${PATH}" \
+    bash gradlew -Dorg.gradle.java.home="$jdk_home" \
     "-PwpsAdbTool.version=$VERSION" \
     :desktopApp:createReleaseDistributable)
   local built_app

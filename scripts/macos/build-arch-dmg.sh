@@ -33,6 +33,12 @@ GRADLE=(bash gradlew -Dorg.gradle.java.home="$JAVA_HOME" "-PwpsAdbTool.version=$
 
 cd "$ROOT_DIR"
 
+export GRADLE_OPTS="-Dorg.gradle.java.home=${JAVA_HOME}"
+export PATH="${JAVA_HOME}/bin:${PATH}"
+
+echo "Using JAVA_HOME=${JAVA_HOME}"
+java -version
+
 if [[ "${MACOS_SIGN:-false}" == "true" ]]; then
   if [[ -n "${NOTARIZATION_APPLE_ID:-}" && -n "${NOTARIZATION_PASSWORD:-}" && -n "${NOTARIZATION_TEAM_ID:-}" ]]; then
     echo "Building signed and notarized release DMG ($ARCH)..."
