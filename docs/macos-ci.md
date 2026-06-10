@@ -15,7 +15,7 @@
 | `WpsAdbTool-*-macos-arm64.dmg` | Apple Silicon（M1/M2/M3/M4） |
 | `WpsAdbTool-*-macos-x64.dmg` | Intel Mac |
 
-打 `v*` 标签（如 `v1.0.0`）也会自动触发构建；若已配置签名密钥，将尝试签名并公证。
+打 `v*` 标签（如 `v1.0.0`）也会自动触发构建，并**默认尝试签名与公证**（需事先配置全部 Secrets；未配置时该步骤会失败）。
 
 ## 签名与公证
 
