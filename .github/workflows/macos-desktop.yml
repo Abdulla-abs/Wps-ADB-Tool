@@ -39,6 +39,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Ensure Gradle wrapper is executable
+        run: chmod +x gradlew scripts/macos/*.sh
+
       - name: Resolve app version
         run: |
           if [[ "${{ github.event_name }}" == "push" ]]; then
@@ -92,6 +95,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Ensure Gradle wrapper is executable
+        run: chmod +x gradlew scripts/macos/*.sh
+
       - name: Resolve app version
         run: |
           if [[ "${{ github.event_name }}" == "push" ]]; then
@@ -142,6 +148,9 @@ jobs:
       SHOULD_SIGN: ${{ inputs.notarize && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Ensure Gradle wrapper is executable
+        run: chmod +x gradlew scripts/macos/*.sh
 
       - name: Resolve app version
         run: echo "WPS_ADB_TOOL_VERSION=${{ inputs.version }}" >> "$GITHUB_ENV"
