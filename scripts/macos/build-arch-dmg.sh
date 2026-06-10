@@ -29,7 +29,7 @@ fi
 ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 VERSION="${WPS_ADB_TOOL_VERSION:-1.0.0}"
 OUTPUT_DIR="$ROOT_DIR/desktopApp/build/ci-artifacts"
-GRADLE=(./gradlew -Dorg.gradle.java.home="$JAVA_HOME" "-PwpsAdbTool.version=$VERSION")
+GRADLE=(bash gradlew -Dorg.gradle.java.home="$JAVA_HOME" "-PwpsAdbTool.version=$VERSION")
 
 cd "$ROOT_DIR"
 
