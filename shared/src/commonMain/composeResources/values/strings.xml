@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">WpsAdbTool</string>
+    <string name="adb_daemon_version">ADB Daemon v1.0.41</string>
+
+    <!-- Sidebar -->
+    <string name="nav_device_wall">Device Wall</string>
+    <string name="nav_group_command">Group Command</string>
+    <string name="nav_global_settings">Global Settings</string>
+    <string name="sidebar_installing_apk">Installing APK...</string>
+    <string name="sidebar_drop_apk_title">DROP APK TO INSTALL</string>
+    <string name="sidebar_drop_apk_subtitle">Will install on %1$d online devices</string>
+    <string name="action_logcat_hide">Hide Logcat Console</string>
+    <string name="action_logcat_show">View Logcat Logs</string>
+
+    <!-- Header -->
+    <string name="header_search_placeholder">Filter devices...</string>
+    <string name="filter_all_devices">All Devices</string>
+    <string name="filter_physical">Physical</string>
+    <string name="filter_emulators">Emulators</string>
+    <string name="sort_prefix">Sort:</string>
+    <string name="sort_name">Name</string>
+    <string name="sort_serial">Serial</string>
+    <string name="sort_battery">Battery</string>
+    <string name="header_add_wireless">+ Add Wireless Device</string>
+
+    <!-- Footer -->
+    <string name="footer_adb_daemon">ADB Daemon:</string>
+    <string name="footer_adb_rebooting">REBOOTING...</string>
+    <string name="footer_adb_active">Active (v1.0.41)</string>
+    <string name="footer_adb_terminated">Terminated</string>
+    <string name="footer_cluster_status">Operational Cluster: %1$d Sockets connected</string>
+    <string name="footer_kill_daemon">Kill Daemon Server</string>
+    <string name="footer_restart_adb">Restart ADB</string>
+
+    <!-- Device Wall -->
+    <string name="device_wall_title">Device Wall Canvas</string>
+    <string name="device_wall_subtitle">Monitor interactive screen frames and remote debug connected clusters.</string>
+    <string name="device_wall_empty">No matching connected Android targets found</string>
+    <string name="device_loading_screen">Loading screen...</string>
+    <string name="device_offline">Device Offline</string>
+    <string name="device_action_reconnect">Reconnect</string>
+    <string name="device_app_label">App: %1$s</string>
+    <string name="device_action_mirror">Mirror</string>
+    <string name="device_action_shell">Shell</string>
+    <string name="device_action_reboot">Reboot</string>
+    <string name="device_action_drop">Drop</string>
+    <string name="device_drop_apk_hint">Drop APK here to install</string>
+    <string name="device_installing_apk">Installing APK...</string>
+    <string name="device_storage_label">Device Storage</string>
+    <string name="device_no_capture_title">No Screen Capture</string>
+    <string name="device_no_capture_hint">Unlock device screen, then click Refresh</string>
+    <string name="device_connected">Connected device</string>
+    <string name="device_unavailable">Device unavailable</string>
+    <string name="connection_wifi">WiFi</string>
+    <string name="connection_usb">USB</string>
+    <string name="connection_emulator">EMU</string>
+    <string name="form_factor_phone">Phone</string>
+    <string name="form_factor_tablet">Tablet</string>
+    <string name="form_factor_tv">TV</string>
+    <string name="form_factor_unknown">Unknown</string>
+    <string name="status_lte">LTE</string>
+
+    <!-- Pairing -->
+    <string name="pairing_step1_title">Prepare</string>
+    <string name="pairing_step1_subtitle">Connect via USB &amp; Enable TCP</string>
+    <string name="pairing_step2_title">Connect</string>
+    <string name="pairing_step2_subtitle">Enter IP &amp; Port</string>
+    <string name="pairing_step3_title">Finalize</string>
+    <string name="pairing_step3_subtitle">Verifying Connection</string>
+    <string name="pairing_prepare_title">Initialize Debugging Mode</string>
+    <string name="pairing_prepare_desc">Wireless ADB requires a one-time hand-shaking authorization over USB to establish TCP/IP access.</string>
+    <string name="pairing_checklist_usb_title">1. Connect device via USB</string>
+    <string name="pairing_checklist_usb_subtitle">Click to tag physical link active</string>
+    <string name="pairing_checklist_tcp_title">2. Toggle 'Enable ADB over TCP/IP'</string>
+    <string name="pairing_checklist_tcp_subtitle">Establishes listener socket (port 5555)</string>
+    <string name="pairing_prepare_next">I've enabled TCP/IP →</string>
+    <string name="pairing_connect_title">Configure Target Host</string>
+    <string name="pairing_scan_idle">Auto-Scan Subnet</string>
+    <string name="pairing_scan_in_progress">Scanning...</string>
+    <string name="pairing_ip_label">IP Address</string>
+    <string name="pairing_port_label">Port</string>
+    <string name="pairing_scan_found">Found: %1$s at %2$s:%3$s</string>
+    <string name="pairing_connect_button">Connect to Wireless Target</string>
+    <string name="pairing_back">← Back to Preparation</string>
+    <string name="pairing_handshaking">Handshaking with %1$s:%2$s...</string>
+    <string name="pairing_adb_connect_cmd">adb connect %1$s:%2$s</string>
+    <string name="pairing_success_title">Pairing Successful</string>
+    <string name="pairing_success_message">%1$s on %2$s:%3$s loaded into cluster.</string>
+    <string name="pairing_default_device">Pixel 7 Pro</string>
+    <string name="pairing_finalize_button">Finalize &amp; Go to Dashboard</string>
+    <string name="pairing_failure_title">Host Connection Failed</string>
+    <string name="pairing_failure_message">Verify same Wi-Fi subnet and port 5555 is open.</string>
+    <string name="pairing_edit_host">Edit Host Details</string>
+    <string name="pairing_retry">Retry</string>
+
+    <!-- Groups -->
+    <string name="groups_select_target">Select Target Group</string>
+    <string name="groups_all_connected">All Connected Devices</string>
+    <string name="groups_qa_physical">QA Physical Hardware</string>
+    <string name="groups_emulator_bench">Automated Emulator Bench</string>
+    <string name="groups_group_suffix">%1$s Group</string>
+    <string name="groups_filter_all">All</string>
+    <string name="groups_filter_physical">Physical</string>
+    <string name="groups_filter_emulators">Emulators</string>
+    <string name="groups_online_count">%1$d On</string>
+    <string name="groups_batch_deck">Batch Command Deck (%1$d targets)</string>
+    <string name="groups_batch_sideload">Batch Sideload APK</string>
+    <string name="groups_batch_wipe_cache">Wipe Cache</string>
+    <string name="groups_batch_reboot">Batch Reboot</string>
+    <string name="groups_batch_battery">Battery Telemetry</string>
+    <string name="groups_in_progress">In-progress: %1$s</string>
+    <string name="groups_console_empty">Awaiting batch executor commands...</string>
+    <string name="groups_console_initiating">Initiating parallel cluster batch operation: %1$s</string>
+    <string name="groups_console_broadcasting">Broadcasting... %1$d%%</string>
+    <string name="groups_console_parallel">[PARALLEL] adb -s %1$s %2$s -&gt; Exit Code 0</string>
+    <string name="groups_console_completed">✓ Batch [%1$s] completed on %2$d devices.</string>
+    <string name="groups_action_install">Batch Install APK</string>
+    <string name="groups_action_wipe">Wipe Cache</string>
+    <string name="groups_action_reboot">Batch Reboot</string>
+    <string name="groups_action_battery">Battery Dump</string>
+
+    <!-- Settings -->
+    <string name="settings_title">ADB Global Configuration Settings</string>
+    <string name="settings_subtitle">Adjust ADB binary path, port ranges, parallel workers, and scanner behavior.</string>
+    <string name="settings_transport_bindings">Transport Bindings</string>
+    <string name="settings_adb_path">ADB executable path</string>
+    <string name="settings_start_port">Start Port</string>
+    <string name="settings_end_port">End Port</string>
+    <string name="settings_parallel_allocation">Parallel Allocation</string>
+    <string name="settings_scan_interval">Scan Interval</string>
+    <string name="settings_scan_interval_value">%1$ds</string>
+    <string name="settings_max_threads">Max Threads</string>
+    <string name="settings_max_threads_value">%1$d Thr</string>
+    <string name="settings_developer_security">Developer Security</string>
+    <string name="settings_auto_trust_title">Auto-Trust RSA Keys</string>
+    <string name="settings_auto_trust_subtitle">Skip ADB prompt on subsequent mounts</string>
+    <string name="settings_telemetry_title">Crash Telemetry</string>
+    <string name="settings_telemetry_subtitle">Transfer logs for diagnostics</string>
+    <string name="settings_log_retention">Logcat Retention Limit</string>
+    <string name="settings_save">Save Changes</string>
+    <string name="settings_save_success">Local ADB configurations saved successfully!</string>
+
+    <!-- Logs -->
+    <string name="logs_title">Logcat Console</string>
+    <string name="logs_clear">Clear</string>
+    <string name="logs_close">Close</string>
+
+    <!-- Mirror -->
+    <string name="mirror_title">Active Screen Mirroring</string>
+    <string name="mirror_device_subtitle">%1$s • %2$s</string>
+    <string name="mirror_app_launcher">ACTIVE APP LAUNCHER</string>
+    <string name="mirror_app_photoflow">PhotoFlow</string>
+    <string name="mirror_app_settings">Settings</string>
+    <string name="mirror_wifi_battery">WiFi %1$d%%</string>
+    <string name="mirror_photoflow_client">PhotoFlow Client</string>
+    <string name="mirror_brightness">Brightness</string>
+    <string name="mirror_wifi">Wi-Fi</string>
+    <string name="mirror_bluetooth">Bluetooth</string>
+    <string name="mirror_developer_mode">Developer Mode</string>
+    <string name="mirror_adb_console">ADB CONSOLE</string>
+    <string name="mirror_cmd_getprop">getprop</string>
+    <string name="mirror_cmd_battery">dumpsys battery</string>
+    <string name="mirror_cmd_packages">pm list packages</string>
+    <string name="mirror_console_empty">Type shell commands or tap quick helpers...</string>
+    <string name="mirror_console_placeholder">adb shell command...</string>
+    <string name="mirror_console_hint">Press Enter in field above — use quick chips to run</string>
+    <string name="mirror_shell_help">Commands: getprop, pm list packages, dumpsys battery, clear</string>
+    <string name="mirror_shell_not_found">%1$s: command not found</string>
+
+    <!-- File picker -->
+    <string name="apk_picker_title">Select APK</string>
+</resources>

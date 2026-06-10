@@ -1,0 +1,6 @@
+{
+  "name": "DroidCluster Device Wall",
+  "description": "A high-performance wireless ADB pairing and device cluster management dashboard designed for Android developers and QA engineers.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

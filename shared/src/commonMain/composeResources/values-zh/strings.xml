@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">WpsAdbTool</string>
+    <string name="adb_daemon_version">ADB 守护进程 v1.0.41</string>
+
+    <!-- Sidebar -->
+    <string name="nav_device_wall">设备墙</string>
+    <string name="nav_group_command">分组命令</string>
+    <string name="nav_global_settings">全局设置</string>
+    <string name="sidebar_installing_apk">正在安装 APK...</string>
+    <string name="sidebar_drop_apk_title">拖放 APK 安装</string>
+    <string name="sidebar_drop_apk_subtitle">将安装到 %1$d 台在线设备</string>
+    <string name="action_logcat_hide">隐藏 Logcat 控制台</string>
+    <string name="action_logcat_show">查看 Logcat 日志</string>
+
+    <!-- Header -->
+    <string name="header_search_placeholder">筛选设备...</string>
+    <string name="filter_all_devices">全部设备</string>
+    <string name="filter_physical">物理设备</string>
+    <string name="filter_emulators">模拟器</string>
+    <string name="sort_prefix">排序:</string>
+    <string name="sort_name">名称</string>
+    <string name="sort_serial">序列号</string>
+    <string name="sort_battery">电量</string>
+    <string name="header_add_wireless">+ 添加无线设备</string>
+
+    <!-- Footer -->
+    <string name="footer_adb_daemon">ADB 守护进程:</string>
+    <string name="footer_adb_rebooting">重启中...</string>
+    <string name="footer_adb_active">运行中 (v1.0.41)</string>
+    <string name="footer_adb_terminated">已终止</string>
+    <string name="footer_cluster_status">运行集群: %1$d 个连接</string>
+    <string name="footer_kill_daemon">终止守护进程</string>
+    <string name="footer_restart_adb">重启 ADB</string>
+
+    <!-- Device Wall -->
+    <string name="device_wall_title">设备墙</string>
+    <string name="device_wall_subtitle">监控设备屏幕画面，远程调试已连接的设备集群。</string>
+    <string name="device_wall_empty">未找到匹配的 Android 设备</string>
+    <string name="device_loading_screen">加载屏幕中...</string>
+    <string name="device_offline">设备离线</string>
+    <string name="device_action_reconnect">重连</string>
+    <string name="device_app_label">应用: %1$s</string>
+    <string name="device_action_mirror">投屏</string>
+    <string name="device_action_shell">Shell</string>
+    <string name="device_action_reboot">重启</string>
+    <string name="device_action_drop">断开</string>
+    <string name="device_drop_apk_hint">拖放 APK 到此处安装</string>
+    <string name="device_installing_apk">正在安装 APK...</string>
+    <string name="device_storage_label">设备存储</string>
+    <string name="device_no_capture_title">无屏幕截图</string>
+    <string name="device_no_capture_hint">请解锁设备屏幕，然后点击刷新</string>
+    <string name="device_connected">已连接设备</string>
+    <string name="device_unavailable">设备不可用</string>
+    <string name="connection_wifi">WiFi</string>
+    <string name="connection_usb">USB</string>
+    <string name="connection_emulator">模拟器</string>
+    <string name="form_factor_phone">手机</string>
+    <string name="form_factor_tablet">平板</string>
+    <string name="form_factor_tv">电视</string>
+    <string name="form_factor_unknown">未知</string>
+    <string name="status_lte">LTE</string>
+
+    <!-- Pairing -->
+    <string name="pairing_step1_title">准备</string>
+    <string name="pairing_step1_subtitle">USB 连接并启用 TCP</string>
+    <string name="pairing_step2_title">连接</string>
+    <string name="pairing_step2_subtitle">输入 IP 和端口</string>
+    <string name="pairing_step3_title">完成</string>
+    <string name="pairing_step3_subtitle">验证连接</string>
+    <string name="pairing_prepare_title">初始化调试模式</string>
+    <string name="pairing_prepare_desc">无线 ADB 需要首次通过 USB 授权握手，以建立 TCP/IP 访问。</string>
+    <string name="pairing_checklist_usb_title">1. 通过 USB 连接设备</string>
+    <string name="pairing_checklist_usb_subtitle">点击标记物理连接已就绪</string>
+    <string name="pairing_checklist_tcp_title">2. 开启「ADB over TCP/IP」</string>
+    <string name="pairing_checklist_tcp_subtitle">建立监听套接字（端口 5555）</string>
+    <string name="pairing_prepare_next">已启用 TCP/IP →</string>
+    <string name="pairing_connect_title">配置目标主机</string>
+    <string name="pairing_scan_idle">自动扫描子网</string>
+    <string name="pairing_scan_in_progress">扫描中...</string>
+    <string name="pairing_ip_label">IP 地址</string>
+    <string name="pairing_port_label">端口</string>
+    <string name="pairing_scan_found">发现: %1$s 位于 %2$s:%3$s</string>
+    <string name="pairing_connect_button">连接无线目标</string>
+    <string name="pairing_back">← 返回准备步骤</string>
+    <string name="pairing_handshaking">正在与 %1$s:%2$s 握手...</string>
+    <string name="pairing_adb_connect_cmd">adb connect %1$s:%2$s</string>
+    <string name="pairing_success_title">配对成功</string>
+    <string name="pairing_success_message">%1$s（%2$s:%3$s）已加入集群。</string>
+    <string name="pairing_default_device">Pixel 7 Pro</string>
+    <string name="pairing_finalize_button">完成并返回主页</string>
+    <string name="pairing_failure_title">主机连接失败</string>
+    <string name="pairing_failure_message">请确认在同一 Wi-Fi 子网，且端口 5555 已开放。</string>
+    <string name="pairing_edit_host">编辑主机信息</string>
+    <string name="pairing_retry">重试</string>
+
+    <!-- Groups -->
+    <string name="groups_select_target">选择目标分组</string>
+    <string name="groups_all_connected">全部已连接设备</string>
+    <string name="groups_qa_physical">QA 物理硬件</string>
+    <string name="groups_emulator_bench">自动化模拟器台架</string>
+    <string name="groups_group_suffix">%1$s 分组</string>
+    <string name="groups_filter_all">全部</string>
+    <string name="groups_filter_physical">物理设备</string>
+    <string name="groups_filter_emulators">模拟器</string>
+    <string name="groups_online_count">%1$d 在线</string>
+    <string name="groups_batch_deck">批量命令面板（%1$d 个目标）</string>
+    <string name="groups_batch_sideload">批量侧载 APK</string>
+    <string name="groups_batch_wipe_cache">清除缓存</string>
+    <string name="groups_batch_reboot">批量重启</string>
+    <string name="groups_batch_battery">电池遥测</string>
+    <string name="groups_in_progress">进行中: %1$s</string>
+    <string name="groups_console_empty">等待批量执行命令...</string>
+    <string name="groups_console_initiating">启动并行集群批量操作: %1$s</string>
+    <string name="groups_console_broadcasting">广播中... %1$d%%</string>
+    <string name="groups_console_parallel">[并行] adb -s %1$s %2$s -&gt; 退出码 0</string>
+    <string name="groups_console_completed">✓ 批量 [%1$s] 已在 %2$d 台设备上完成。</string>
+    <string name="groups_action_install">批量安装 APK</string>
+    <string name="groups_action_wipe">清除缓存</string>
+    <string name="groups_action_reboot">批量重启</string>
+    <string name="groups_action_battery">电池信息</string>
+
+    <!-- Settings -->
+    <string name="settings_title">ADB 全局配置</string>
+    <string name="settings_subtitle">调整 ADB 路径、端口范围、并行线程和扫描行为。</string>
+    <string name="settings_transport_bindings">传输绑定</string>
+    <string name="settings_adb_path">ADB 可执行文件路径</string>
+    <string name="settings_start_port">起始端口</string>
+    <string name="settings_end_port">结束端口</string>
+    <string name="settings_parallel_allocation">并行分配</string>
+    <string name="settings_scan_interval">扫描间隔</string>
+    <string name="settings_scan_interval_value">%1$d 秒</string>
+    <string name="settings_max_threads">最大线程数</string>
+    <string name="settings_max_threads_value">%1$d 线程</string>
+    <string name="settings_developer_security">开发者安全</string>
+    <string name="settings_auto_trust_title">自动信任 RSA 密钥</string>
+    <string name="settings_auto_trust_subtitle">跳过后续挂载时的 ADB 授权提示</string>
+    <string name="settings_telemetry_title">崩溃遥测</string>
+    <string name="settings_telemetry_subtitle">上传日志用于诊断</string>
+    <string name="settings_log_retention">Logcat 保留上限</string>
+    <string name="settings_save">保存更改</string>
+    <string name="settings_save_success">本地 ADB 配置已保存！</string>
+
+    <!-- Logs -->
+    <string name="logs_title">Logcat 控制台</string>
+    <string name="logs_clear">清空</string>
+    <string name="logs_close">关闭</string>
+
+    <!-- Mirror -->
+    <string name="mirror_title">屏幕投屏</string>
+    <string name="mirror_device_subtitle">%1$s • %2$s</string>
+    <string name="mirror_app_launcher">当前应用启动器</string>
+    <string name="mirror_app_photoflow">PhotoFlow</string>
+    <string name="mirror_app_settings">设置</string>
+    <string name="mirror_wifi_battery">WiFi %1$d%%</string>
+    <string name="mirror_photoflow_client">PhotoFlow 客户端</string>
+    <string name="mirror_brightness">亮度</string>
+    <string name="mirror_wifi">Wi-Fi</string>
+    <string name="mirror_bluetooth">蓝牙</string>
+    <string name="mirror_developer_mode">开发者模式</string>
+    <string name="mirror_adb_console">ADB 控制台</string>
+    <string name="mirror_cmd_getprop">getprop</string>
+    <string name="mirror_cmd_battery">dumpsys battery</string>
+    <string name="mirror_cmd_packages">pm list packages</string>
+    <string name="mirror_console_empty">输入 Shell 命令或点击快捷指令...</string>
+    <string name="mirror_console_placeholder">adb shell 命令...</string>
+    <string name="mirror_console_hint">在上方输入框按 Enter — 或使用快捷芯片执行</string>
+    <string name="mirror_shell_help">命令: getprop, pm list packages, dumpsys battery, clear</string>
+    <string name="mirror_shell_not_found">%1$s: 命令未找到</string>
+
+    <!-- File picker -->
+    <string name="apk_picker_title">选择 APK</string>
+</resources>
