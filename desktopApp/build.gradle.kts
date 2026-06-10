@@ -27,6 +27,10 @@ compose.desktop {
     application {
         mainClass = "fun.abbas.wps_adb.MainKt"
 
+        buildTypes.release.proguard {
+            configurationFiles.from(project.file("proguard-rules.pro"))
+        }
+
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "WpsAdbTool"
