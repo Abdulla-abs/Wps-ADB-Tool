@@ -37,9 +37,11 @@
     <string name="device_wall_title">设备墙</string>
     <string name="device_wall_subtitle">监控设备屏幕画面，远程调试已连接的设备集群。</string>
     <string name="device_wall_empty">未找到匹配的 Android 设备</string>
+    <string name="device_wall_scanning">正在扫描设备</string>
     <string name="device_loading_screen">加载屏幕中...</string>
     <string name="device_offline">设备离线</string>
     <string name="device_action_reconnect">重连</string>
+    <string name="device_action_remove">移除</string>
     <string name="device_app_label">应用: %1$s</string>
     <string name="device_action_mirror">投屏</string>
     <string name="device_action_shell">Shell</string>
@@ -47,6 +49,8 @@
     <string name="device_action_drop">断开</string>
     <string name="device_drop_apk_hint">拖放 APK 到此处安装</string>
     <string name="device_installing_apk">正在安装 APK...</string>
+    <string name="apk_install_toast_success">%1$s 已安装到 %2$s</string>
+    <string name="apk_install_toast_failure">%1$s 安装到 %2$s 失败</string>
     <string name="device_storage_label">设备存储</string>
     <string name="device_no_capture_title">无屏幕截图</string>
     <string name="device_no_capture_hint">请解锁设备屏幕，然后点击刷新</string>
@@ -80,7 +84,9 @@
     <string name="pairing_scan_in_progress">扫描中...</string>
     <string name="pairing_ip_label">IP 地址</string>
     <string name="pairing_port_label">端口</string>
+    <string name="pairing_port_out_of_range">端口必须在 %1$d–%2$d 范围内（见设置页）。</string>
     <string name="pairing_scan_found">发现: %1$s 位于 %2$s:%3$s</string>
+    <string name="pairing_scan_unavailable">当前版本不支持子网扫描。请手动输入设备 IP 与端口，或改用 QR 无线配对。</string>
     <string name="pairing_connect_button">连接无线目标</string>
     <string name="pairing_back">← 返回准备步骤</string>
     <string name="pairing_handshaking">正在与 %1$s:%2$s 握手...</string>
@@ -93,6 +99,20 @@
     <string name="pairing_failure_message">请确认在同一 Wi-Fi 子网，且端口 5555 已开放。</string>
     <string name="pairing_edit_host">编辑主机信息</string>
     <string name="pairing_retry">重试</string>
+    <string name="pairing_method_legacy">USB + TCP/IP（传统方式）</string>
+    <string name="pairing_method_qr">无线调试二维码（Android 11+）</string>
+    <string name="pairing_prepare_qr_title">开启无线调试</string>
+    <string name="pairing_prepare_qr_desc">无需 USB。在手机上开启「无线调试」后，于下一步扫描电脑上的二维码。</string>
+    <string name="pairing_checklist_wireless_title">开启「无线调试」</string>
+    <string name="pairing_checklist_wireless_subtitle">设置 → 开发者选项 → 无线调试</string>
+    <string name="pairing_qr_instructions">1. 手机与电脑在同一 Wi‑Fi\n2. 开发者选项 → 无线调试\n3. 使用二维码配对设备\n4. 扫描左侧二维码</string>
+    <string name="pairing_qr_waiting">等待扫码…</string>
+    <string name="pairing_qr_pairing">正在配对 %1$s…</string>
+    <string name="pairing_qr_connecting">正在连接 %1$s…</string>
+    <string name="pairing_qr_refresh">刷新二维码</string>
+    <string name="pairing_step1_subtitle_qr">开启无线调试</string>
+    <string name="pairing_step2_subtitle_qr">扫描二维码配对</string>
+    <string name="pairing_qr_failure_message">%1$s</string>
 
     <!-- Groups -->
     <string name="groups_select_target">选择目标分组</string>
@@ -119,12 +139,18 @@
     <string name="groups_action_wipe">清除缓存</string>
     <string name="groups_action_reboot">批量重启</string>
     <string name="groups_action_battery">电池信息</string>
+    <string name="groups_dialog_package_title">清除缓存目标包名</string>
+    <string name="groups_dialog_package_label">包名</string>
+    <string name="groups_dialog_confirm">执行批量</string>
+    <string name="groups_dialog_cancel">取消</string>
+    <string name="groups_apk_pick_cancelled">已取消选择 APK。</string>
 
     <!-- Settings -->
     <string name="settings_title">ADB 全局配置</string>
     <string name="settings_subtitle">调整 ADB 路径、端口范围、并行线程和扫描行为。</string>
     <string name="settings_transport_bindings">传输绑定</string>
     <string name="settings_adb_path">ADB 可执行文件路径</string>
+    <string name="settings_scrcpy_path">scrcpy 可执行文件路径</string>
     <string name="settings_start_port">起始端口</string>
     <string name="settings_end_port">结束端口</string>
     <string name="settings_parallel_allocation">并行分配</string>
@@ -134,9 +160,11 @@
     <string name="settings_max_threads_value">%1$d 线程</string>
     <string name="settings_developer_security">开发者安全</string>
     <string name="settings_auto_trust_title">自动信任 RSA 密钥</string>
-    <string name="settings_auto_trust_subtitle">跳过后续挂载时的 ADB 授权提示</string>
+    <string name="settings_auto_trust_subtitle">确保本机存在 ADB RSA 密钥对（首次 USB 连接仍需在设备上确认）</string>
+    <string name="settings_auto_trust_hint">将确保本机存在 ADB RSA 密钥对。首次 USB 连接仍需在设备上一次性确认授权。</string>
     <string name="settings_telemetry_title">崩溃遥测</string>
     <string name="settings_telemetry_subtitle">上传日志用于诊断</string>
+    <string name="settings_telemetry_hint">即将推出 — 当前不会收集任何诊断数据。</string>
     <string name="settings_log_retention">Logcat 保留上限</string>
     <string name="settings_save">保存更改</string>
     <string name="settings_save_success">本地 ADB 配置已保存！</string>
@@ -145,28 +173,66 @@
     <string name="logs_title">Logcat 控制台</string>
     <string name="logs_clear">清空</string>
     <string name="logs_close">关闭</string>
+    <string name="logs_tab_events">事件</string>
+    <string name="logs_tab_logcat">Logcat</string>
+    <string name="logs_logcat_filter_all">全部设备</string>
+    <string name="logs_logcat_filter_device">设备: %1$s</string>
+    <string name="logs_clear_logcat">清空 logcat</string>
+
+    <!-- App log side panel -->
+    <string name="applog_action_launch">打开应用</string>
+    <string name="applog_action_uninstall">卸载应用</string>
+    <string name="applog_action_monitor_start">监听日志</string>
+    <string name="applog_action_monitor_stop">停止监听</string>
+    <string name="applog_action_autoscroll_start">自动滚动</string>
+    <string name="applog_action_autoscroll_stop">停止滚动</string>
+    <string name="applog_action_clear">清空</string>
+    <string name="applog_package_parsing">正在解析包名…</string>
+    <string name="applog_package_unknown">无法获取包名，打开应用与监听日志已禁用。</string>
+    <string name="applog_logs_empty">暂无应用日志。请先开始监听，再在设备上打开应用。</string>
+    <string name="applog_logs_no_match">没有符合筛选条件的日志。</string>
+    <string name="applog_filter_placeholder">按标签或内容筛选…</string>
 
     <!-- Mirror -->
     <string name="mirror_title">屏幕投屏</string>
     <string name="mirror_device_subtitle">%1$s • %2$s</string>
-    <string name="mirror_app_launcher">当前应用启动器</string>
-    <string name="mirror_app_photoflow">PhotoFlow</string>
-    <string name="mirror_app_settings">设置</string>
-    <string name="mirror_wifi_battery">WiFi %1$d%%</string>
-    <string name="mirror_photoflow_client">PhotoFlow 客户端</string>
-    <string name="mirror_brightness">亮度</string>
-    <string name="mirror_wifi">Wi-Fi</string>
-    <string name="mirror_bluetooth">蓝牙</string>
-    <string name="mirror_developer_mode">开发者模式</string>
-    <string name="mirror_adb_console">ADB 控制台</string>
-    <string name="mirror_cmd_getprop">getprop</string>
-    <string name="mirror_cmd_battery">dumpsys battery</string>
-    <string name="mirror_cmd_packages">pm list packages</string>
-    <string name="mirror_console_empty">输入 Shell 命令或点击快捷指令...</string>
-    <string name="mirror_console_placeholder">adb shell 命令...</string>
-    <string name="mirror_console_hint">在上方输入框按 Enter — 或使用快捷芯片执行</string>
-    <string name="mirror_shell_help">命令: getprop, pm list packages, dumpsys battery, clear</string>
-    <string name="mirror_shell_not_found">%1$s: 命令未找到</string>
+    <string name="mirror_battery">%1$d%%</string>
+    <string name="mirror_state_idle">就绪</string>
+    <string name="mirror_state_starting">启动中</string>
+    <string name="mirror_state_running">投屏中</string>
+    <string name="mirror_state_stopped">已停止</string>
+    <string name="mirror_state_error">错误</string>
+    <string name="mirror_state_unavailable">scrcpy 不可用</string>
+    <string name="mirror_action_start">开始投屏</string>
+    <string name="mirror_action_stop">停止投屏</string>
+    <string name="mirror_action_download">下载 scrcpy</string>
+    <string name="mirror_unavailable_hint">真实投屏需要 Desktop 版并本地安装 scrcpy，请在设置中配置路径。</string>
+    <string name="mirror_download_hint">从 GitHub 获取最新版本，并在设置中填写可执行文件路径。</string>
+    <string name="mirror_error_prefix">错误：%1$s</string>
+    <string name="mirror_connection_settings">连接设置</string>
+    <string name="mirror_settings_locked_hint">投屏进行中无法修改连接设置，请先停止投屏。</string>
+    <string name="mirror_option_enable_audio">启用音频</string>
+    <string name="mirror_quality_max_size">最大分辨率</string>
+    <string name="mirror_quality_bitrate">视频码率</string>
+    <string name="mirror_quality_fps">最大帧率</string>
+    <string name="mirror_max_size_original">原始</string>
+    <string name="mirror_max_size_720">720p</string>
+    <string name="mirror_max_size_1080">1080p</string>
+    <string name="mirror_max_size_1440">1440p</string>
+    <string name="mirror_video_bitrate_default">默认</string>
+    <string name="mirror_video_bitrate_2m">2 Mbps</string>
+    <string name="mirror_video_bitrate_4m">4 Mbps</string>
+    <string name="mirror_video_bitrate_8m">8 Mbps</string>
+    <string name="mirror_video_bitrate_16m">16 Mbps</string>
+    <string name="mirror_fps_default">默认</string>
+    <string name="mirror_fps_15">15</string>
+    <string name="mirror_fps_30">30</string>
+    <string name="mirror_fps_60">60</string>
+    <string name="mirror_option_stay_awake">保持设备唤醒</string>
+    <string name="mirror_option_turn_screen_off">关闭设备屏幕</string>
+    <string name="mirror_option_show_touches">显示触摸点</string>
+    <string name="mirror_option_always_on_top">窗口置顶</string>
+    <string name="mirror_option_view_only">仅查看（禁用控制）</string>
 
     <!-- File picker -->
     <string name="apk_picker_title">选择 APK</string>

@@ -22,6 +22,13 @@ class WirelessDeviceStore(
         writeAll(updated)
     }
 
+    fun remove(endpoint: String) {
+        val current = load()
+        val updated = current.filterNot { it.endpoint == endpoint }
+        if (updated.size == current.size) return
+        writeAll(updated)
+    }
+
     fun updateFromDevice(device: Device) {
         if (':' !in device.serial) return
         val host = device.serial.substringBeforeLast(':')

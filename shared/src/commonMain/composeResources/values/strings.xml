@@ -37,9 +37,11 @@
     <string name="device_wall_title">Device Wall Canvas</string>
     <string name="device_wall_subtitle">Monitor interactive screen frames and remote debug connected clusters.</string>
     <string name="device_wall_empty">No matching connected Android targets found</string>
+    <string name="device_wall_scanning">Scanning devices…</string>
     <string name="device_loading_screen">Loading screen...</string>
     <string name="device_offline">Device Offline</string>
     <string name="device_action_reconnect">Reconnect</string>
+    <string name="device_action_remove">Remove</string>
     <string name="device_app_label">App: %1$s</string>
     <string name="device_action_mirror">Mirror</string>
     <string name="device_action_shell">Shell</string>
@@ -47,6 +49,8 @@
     <string name="device_action_drop">Drop</string>
     <string name="device_drop_apk_hint">Drop APK here to install</string>
     <string name="device_installing_apk">Installing APK...</string>
+    <string name="apk_install_toast_success">%1$s installed on %2$s</string>
+    <string name="apk_install_toast_failure">Failed to install %1$s on %2$s</string>
     <string name="device_storage_label">Device Storage</string>
     <string name="device_no_capture_title">No Screen Capture</string>
     <string name="device_no_capture_hint">Unlock device screen, then click Refresh</string>
@@ -80,7 +84,9 @@
     <string name="pairing_scan_in_progress">Scanning...</string>
     <string name="pairing_ip_label">IP Address</string>
     <string name="pairing_port_label">Port</string>
+    <string name="pairing_port_out_of_range">Port must be between %1$d and %2$d (see Settings).</string>
     <string name="pairing_scan_found">Found: %1$s at %2$s:%3$s</string>
+    <string name="pairing_scan_unavailable">Subnet scan is not available in this version. Enter the device IP and port manually, or switch to QR wireless pairing.</string>
     <string name="pairing_connect_button">Connect to Wireless Target</string>
     <string name="pairing_back">← Back to Preparation</string>
     <string name="pairing_handshaking">Handshaking with %1$s:%2$s...</string>
@@ -93,6 +99,20 @@
     <string name="pairing_failure_message">Verify same Wi-Fi subnet and port 5555 is open.</string>
     <string name="pairing_edit_host">Edit Host Details</string>
     <string name="pairing_retry">Retry</string>
+    <string name="pairing_method_legacy">USB + TCP/IP (Legacy)</string>
+    <string name="pairing_method_qr">Wireless Debugging QR (Android 11+)</string>
+    <string name="pairing_prepare_qr_title">Enable Wireless Debugging</string>
+    <string name="pairing_prepare_qr_desc">No USB required. Enable Wireless debugging on your phone, then scan the QR code on the next step.</string>
+    <string name="pairing_checklist_wireless_title">Enable Wireless debugging</string>
+    <string name="pairing_checklist_wireless_subtitle">Settings → Developer options → Wireless debugging</string>
+    <string name="pairing_qr_instructions">1. Same Wi‑Fi as this PC\n2. Developer options → Wireless debugging\n3. Pair device with QR code\n4. Scan the code on the left</string>
+    <string name="pairing_qr_waiting">Waiting for scan…</string>
+    <string name="pairing_qr_pairing">Pairing with %1$s…</string>
+    <string name="pairing_qr_connecting">Connecting to %1$s…</string>
+    <string name="pairing_qr_refresh">Refresh QR code</string>
+    <string name="pairing_step1_subtitle_qr">Enable wireless debugging</string>
+    <string name="pairing_step2_subtitle_qr">Scan QR to pair</string>
+    <string name="pairing_qr_failure_message">%1$s</string>
 
     <!-- Groups -->
     <string name="groups_select_target">Select Target Group</string>
@@ -119,12 +139,18 @@
     <string name="groups_action_wipe">Wipe Cache</string>
     <string name="groups_action_reboot">Batch Reboot</string>
     <string name="groups_action_battery">Battery Dump</string>
+    <string name="groups_dialog_package_title">Target package for cache wipe</string>
+    <string name="groups_dialog_package_label">Package name</string>
+    <string name="groups_dialog_confirm">Run batch</string>
+    <string name="groups_dialog_cancel">Cancel</string>
+    <string name="groups_apk_pick_cancelled">APK selection cancelled.</string>
 
     <!-- Settings -->
     <string name="settings_title">ADB Global Configuration Settings</string>
     <string name="settings_subtitle">Adjust ADB binary path, port ranges, parallel workers, and scanner behavior.</string>
     <string name="settings_transport_bindings">Transport Bindings</string>
     <string name="settings_adb_path">ADB executable path</string>
+    <string name="settings_scrcpy_path">scrcpy executable path</string>
     <string name="settings_start_port">Start Port</string>
     <string name="settings_end_port">End Port</string>
     <string name="settings_parallel_allocation">Parallel Allocation</string>
@@ -134,9 +160,11 @@
     <string name="settings_max_threads_value">%1$d Thr</string>
     <string name="settings_developer_security">Developer Security</string>
     <string name="settings_auto_trust_title">Auto-Trust RSA Keys</string>
-    <string name="settings_auto_trust_subtitle">Skip ADB prompt on subsequent mounts</string>
+    <string name="settings_auto_trust_subtitle">Ensures a local ADB RSA key pair exists (first USB connection still requires on-device approval)</string>
+    <string name="settings_auto_trust_hint">Ensures a local ADB RSA key pair exists. First USB connection still requires one-time approval on the device.</string>
     <string name="settings_telemetry_title">Crash Telemetry</string>
     <string name="settings_telemetry_subtitle">Transfer logs for diagnostics</string>
+    <string name="settings_telemetry_hint">Coming soon — no diagnostic data is collected yet.</string>
     <string name="settings_log_retention">Logcat Retention Limit</string>
     <string name="settings_save">Save Changes</string>
     <string name="settings_save_success">Local ADB configurations saved successfully!</string>
@@ -145,28 +173,66 @@
     <string name="logs_title">Logcat Console</string>
     <string name="logs_clear">Clear</string>
     <string name="logs_close">Close</string>
+    <string name="logs_tab_events">Events</string>
+    <string name="logs_tab_logcat">Logcat</string>
+    <string name="logs_logcat_filter_all">All devices</string>
+    <string name="logs_logcat_filter_device">Device: %1$s</string>
+    <string name="logs_clear_logcat">Clear logcat</string>
+
+    <!-- App log side panel -->
+    <string name="applog_action_launch">Launch App</string>
+    <string name="applog_action_uninstall">Uninstall App</string>
+    <string name="applog_action_monitor_start">Monitor Logs</string>
+    <string name="applog_action_monitor_stop">Stop Monitor</string>
+    <string name="applog_action_autoscroll_start">Auto Scroll</string>
+    <string name="applog_action_autoscroll_stop">Pause Scroll</string>
+    <string name="applog_action_clear">Clear</string>
+    <string name="applog_package_parsing">Parsing package…</string>
+    <string name="applog_package_unknown">Package name unavailable — launch and monitor are disabled.</string>
+    <string name="applog_logs_empty">No app logs yet. Start monitoring, then open the app on the device.</string>
+    <string name="applog_logs_no_match">No logs match the current filter.</string>
+    <string name="applog_filter_placeholder">Filter by tag or message…</string>
 
     <!-- Mirror -->
-    <string name="mirror_title">Active Screen Mirroring</string>
+    <string name="mirror_title">Screen Mirroring</string>
     <string name="mirror_device_subtitle">%1$s • %2$s</string>
-    <string name="mirror_app_launcher">ACTIVE APP LAUNCHER</string>
-    <string name="mirror_app_photoflow">PhotoFlow</string>
-    <string name="mirror_app_settings">Settings</string>
-    <string name="mirror_wifi_battery">WiFi %1$d%%</string>
-    <string name="mirror_photoflow_client">PhotoFlow Client</string>
-    <string name="mirror_brightness">Brightness</string>
-    <string name="mirror_wifi">Wi-Fi</string>
-    <string name="mirror_bluetooth">Bluetooth</string>
-    <string name="mirror_developer_mode">Developer Mode</string>
-    <string name="mirror_adb_console">ADB CONSOLE</string>
-    <string name="mirror_cmd_getprop">getprop</string>
-    <string name="mirror_cmd_battery">dumpsys battery</string>
-    <string name="mirror_cmd_packages">pm list packages</string>
-    <string name="mirror_console_empty">Type shell commands or tap quick helpers...</string>
-    <string name="mirror_console_placeholder">adb shell command...</string>
-    <string name="mirror_console_hint">Press Enter in field above — use quick chips to run</string>
-    <string name="mirror_shell_help">Commands: getprop, pm list packages, dumpsys battery, clear</string>
-    <string name="mirror_shell_not_found">%1$s: command not found</string>
+    <string name="mirror_battery">%1$d%%</string>
+    <string name="mirror_state_idle">Ready</string>
+    <string name="mirror_state_starting">Starting</string>
+    <string name="mirror_state_running">Mirroring</string>
+    <string name="mirror_state_stopped">Stopped</string>
+    <string name="mirror_state_error">Error</string>
+    <string name="mirror_state_unavailable">scrcpy Unavailable</string>
+    <string name="mirror_action_start">Start Mirroring</string>
+    <string name="mirror_action_stop">Stop Mirroring</string>
+    <string name="mirror_action_download">Download scrcpy</string>
+    <string name="mirror_unavailable_hint">Real mirroring requires the Desktop app and a locally installed scrcpy binary. Configure the path in Settings.</string>
+    <string name="mirror_download_hint">Get the latest release from GitHub and set the executable path in Settings.</string>
+    <string name="mirror_error_prefix">Error: %1$s</string>
+    <string name="mirror_connection_settings">Connection Settings</string>
+    <string name="mirror_settings_locked_hint">Stop mirroring to edit connection settings.</string>
+    <string name="mirror_option_enable_audio">Enable audio</string>
+    <string name="mirror_quality_max_size">Max resolution</string>
+    <string name="mirror_quality_bitrate">Video bit rate</string>
+    <string name="mirror_quality_fps">Max FPS</string>
+    <string name="mirror_max_size_original">Original</string>
+    <string name="mirror_max_size_720">720p</string>
+    <string name="mirror_max_size_1080">1080p</string>
+    <string name="mirror_max_size_1440">1440p</string>
+    <string name="mirror_video_bitrate_default">Default</string>
+    <string name="mirror_video_bitrate_2m">2 Mbps</string>
+    <string name="mirror_video_bitrate_4m">4 Mbps</string>
+    <string name="mirror_video_bitrate_8m">8 Mbps</string>
+    <string name="mirror_video_bitrate_16m">16 Mbps</string>
+    <string name="mirror_fps_default">Default</string>
+    <string name="mirror_fps_15">15</string>
+    <string name="mirror_fps_30">30</string>
+    <string name="mirror_fps_60">60</string>
+    <string name="mirror_option_stay_awake">Keep device awake</string>
+    <string name="mirror_option_turn_screen_off">Turn device screen off</string>
+    <string name="mirror_option_show_touches">Show touches</string>
+    <string name="mirror_option_always_on_top">Always on top</string>
+    <string name="mirror_option_view_only">View only (no control)</string>
 
     <!-- File picker -->
     <string name="apk_picker_title">Select APK</string>

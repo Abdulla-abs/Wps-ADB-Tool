@@ -5,8 +5,11 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -41,16 +44,22 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
 ) {
     var adbPath by remember(settings) { mutableStateOf(settings.adbPath) }
+    var scrcpyPath by remember(settings) { mutableStateOf(settings.scrcpyPath) }
     var minPort by remember(settings) { mutableStateOf(settings.minPort.toString()) }
     var maxPort by remember(settings) { mutableStateOf(settings.maxPort.toString()) }
     var scanInterval by remember(settings) { mutableStateOf(settings.scanIntervalSec.toFloat()) }
     var parallelThreads by remember(settings) { mutableStateOf(settings.parallelThreads.toFloat()) }
     var logRetention by remember(settings) { mutableStateOf(settings.logRetention.toString()) }
     var autoApproveKey by remember(settings) { mutableStateOf(settings.autoApproveKey) }
-    var diagnosticTelemetry by remember(settings) { mutableStateOf(settings.diagnosticTelemetry) }
     var showToast by remember { mutableStateOf(false) }
 
-    Column(modifier = modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
         Column {
             Text(stringResource(Res.string.settings_title), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = CarbonColors.OnSurface)
             Text(
@@ -67,6 +76,14 @@ fun SettingsScreen(
                 OutlinedTextField(
                     value = adbPath,
                     onValueChange = { adbPath = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    colors = fieldColors(),
+                )
+                FieldLabel(stringResource(Res.string.settings_scrcpy_path))
+                OutlinedTextField(
+                    value = scrcpyPath,
+                    onValueChange = { scrcpyPath = it },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     colors = fieldColors(),
@@ -104,12 +121,31 @@ fun SettingsScreen(
                 }
                 Checkbox(autoApproveKey, { autoApproveKey = it }, colors = CheckboxDefaults.colors(checkedColor = CarbonColors.Primary))
             }
+            if (autoApproveKey) {
+                Text(
+                    stringResource(Res.string.settings_auto_trust_hint),
+                    fontSize = 10.sp,
+                    color = CarbonColors.Outline,
+                    modifier = Modifier.padding(start = 4.dp, top = 2.dp),
+                )
+            }
             Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text(stringResource(Res.string.settings_telemetry_title), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = CarbonColors.OnSurface)
                     Text(stringResource(Res.string.settings_telemetry_subtitle), fontSize = 10.sp, color = CarbonColors.Outline)
+                    Text(
+                        stringResource(Res.string.settings_telemetry_hint),
+                        fontSize = 10.sp,
+                        color = CarbonColors.Outline,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
                 }
-                Checkbox(diagnosticTelemetry, { diagnosticTelemetry = it }, colors = CheckboxDefaults.colors(checkedColor = CarbonColors.Primary))
+                Checkbox(
+                    checked = false,
+                    onCheckedChange = {},
+                    enabled = false,
+                    colors = CheckboxDefaults.colors(checkedColor = CarbonColors.Primary),
+                )
             }
             FieldLabel(stringResource(Res.string.settings_log_retention))
             OutlinedTextField(logRetention, { logRetention = it }, Modifier.fillMaxWidth(), singleLine = true, colors = fieldColors())
@@ -121,13 +157,15 @@ fun SettingsScreen(
                     onSave(
                         AppSettings(
                             adbPath = adbPath,
+                            scrcpyPath = scrcpyPath,
+                            scrcpyConnection = settings.scrcpyConnection,
                             minPort = minPort.toIntOrNull() ?: 5555,
                             maxPort = maxPort.toIntOrNull() ?: 5585,
                             scanIntervalSec = scanInterval.toInt(),
                             parallelThreads = parallelThreads.toInt(),
                             logRetention = logRetention.toIntOrNull() ?: 2500,
                             autoApproveKey = autoApproveKey,
-                            diagnosticTelemetry = diagnosticTelemetry,
+                            diagnosticTelemetry = settings.diagnosticTelemetry,
                         ),
                     )
                     showToast = true

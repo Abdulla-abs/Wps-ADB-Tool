@@ -16,6 +16,8 @@ kotlinx-coroutines = "1.11.0"
 material3 = "1.11.0-alpha07"
 coil = "3.4.0"
 ktor = "3.1.0"
+jmdns = "3.5.9"
+qrcode-kotlin = "4.5.0"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -43,6 +45,8 @@ coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" 
 coil-network-ktor3 = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil" }
 ktor-client-android = { module = "io.ktor:ktor-client-android", version.ref = "ktor" }
 ktor-client-java = { module = "io.ktor:ktor-client-java", version.ref = "ktor" }
+jmdns = { module = "org.jmdns:jmdns", version.ref = "jmdns" }
+qrcode-kotlin = { module = "io.github.g0dkar:qrcode-kotlin", version.ref = "qrcode-kotlin" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

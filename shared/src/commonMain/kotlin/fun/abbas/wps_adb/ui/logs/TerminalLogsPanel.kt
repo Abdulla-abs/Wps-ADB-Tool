@@ -8,8 +8,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -17,19 +15,36 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import `fun`.abbas.wps_adb.model.AdbLog
-import `fun`.abbas.wps_adb.model.LogLevel
 import `fun`.abbas.wps_adb.theme.CarbonColors
+import `fun`.abbas.wps_adb.viewmodel.LogTrayMode
 import org.jetbrains.compose.resources.stringResource
-import wpsadbtool.shared.generated.resources.*
 import wpsadbtool.shared.generated.resources.Res
+import wpsadbtool.shared.generated.resources.logs_clear
+import wpsadbtool.shared.generated.resources.logs_clear_logcat
+import wpsadbtool.shared.generated.resources.logs_close
+import wpsadbtool.shared.generated.resources.logs_logcat_filter_all
+import wpsadbtool.shared.generated.resources.logs_tab_events
+import wpsadbtool.shared.generated.resources.logs_tab_logcat
 
 @Composable
 fun TerminalLogsPanel(
-    logs: List<AdbLog>,
-    onClear: () -> Unit,
+    mode: LogTrayMode,
+    onModeChange: (LogTrayMode) -> Unit,
+    eventLogs: List<AdbLog>,
+    logcatLogs: List<AdbLog>,
+    logcatFilterLabel: String?,
+    onShowAllDevices: () -> Unit,
+    onClearEvents: () -> Unit,
+    onClearLogcat: () -> Unit,
     onClose: () -> Unit,
+    logRetention: Int = 2500,
     modifier: Modifier = Modifier,
 ) {
+    val displayLogs = when (mode) {
+        LogTrayMode.EVENTS -> eventLogs
+        LogTrayMode.LOGCAT -> logcatLogs
+    }
+
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -43,30 +58,61 @@ fun TerminalLogsPanel(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(stringResource(Res.string.logs_title), fontSize = 12.sp, color = CarbonColors.OnSurface, fontFamily = FontFamily.Monospace)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(stringResource(Res.string.logs_clear), fontSize = 11.sp, color = CarbonColors.Outline, modifier = Modifier.clickable(onClick = onClear))
-                Text(stringResource(Res.string.logs_close), fontSize = 11.sp, color = CarbonColors.Outline, modifier = Modifier.clickable(onClick = onClose))
-            }
-        }
-        LazyColumn(modifier = Modifier.weight(1f).padding(8.dp)) {
-            items(logs.takeLast(200)) { log ->
                 Text(
-                    "${log.timestamp} ${log.level.name}/${log.tag}: ${log.message}",
-                    fontSize = 11.sp,
+                    text = stringResource(Res.string.logs_tab_events),
+                    fontSize = 12.sp,
+                    color = if (mode == LogTrayMode.EVENTS) CarbonColors.Primary else CarbonColors.Outline,
                     fontFamily = FontFamily.Monospace,
-                    color = logColor(log.level),
-                    modifier = Modifier.padding(vertical = 1.dp),
+                    modifier = Modifier.clickable { onModeChange(LogTrayMode.EVENTS) },
+                )
+                Text(
+                    text = stringResource(Res.string.logs_tab_logcat),
+                    fontSize = 12.sp,
+                    color = if (mode == LogTrayMode.LOGCAT) CarbonColors.Primary else CarbonColors.Outline,
+                    fontFamily = FontFamily.Monospace,
+                    modifier = Modifier.clickable { onModeChange(LogTrayMode.LOGCAT) },
+                )
+                if (mode == LogTrayMode.LOGCAT && logcatFilterLabel != null) {
+                    Text(
+                        text = logcatFilterLabel,
+                        fontSize = 11.sp,
+                        color = CarbonColors.OnSurface,
+                        fontFamily = FontFamily.Monospace,
+                    )
+                    Text(
+                        text = stringResource(Res.string.logs_logcat_filter_all),
+                        fontSize = 11.sp,
+                        color = CarbonColors.Primary,
+                        fontFamily = FontFamily.Monospace,
+                        modifier = Modifier.clickable(onClick = onShowAllDevices),
+                    )
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                val clearLabel = if (mode == LogTrayMode.EVENTS) {
+                    stringResource(Res.string.logs_clear)
+                } else {
+                    stringResource(Res.string.logs_clear_logcat)
+                }
+                val onClear = if (mode == LogTrayMode.EVENTS) onClearEvents else onClearLogcat
+                Text(
+                    text = clearLabel,
+                    fontSize = 11.sp,
+                    color = CarbonColors.Outline,
+                    modifier = Modifier.clickable(onClick = onClear),
+                )
+                Text(
+                    text = stringResource(Res.string.logs_close),
+                    fontSize = 11.sp,
+                    color = CarbonColors.Outline,
+                    modifier = Modifier.clickable(onClick = onClose),
                 )
             }
         }
+        SelectableLogList(
+            logs = displayLogs.takeLast(logRetention.coerceAtLeast(1)),
+            modifier = Modifier.weight(1f).padding(8.dp),
+        )
     }
-}
-
-private fun logColor(level: LogLevel) = when (level) {
-    LogLevel.V -> CarbonColors.Outline
-    LogLevel.D -> CarbonColors.Secondary
-    LogLevel.I -> CarbonColors.Primary
-    LogLevel.W -> CarbonColors.SecondaryContainer
-    LogLevel.E -> CarbonColors.Error
 }

@@ -52,5 +52,14 @@ class JvmAdbDeviceParserTest {
         )
         assertEquals(ConnectionType.USB, usb.connectionType)
         assertTrue(usb.name.contains("Phone"))
+
+        val wirelessTls = JvmAdbDeviceParser.toDevice(
+            JvmAdbDeviceParser.parseDevicesOutput(
+                "adb-1943c766-2fwUSM._adb-tls-connect._tcp device product:RMX3823 model:RMX3823",
+            ).first(),
+            "Android 14",
+            90,
+        )
+        assertEquals(ConnectionType.WIFI, wirelessTls.connectionType)
     }
 }

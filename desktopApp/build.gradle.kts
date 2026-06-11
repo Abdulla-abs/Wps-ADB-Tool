@@ -1,9 +1,19 @@
+import org.gradle.api.tasks.JavaExec
+import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlinJvm)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+}
+
+kotlin {
+    jvmToolchain(17)
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
+    }
 }
 
 dependencies {
@@ -23,9 +33,36 @@ val macSignEnabled = providers.environmentVariable("MACOS_SIGN")
             .orElse(false),
     )
 
+tasks.withType<JavaExec>().configureEach {
+    val sharedClassesDir = layout.projectDirectory.dir("../shared/build/classes/kotlin/jvm/main")
+    val sharedResourcesDir = layout.projectDirectory.dir("../shared/build/processedResources/jvm/main")
+    dependsOn(
+        ":shared:compileKotlinJvm",
+        ":shared:jvmProcessResources",
+    )
+    doFirst {
+        val sharedOutputs = listOf(sharedClassesDir.asFile, sharedResourcesDir.asFile).filter { it.exists() }
+        if (sharedOutputs.isEmpty()) return@doFirst
+
+        classpath = files(sharedOutputs) + classpath.filter { file ->
+            !(file.name.startsWith("shared-jvm") && file.extension.equals("jar", ignoreCase = true))
+        }
+    }
+}
+
 compose.desktop {
     application {
         mainClass = "fun.abbas.wps_adb.MainKt"
+
+        // checkRuntime / jpackage need a full JDK (jlink + jpackage).
+        // IDEA's bundled JBR lacks them; defaulting to the Gradle JVM would fail there.
+        val packagingJdkFromToolchain = javaToolchains.launcherFor {
+            languageVersion.set(JavaLanguageVersion.of(17))
+        }.map { it.metadata.installationPath.asFile.absolutePath }
+        javaHome = providers.gradleProperty("wpsAdbTool.packagingJdk")
+            .orElse(providers.environmentVariable("WPS_ADB_PACKAGING_JDK"))
+            .orElse(packagingJdkFromToolchain)
+            .get()
 
         buildTypes.release.proguard {
             configurationFiles.from(project.file("proguard-rules.pro"))

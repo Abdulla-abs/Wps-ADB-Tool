@@ -11,6 +11,7 @@ data class ParsedAdbDevice(
     val status: DeviceStatus,
     val product: String?,
     val model: String?,
+    val deviceName: String? = null,
 )
 
 object JvmAdbDeviceParser {
@@ -32,6 +33,7 @@ object JvmAdbDeviceParser {
                     },
                     product = extractField(extras, "product"),
                     model = extractField(extras, "model"),
+                    deviceName = extractField(extras, "device"),
                 )
             }
             .toList()
@@ -49,11 +51,7 @@ object JvmAdbDeviceParser {
         val isEmulator = parsed.serial.startsWith("emulator-") ||
             parsed.model?.contains("sdk", ignoreCase = true) == true ||
             parsed.product?.contains("sdk", ignoreCase = true) == true
-        val connectionType = when {
-            isEmulator -> ConnectionType.EMULATOR
-            ':' in parsed.serial -> ConnectionType.WIFI
-            else -> ConnectionType.USB
-        }
+        val connectionType = DeviceTransportDeduplicator.resolveConnectionType(parsed.serial, isEmulator)
         val displayName = parsed.model?.replace('_', ' ') ?: parsed.product ?: parsed.serial
         return Device(
             id = parsed.serial,

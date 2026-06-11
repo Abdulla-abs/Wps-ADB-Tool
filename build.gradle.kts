@@ -10,3 +10,14 @@ plugins {
     alias(libs.plugins.kotlinAndroid) apply false
     alias(libs.plugins.kotlinMultiplatform) apply false
 }
+
+subprojects {
+    configurations.configureEach {
+        resolutionStrategy.eachDependency {
+            if (requested.group == "org.jetbrains.skiko") {
+                useVersion("0.144.6")
+                because("Align Skiko with Compose Multiplatform 1.11.1")
+            }
+        }
+    }
+}

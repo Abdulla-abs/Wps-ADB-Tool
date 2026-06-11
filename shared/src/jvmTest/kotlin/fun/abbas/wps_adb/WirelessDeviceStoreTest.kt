@@ -79,4 +79,19 @@ class WirelessDeviceStoreTest {
 
         assertTrue(WirelessDeviceStore(file).load().isEmpty())
     }
+
+    @Test
+    fun remove_deletesPersistedEndpoint() {
+        val file = File.createTempFile("wps-adb-wireless", ".txt")
+        file.deleteOnExit()
+        val store = WirelessDeviceStore(file)
+
+        store.addOrUpdate(SavedWirelessDevice("192.168.0.2", 5555, "Test Phone"))
+        store.addOrUpdate(SavedWirelessDevice("192.168.0.3", 5555, "Other Phone"))
+        store.remove("192.168.0.2:5555")
+
+        val loaded = store.load()
+        assertEquals(1, loaded.size)
+        assertEquals("192.168.0.3:5555", loaded.single().endpoint)
+    }
 }

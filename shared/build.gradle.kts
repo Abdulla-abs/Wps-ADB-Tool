@@ -8,7 +8,13 @@ plugins {
 }
 
 kotlin {
-    jvm()
+    jvmToolchain(17)
+
+    jvm {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+        }
+    }
 
     androidTarget {
         compilerOptions {
@@ -24,6 +30,7 @@ kotlin {
         jvmMain.dependencies {
             implementation(libs.kotlinx.coroutinesSwing)
             implementation(libs.ktor.client.java)
+            implementation(libs.jmdns)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -37,6 +44,7 @@ kotlin {
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.coil.compose)
             implementation(libs.coil.network.ktor3)
+            implementation(libs.qrcode.kotlin)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

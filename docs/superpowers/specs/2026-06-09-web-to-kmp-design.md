@@ -1,6 +1,6 @@
 # WpsAdbTool UI 原型迁移至 Kotlin Multiplatform 设计规格
 
-> 状态：草案 — 待评审  
+> 状态：已实现（Desktop 核心迁移完成，2026-06-11）  
 > 来源：`wpsAdbToolForWeb`（React 原型，仅作 UI 参考）→ `WpsAdbTool`（Compose Multiplatform，Android + Desktop）
 
 ## 1. 背景与目标
@@ -10,7 +10,7 @@
 | 项目 | 技术栈 | 状态 |
 |------|--------|------|
 | `wpsAdbToolForWeb` | React 19、Vite 6、Tailwind CSS 4 | UI 原型，Mock 数据，**仅作设计参考** |
-| `WpsAdbTool` | KMP + Compose Multiplatform 1.11.1 | Android + Desktop，占位 UI |
+| `WpsAdbTool` | KMP + Compose Multiplatform 1.11.1 | Android（Mock）+ Desktop（真实 ADB / scrcpy / QR） |
 
 Web 原型中**需要迁移**的功能模块（均为模拟逻辑）：
 

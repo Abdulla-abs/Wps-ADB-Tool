@@ -10,14 +10,18 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -57,6 +61,7 @@ import wpsadbtool.shared.generated.resources.Res
 @Composable
 fun DeviceWallScreen(
     devices: List<Device>,
+    isScanningDevices: Boolean,
     filterTab: FilterTab,
     searchQuery: String,
     sortParam: SortParam,
@@ -65,10 +70,24 @@ fun DeviceWallScreen(
     onAction: (String, DeviceAction) -> Unit,
     onApkDrop: suspend (deviceId: String, apkPath: String) -> Unit,
     onReconnect: (String) -> Unit,
+    onRemove: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxSize().padding(24.dp)) {
-        Text(stringResource(Res.string.device_wall_title), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = CarbonColors.OnSurface)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(
+                stringResource(Res.string.device_wall_title),
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = CarbonColors.OnSurface,
+            )
+            if (isScanningDevices) {
+                DeviceScanningTag()
+            }
+        }
         Text(
             stringResource(Res.string.device_wall_subtitle),
             fontSize = 12.sp,
@@ -77,6 +96,7 @@ fun DeviceWallScreen(
         )
         DeviceGrid(
             devices = devices,
+            isScanningDevices = isScanningDevices,
             filterTab = filterTab,
             searchQuery = searchQuery,
             sortParam = sortParam,
@@ -85,7 +105,57 @@ fun DeviceWallScreen(
             onAction = onAction,
             onApkDrop = onApkDrop,
             onReconnect = onReconnect,
+            onRemove = onRemove,
             modifier = Modifier.weight(1f).fillMaxWidth(),
+        )
+    }
+}
+
+@Composable
+private fun DeviceScanningTag(modifier: Modifier = Modifier) {
+    val labelSize = 9.sp
+    val indicatorSize = 9.dp
+    Row(
+        modifier = modifier
+            .border(1.dp, CarbonColors.Primary.copy(alpha = 0.35f), RoundedCornerShape(8.dp))
+            .background(CarbonColors.Primary.copy(alpha = 0.08f), RoundedCornerShape(8.dp))
+            .padding(horizontal = 7.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(
+            stringResource(Res.string.device_wall_scanning),
+            fontSize = labelSize,
+            fontWeight = FontWeight.Medium,
+            color = CarbonColors.Primary,
+        )
+        CircularProgressIndicator(
+            modifier = Modifier.size(indicatorSize),
+            color = CarbonColors.Primary,
+            trackColor = CarbonColors.OutlineVariant,
+            strokeWidth = 1.dp,
+        )
+    }
+}
+
+@Composable
+private fun DeviceScanningPanel(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            stringResource(Res.string.device_wall_scanning),
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = CarbonColors.Primary,
+        )
+        LinearProgressIndicator(
+            modifier = Modifier.width(220.dp).height(3.dp),
+            color = CarbonColors.Primary,
+            trackColor = CarbonColors.OutlineVariant,
+            strokeCap = ProgressIndicatorDefaults.LinearStrokeCap,
         )
     }
 }
@@ -93,6 +163,7 @@ fun DeviceWallScreen(
 @Composable
 fun DeviceGrid(
     devices: List<Device>,
+    isScanningDevices: Boolean,
     filterTab: FilterTab,
     searchQuery: String,
     sortParam: SortParam,
@@ -101,6 +172,7 @@ fun DeviceGrid(
     onAction: (String, DeviceAction) -> Unit,
     onApkDrop: suspend (deviceId: String, apkPath: String) -> Unit,
     onReconnect: (String) -> Unit,
+    onRemove: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val filtered = devices
@@ -135,7 +207,10 @@ fun DeviceGrid(
                 .padding(32.dp),
             contentAlignment = Alignment.Center,
         ) {
-            Text(stringResource(Res.string.device_wall_empty), color = CarbonColors.OnSurfaceVariant)
+            when {
+                isScanningDevices && devices.isEmpty() -> DeviceScanningPanel()
+                else -> Text(stringResource(Res.string.device_wall_empty), color = CarbonColors.OnSurfaceVariant)
+            }
         }
     } else {
         LazyVerticalGrid(
@@ -145,7 +220,7 @@ fun DeviceGrid(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             items(filtered, key = { it.id }) { device ->
-                DeviceCard(device, onMirror, onTerminal, onAction, onApkDrop, onReconnect)
+                DeviceCard(device, onMirror, onTerminal, onAction, onApkDrop, onReconnect, onRemove)
             }
         }
     }
@@ -159,6 +234,7 @@ fun DeviceCard(
     onAction: (String, DeviceAction) -> Unit,
     onApkDrop: suspend (deviceId: String, apkPath: String) -> Unit,
     onReconnect: (String) -> Unit,
+    onRemove: (String) -> Unit,
 ) {
     val isOnline = device.status == DeviceStatus.ONLINE
     var isDragOver by remember(device.id) { mutableStateOf(false) }
@@ -299,7 +375,10 @@ fun DeviceCard(
                     }
                 }
                 isOnline -> ScreenshotFallback(device)
-                else -> OfflineDevicePrompt(onReconnect = { onReconnect(device.id) })
+                else -> OfflineDevicePrompt(
+                    onReconnect = { onReconnect(device.id) },
+                    onRemove = { onRemove(device.id) },
+                )
             }
             if (isDragOver && isOnline) {
                 Box(
@@ -411,7 +490,7 @@ private fun ScreenshotFallback(device: Device) {
 }
 
 @Composable
-private fun OfflineDevicePrompt(onReconnect: () -> Unit) {
+private fun OfflineDevicePrompt(onReconnect: () -> Unit, onRemove: () -> Unit) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -423,6 +502,13 @@ private fun OfflineDevicePrompt(onReconnect: () -> Unit) {
             color = CarbonColors.Primary,
             textDecoration = TextDecoration.Underline,
             modifier = Modifier.clickable(onClick = onReconnect),
+        )
+        Text(
+            stringResource(Res.string.device_action_remove),
+            fontSize = 12.sp,
+            color = CarbonColors.Error,
+            textDecoration = TextDecoration.Underline,
+            modifier = Modifier.clickable(onClick = onRemove),
         )
     }
 }
