@@ -88,7 +88,7 @@ Desktop 配置保存在：
 
 产物目录：`desktopApp/build/compose/binaries/main-release/`
 
-macOS 签名、公证与 CI 打包见 [docs/macos-ci.md](./docs/macos-ci.md)。
+macOS 签名、公证与 CI 打包见 [docs/macos-ci.md](./docs/macos-ci.md)。Windows CI 打包见 [docs/windows-ci.md](./docs/windows-ci.md)。
 
 ### 运行 Android
 

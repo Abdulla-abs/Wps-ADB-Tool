@@ -1,0 +1,50 @@
+name: Windows Desktop
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: App version (e.g. 1.0.0)
+        type: string
+        default: 1.0.0
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve app version
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_EVENT_NAME -eq 'push') {
+            $version = $env:GITHUB_REF_NAME -replace '^v', ''
+          } else {
+            $version = '${{ inputs.version }}'
+          }
+          "WPS_ADB_TOOL_VERSION=$version" >> $env:GITHUB_ENV
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Build MSI
+        env:
+          JAVA_HOME: ${{ env.JAVA_HOME }}
+          WPS_ADB_TOOL_VERSION: ${{ env.WPS_ADB_TOOL_VERSION }}
+        run: pwsh -File scripts/windows/build-msi.ps1
+
+      - name: Upload MSI
+        uses: actions/upload-artifact@v4
+        with:
+          name: WpsAdbTool-windows-x64
+          path: desktopApp/build/ci-artifacts/WpsAdbTool-*-windows-x64.msi
+          if-no-files-found: error
