@@ -5,6 +5,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
 import `fun`.abbas.wps_adb.data.createAdbRepository
+import `fun`.abbas.wps_adb.data.createDeviceShellService
 import `fun`.abbas.wps_adb.data.createScrcpyMirrorService
 import `fun`.abbas.wps_adb.theme.CarbonTheme
 import `fun`.abbas.wps_adb.ui.layout.AppShell
@@ -22,6 +23,9 @@ fun App() {
                 repository = repository,
                 scrcpyMirrorService = createScrcpyMirrorService(
                     scrcpyPathProvider = { repository.settings.value.scrcpyPath },
+                    adbPathProvider = { repository.settings.value.adbPath },
+                ),
+                deviceShellService = createDeviceShellService(
                     adbPathProvider = { repository.settings.value.adbPath },
                 ),
             )

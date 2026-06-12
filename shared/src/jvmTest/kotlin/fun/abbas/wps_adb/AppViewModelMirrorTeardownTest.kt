@@ -77,7 +77,8 @@ class AppViewModelMirrorTeardownTest {
         advanceUntilIdle()
 
         assertTrue(tabId in scrcpyService.stoppedTabIds)
-        assertFalse(viewModel.uiState.value.sidePanel.isVisible)
+        assertTrue(viewModel.uiState.value.sidePanel.isVisible)
+        assertTrue(viewModel.uiState.value.sidePanel.tabs.isEmpty())
         collector.cancel()
     }
 

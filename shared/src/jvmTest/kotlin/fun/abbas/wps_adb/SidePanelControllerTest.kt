@@ -4,6 +4,7 @@ import `fun`.abbas.wps_adb.data.MockData
 import `fun`.abbas.wps_adb.model.ApkInstallResult
 import `fun`.abbas.wps_adb.model.ApkMetadata
 import `fun`.abbas.wps_adb.model.ScrcpyConnectionOptions
+import `fun`.abbas.wps_adb.model.SidePanelDrawerState
 import `fun`.abbas.wps_adb.model.SidePanelState
 import `fun`.abbas.wps_adb.model.SidePanelTab
 import `fun`.abbas.wps_adb.viewmodel.SidePanelController
@@ -16,6 +17,13 @@ class SidePanelControllerTest {
     private val pixel = MockData.initialDevices[0]
     private val galaxy = MockData.initialDevices[1]
     private val defaultConnection = ScrcpyConnectionOptions()
+
+    @Test
+    fun openMirrorTab_expandsDrawer() {
+        val result = SidePanelController.openMirrorTab(SidePanelState(), pixel, defaultConnection)
+
+        assertEquals(SidePanelDrawerState.Expanded, result.state.drawerState)
+    }
 
     @Test
     fun openMirrorTab_focusesExistingTabForSameDevice() {
@@ -56,6 +64,38 @@ class SidePanelControllerTest {
         assertEquals(listOf(SidePanelController.mirrorTabId(pixel.id)), removed)
         assertTrue(remaining.tabs.single() is SidePanelTab.Mirror)
         assertEquals(galaxy.id, remaining.tabs.single().device.id)
+    }
+
+    @Test
+    fun openDebugTab_createsAwaitingApkTabAndFocusesExisting() {
+        val first = SidePanelController.openDebugTab(SidePanelState(), pixel)
+        val second = SidePanelController.openDebugTab(first.state, pixel)
+
+        assertEquals(1, second.state.tabs.size)
+        val tab = second.state.tabs.single() as SidePanelTab.AppLog
+        assertEquals(SidePanelController.debugTabId(pixel.id), tab.id)
+        assertTrue(tab.awaitingApk)
+        assertEquals(first.state.activeTabId, second.state.activeTabId)
+    }
+
+    @Test
+    fun openAppLogTab_updatesAwaitingDebugTabWithInstallResult() {
+        val debug = SidePanelController.openDebugTab(SidePanelState(), pixel)
+        val result = ApkInstallResult(
+            success = true,
+            message = "Success",
+            apkPath = "/tmp/demo.apk",
+            apkFileName = "demo.apk",
+            metadata = ApkMetadata("com.mock.demo"),
+        )
+        val updated = SidePanelController.openAppLogTab(debug.state, pixel, result)
+
+        assertEquals(1, updated.state.tabs.size)
+        val tab = updated.state.tabs.single() as SidePanelTab.AppLog
+        assertEquals(SidePanelController.debugTabId(pixel.id), tab.id)
+        assertEquals(false, tab.awaitingApk)
+        assertEquals("demo.apk", tab.apkFileName)
+        assertEquals("com.mock.demo", tab.packageName)
     }
 
     @Test

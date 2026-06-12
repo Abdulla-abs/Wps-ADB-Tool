@@ -238,6 +238,24 @@ class JvmAdbRunner(
     fun pair(endpoint: String, pairingCode: String): AdbProcessResult =
         run(pairCommandArgs(endpoint, pairingCode))
 
+    fun startBackground(args: List<String>, serial: String? = null): Process? {
+        val command = buildList {
+            add(resolveAdbPath())
+            if (serial != null) {
+                add("-s")
+                add(serial)
+            }
+            addAll(args)
+        }
+        return try {
+            ProcessBuilder(command)
+                .redirectErrorStream(true)
+                .start()
+        } catch (_: Exception) {
+            null
+        }
+    }
+
     fun run(args: List<String>, serial: String? = null): AdbProcessResult {
         val command = buildList {
             add(resolveAdbPath())

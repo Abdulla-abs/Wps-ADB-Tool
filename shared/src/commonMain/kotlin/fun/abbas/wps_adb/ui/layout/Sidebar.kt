@@ -7,12 +7,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -45,8 +42,6 @@ fun Sidebar(
     onTabChange: (NavTab) -> Unit,
     onlineCount: Int,
     onApkInstall: suspend (String) -> Unit,
-    isLogTrayOpen: Boolean,
-    onToggleLogTray: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var installingFile by remember { mutableStateOf<String?>(null) }
@@ -134,14 +129,6 @@ fun Sidebar(
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                if (isLogTrayOpen) stringResource(Res.string.action_logcat_hide) else stringResource(Res.string.action_logcat_show),
-                fontSize = 12.sp,
-                color = if (isLogTrayOpen) CarbonColors.Primary else CarbonColors.Outline,
-                modifier = Modifier.clickable(onClick = onToggleLogTray),
-            )
         }
     }
 }

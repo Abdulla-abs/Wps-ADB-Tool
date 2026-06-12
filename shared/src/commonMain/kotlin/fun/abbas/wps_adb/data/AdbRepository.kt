@@ -25,12 +25,20 @@ interface AdbRepository {
     fun pairWirelessViaQr(): Flow<QrPairingEvent>
     fun cancelQrPairing()
     suspend fun rebootDevice(deviceId: String)
+    suspend fun rebootToRecovery(deviceId: String): Boolean
+    suspend fun clearAppCache(deviceId: String, packageName: String): Boolean
+    suspend fun takeScreenshotToDownloads(deviceId: String): String?
+    suspend fun startScreenRecord(deviceId: String): Boolean
+    suspend fun stopScreenRecord(deviceId: String): String?
+    suspend fun forceStopApp(deviceId: String, packageName: String): Boolean
+    suspend fun clearAppData(deviceId: String, packageName: String): Boolean
     suspend fun disconnectDevice(deviceId: String)
     suspend fun reconnectDevice(deviceId: String)
     suspend fun removeDevice(deviceId: String)
     suspend fun installApk(fileName: String)
     suspend fun installApkOnDevice(deviceId: String, apkPath: String): ApkInstallResult
     suspend fun parseApkMetadata(apkPath: String): ApkMetadata?
+    suspend fun isPackageInstalled(deviceId: String, packageName: String): Boolean
     suspend fun launchApp(
         deviceId: String,
         packageName: String,

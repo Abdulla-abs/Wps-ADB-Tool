@@ -67,7 +67,8 @@ class AppViewModelTeardownTest {
         viewModel.closeSidePanelTab(tabId)
         advanceUntilIdle()
 
-        assertFalse(viewModel.uiState.value.sidePanel.isVisible)
+        assertTrue(viewModel.uiState.value.sidePanel.isVisible)
+        assertTrue(viewModel.uiState.value.sidePanel.tabs.isEmpty())
         assertTrue(tabId in sessionManager.stopAllTabIds)
         stateCollector.cancel()
     }

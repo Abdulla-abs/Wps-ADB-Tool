@@ -23,6 +23,9 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Text
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,6 +51,7 @@ import `fun`.abbas.wps_adb.model.ScreenFormFactor
 import `fun`.abbas.wps_adb.model.displayAspectRatio
 import `fun`.abbas.wps_adb.model.isLandscapeScreen
 import `fun`.abbas.wps_adb.model.FilterTab
+import `fun`.abbas.wps_adb.model.ShellTransitionKind
 import `fun`.abbas.wps_adb.model.SortParam
 import `fun`.abbas.wps_adb.theme.CarbonColors
 import `fun`.abbas.wps_adb.platform.apkDropTarget
@@ -58,6 +62,7 @@ import org.jetbrains.compose.resources.stringResource
 import wpsadbtool.shared.generated.resources.*
 import wpsadbtool.shared.generated.resources.Res
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun DeviceWallScreen(
     devices: List<Device>,
@@ -72,6 +77,9 @@ fun DeviceWallScreen(
     onReconnect: (String) -> Unit,
     onRemove: (String) -> Unit,
     modifier: Modifier = Modifier,
+    transitionKind: ShellTransitionKind = ShellTransitionKind.SLIDE,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null,
 ) {
     Column(modifier = modifier.fillMaxSize().padding(24.dp)) {
         Row(
@@ -106,6 +114,9 @@ fun DeviceWallScreen(
             onApkDrop = onApkDrop,
             onReconnect = onReconnect,
             onRemove = onRemove,
+            transitionKind = transitionKind,
+            sharedTransitionScope = sharedTransitionScope,
+            animatedVisibilityScope = animatedVisibilityScope,
             modifier = Modifier.weight(1f).fillMaxWidth(),
         )
     }
@@ -160,6 +171,7 @@ private fun DeviceScanningPanel(modifier: Modifier = Modifier) {
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun DeviceGrid(
     devices: List<Device>,
@@ -174,6 +186,9 @@ fun DeviceGrid(
     onReconnect: (String) -> Unit,
     onRemove: (String) -> Unit,
     modifier: Modifier = Modifier,
+    transitionKind: ShellTransitionKind = ShellTransitionKind.SLIDE,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null,
 ) {
     val filtered = devices
         .filter { device ->
@@ -220,12 +235,24 @@ fun DeviceGrid(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             items(filtered, key = { it.id }) { device ->
-                DeviceCard(device, onMirror, onTerminal, onAction, onApkDrop, onReconnect, onRemove)
+                DeviceCard(
+                    device = device,
+                    onMirror = onMirror,
+                    onTerminal = onTerminal,
+                    onAction = onAction,
+                    onApkDrop = onApkDrop,
+                    onReconnect = onReconnect,
+                    onRemove = onRemove,
+                    transitionKind = transitionKind,
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = animatedVisibilityScope,
+                )
             }
         }
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun DeviceCard(
     device: Device,
@@ -235,6 +262,9 @@ fun DeviceCard(
     onApkDrop: suspend (deviceId: String, apkPath: String) -> Unit,
     onReconnect: (String) -> Unit,
     onRemove: (String) -> Unit,
+    transitionKind: ShellTransitionKind = ShellTransitionKind.SLIDE,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null,
 ) {
     val isOnline = device.status == DeviceStatus.ONLINE
     var isDragOver by remember(device.id) { mutableStateOf(false) }
@@ -281,7 +311,29 @@ fun DeviceCard(
             verticalAlignment = Alignment.Top,
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(device.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CarbonColors.OnSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                val titleModifier = if (
+                    transitionKind == ShellTransitionKind.SHARED_ELEMENT &&
+                    sharedTransitionScope != null &&
+                    animatedVisibilityScope != null
+                ) {
+                    with(sharedTransitionScope) {
+                        Modifier.sharedElement(
+                            rememberSharedContentState(ShellSharedElementKeys.title(device.id)),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                        )
+                    }
+                } else {
+                    Modifier
+                }
+                Text(
+                    device.name,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = CarbonColors.OnSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = titleModifier,
+                )
                 Text(device.serial, fontSize = 11.sp, fontFamily = FontFamily.Monospace, color = CarbonColors.Outline)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -302,8 +354,22 @@ fun DeviceCard(
             }
         }
 
+        val previewModifier = if (
+            transitionKind == ShellTransitionKind.SHARED_ELEMENT &&
+            sharedTransitionScope != null &&
+            animatedVisibilityScope != null
+        ) {
+            with(sharedTransitionScope) {
+                Modifier.sharedElement(
+                    rememberSharedContentState(ShellSharedElementKeys.hero(device.id)),
+                    animatedVisibilityScope = animatedVisibilityScope,
+                )
+            }
+        } else {
+            Modifier
+        }
         Box(
-            modifier = Modifier
+            modifier = previewModifier
                 .padding(horizontal = 12.dp)
                 .fillMaxWidth()
                 .aspectRatio(device.displayAspectRatio())
@@ -425,7 +491,7 @@ fun DeviceCard(
                 ) {
                     Text(stringResource(Res.string.device_action_mirror), fontSize = 11.sp, color = CarbonColors.Primary, modifier = Modifier.clickable { onMirror(device) })
                     Text(stringResource(Res.string.device_action_shell), fontSize = 11.sp, color = CarbonColors.OnSurface, modifier = Modifier.clickable { onTerminal(device) })
-                    Text(stringResource(Res.string.device_action_reboot), fontSize = 11.sp, color = CarbonColors.OnSurface, modifier = Modifier.clickable { onAction(device.id, DeviceAction.REBOOT) })
+                    Text(stringResource(Res.string.device_action_debug), fontSize = 11.sp, color = CarbonColors.OnSurface, modifier = Modifier.clickable { onAction(device.id, DeviceAction.DEBUG) })
                     Text(stringResource(Res.string.device_action_drop), fontSize = 11.sp, color = CarbonColors.Error, modifier = Modifier.clickable { onAction(device.id, DeviceAction.DISCONNECT) })
                 }
             }

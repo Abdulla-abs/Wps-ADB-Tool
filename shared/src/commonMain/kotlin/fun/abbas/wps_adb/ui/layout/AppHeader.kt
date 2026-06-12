@@ -21,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import `fun`.abbas.wps_adb.model.FilterTab
@@ -42,6 +43,7 @@ fun AppHeader(
     onSortChange: (SortParam) -> Unit,
     onRefresh: () -> Unit,
     onAddWireless: () -> Unit,
+    endInset: Dp = 0.dp,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -101,6 +103,7 @@ fun AppHeader(
             }
             Button(
                 onClick = onAddWireless,
+                modifier = Modifier.padding(end = endInset),
                 colors = ButtonDefaults.buttonColors(containerColor = CarbonColors.Primary, contentColor = CarbonColors.OnPrimary),
                 shape = RoundedCornerShape(50),
             ) {

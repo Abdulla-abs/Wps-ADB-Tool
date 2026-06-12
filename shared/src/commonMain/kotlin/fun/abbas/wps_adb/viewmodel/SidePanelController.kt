@@ -3,6 +3,7 @@ package `fun`.abbas.wps_adb.viewmodel
 import `fun`.abbas.wps_adb.model.ApkInstallResult
 import `fun`.abbas.wps_adb.model.Device
 import `fun`.abbas.wps_adb.model.ScrcpyConnectionOptions
+import `fun`.abbas.wps_adb.model.SidePanelDrawerState
 import `fun`.abbas.wps_adb.model.SidePanelState
 import `fun`.abbas.wps_adb.model.SidePanelTab
 
@@ -14,13 +15,65 @@ object SidePanelController {
     fun appLogTabId(deviceId: String, apkFileName: String): String =
         "applog_${deviceId}_${apkFileName.hashCode()}"
 
+    fun debugTabId(deviceId: String): String = "debug_$deviceId"
+
+    fun shellSessionId(deviceId: String): String = "shell_$deviceId"
+
+    fun openDebugTab(state: SidePanelState, device: Device): OpenTabResult {
+        val existing = state.tabs
+            .filterIsInstance<SidePanelTab.AppLog>()
+            .find { it.id == debugTabId(device.id) }
+        if (existing != null) {
+            return OpenTabResult(
+                state = state.copy(
+                    activeTabId = existing.id,
+                    drawerState = SidePanelDrawerState.Expanded,
+                ),
+                evictedTabIds = emptyList(),
+            )
+        }
+        val tab = SidePanelTab.AppLog(
+            id = debugTabId(device.id),
+            title = device.name,
+            device = device,
+            awaitingApk = true,
+        )
+        return insertTab(state, tab)
+    }
+
     fun openAppLogTab(state: SidePanelState, device: Device, result: ApkInstallResult): OpenTabResult {
+        val awaitingDebugTab = state.tabs
+            .filterIsInstance<SidePanelTab.AppLog>()
+            .find { it.id == debugTabId(device.id) && it.awaitingApk }
+        if (awaitingDebugTab != null) {
+            val updated = awaitingDebugTab.copy(
+                awaitingApk = false,
+                apkPath = result.apkPath,
+                apkFileName = result.apkFileName,
+                packageName = result.metadata?.packageName,
+                launchActivity = result.metadata?.launchActivity,
+                appLabel = result.metadata?.appLabel,
+                title = "${device.name} · ${result.apkFileName}",
+            )
+            return OpenTabResult(
+                state = state.copy(
+                    tabs = state.tabs.map { if (it.id == awaitingDebugTab.id) updated else it },
+                    activeTabId = awaitingDebugTab.id,
+                    drawerState = SidePanelDrawerState.Expanded,
+                ),
+                evictedTabIds = emptyList(),
+            )
+        }
+
         val existing = state.tabs
             .filterIsInstance<SidePanelTab.AppLog>()
             .find { it.device.id == device.id && it.apkFileName == result.apkFileName }
         if (existing != null) {
             return OpenTabResult(
-                state = state.copy(activeTabId = existing.id),
+                state = state.copy(
+                    activeTabId = existing.id,
+                    drawerState = SidePanelDrawerState.Expanded,
+                ),
                 evictedTabIds = emptyList(),
             )
         }
@@ -47,7 +100,10 @@ object SidePanelController {
             .find { it.device.id == device.id }
         if (existing != null) {
             return OpenTabResult(
-                state = state.copy(activeTabId = existing.id),
+                state = state.copy(
+                    activeTabId = existing.id,
+                    drawerState = SidePanelDrawerState.Expanded,
+                ),
                 evictedTabIds = emptyList(),
             )
         }
@@ -95,7 +151,11 @@ object SidePanelController {
             tabs = tabs.filter { it.id != candidate.id }
         }
         return OpenTabResult(
-            state = state.copy(tabs = tabs, activeTabId = tab.id),
+            state = state.copy(
+                tabs = tabs,
+                activeTabId = tab.id,
+                drawerState = SidePanelDrawerState.Expanded,
+            ),
             evictedTabIds = evicted,
         )
     }

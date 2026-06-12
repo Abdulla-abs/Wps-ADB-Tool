@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import `fun`.abbas.wps_adb.theme.CarbonColors
@@ -32,6 +33,7 @@ fun StatusFooter(
     onToggleLogTray: () -> Unit,
     onKillAdb: () -> Unit,
     onRestartAdb: () -> Unit,
+    endInset: Dp = 0.dp,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -82,7 +84,12 @@ fun StatusFooter(
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
             FooterAction(if (isLogTrayOpen) stringResource(Res.string.action_logcat_hide) else stringResource(Res.string.action_logcat_show), onToggleLogTray)
             FooterAction(stringResource(Res.string.footer_kill_daemon), onKillAdb, enabled = isAdbActive && !isRestarting, isError = true)
-            FooterAction(stringResource(Res.string.footer_restart_adb), onRestartAdb, enabled = !isRestarting)
+            FooterAction(
+                stringResource(Res.string.footer_restart_adb),
+                onRestartAdb,
+                enabled = !isRestarting,
+                modifier = Modifier.padding(end = endInset),
+            )
         }
     }
 }
@@ -93,6 +100,7 @@ private fun FooterAction(
     onClick: () -> Unit,
     enabled: Boolean = true,
     isError: Boolean = false,
+    modifier: Modifier = Modifier,
 ) {
     Text(
         label,
@@ -103,6 +111,6 @@ private fun FooterAction(
             isError -> CarbonColors.Error
             else -> CarbonColors.Outline
         },
-        modifier = Modifier.clickable(enabled = enabled, onClick = onClick),
+        modifier = modifier.clickable(enabled = enabled, onClick = onClick),
     )
 }

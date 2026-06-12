@@ -1,6 +1,7 @@
 package `fun`.abbas.wps_adb
 
 import `fun`.abbas.wps_adb.data.MockAdbRepository
+import `fun`.abbas.wps_adb.data.NoOpDeviceShellService
 import `fun`.abbas.wps_adb.viewmodel.AppViewModel
 import `fun`.abbas.wps_adb.viewmodel.LogTrayMode
 import kotlinx.coroutines.Dispatchers
@@ -32,13 +33,15 @@ class AppViewModelLogcatTest {
     }
 
     @Test
-    fun `onTerminalDevice opens tray logcat mode and sets device filter`() = runTest(dispatcher) {
+    fun `openShellDeviceLogcat opens tray logcat mode and sets device filter`() = runTest(dispatcher) {
         val repo = MockAdbRepository(initialScanDelayMs = 0)
-        val vm = AppViewModel(repo)
+        val vm = AppViewModel(repo, deviceShellService = FakeDeviceShellService())
         val stateCollector = launch { vm.uiState.collect { } }
         advanceUntilIdle()
         val device = repo.devices.value.first()
         vm.onTerminalDevice(device)
+        advanceUntilIdle()
+        vm.openShellDeviceLogcat()
         advanceUntilIdle()
         assertTrue(vm.uiState.value.isLogTrayOpen)
         assertEquals(LogTrayMode.LOGCAT, vm.uiState.value.logTrayMode)

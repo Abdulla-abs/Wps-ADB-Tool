@@ -45,7 +45,7 @@
     <string name="device_app_label">App: %1$s</string>
     <string name="device_action_mirror">Mirror</string>
     <string name="device_action_shell">Shell</string>
-    <string name="device_action_reboot">Reboot</string>
+    <string name="device_action_debug">Debug</string>
     <string name="device_action_drop">Drop</string>
     <string name="device_drop_apk_hint">Drop APK here to install</string>
     <string name="device_installing_apk">Installing APK...</string>
@@ -180,6 +180,11 @@
     <string name="logs_clear_logcat">Clear logcat</string>
 
     <!-- App log side panel -->
+    <string name="sidepanel_action_expand">Expand</string>
+    <string name="sidepanel_action_collapse">Collapse panel</string>
+    <string name="sidepanel_empty_title">No open sessions</string>
+    <string name="sidepanel_empty_subtitle">Tap Mirror or Debug on a device card to start a session.</string>
+    <string name="sidepanel_tab_count">%1$d</string>
     <string name="applog_action_launch">Launch App</string>
     <string name="applog_action_uninstall">Uninstall App</string>
     <string name="applog_action_monitor_start">Monitor Logs</string>
@@ -192,6 +197,11 @@
     <string name="applog_logs_empty">No app logs yet. Start monitoring, then open the app on the device.</string>
     <string name="applog_logs_no_match">No logs match the current filter.</string>
     <string name="applog_filter_placeholder">Filter by tag or message…</string>
+    <string name="applog_drop_apk_title">DROP APK TO DEBUG</string>
+    <string name="applog_drop_apk_subtitle">Drag an APK here to install and debug on this device</string>
+    <string name="applog_parsing_apk">Parsing APK…</string>
+    <string name="apk_debug_skip_install_toast">%1$s is already installed on %2$s</string>
+    <string name="apk_parse_toast_failure">Failed to parse APK: %1$s</string>
 
     <!-- Mirror -->
     <string name="mirror_title">Screen Mirroring</string>
@@ -236,4 +246,36 @@
 
     <!-- File picker -->
     <string name="apk_picker_title">Select APK</string>
+
+    <!-- Device Shell -->
+    <string name="shell_breadcrumb_wall">Device Wall</string>
+    <string name="shell_breadcrumb_shell">Shell</string>
+    <string name="shell_action_view_logcat">View Logcat</string>
+    <string name="shell_header_connecting">Connecting…</string>
+    <string name="shell_header_connected">Connected</string>
+    <string name="shell_header_disconnected">Disconnected</string>
+    <string name="shell_header_error">Error</string>
+    <string name="shell_terminal_loading">Starting terminal…</string>
+    <string name="shell_terminal_hint">Click the terminal, switch to an English keyboard layout, then type commands directly (e.g. uptime). Do not prefix with adb shell.</string>
+    <string name="shell_terminal_unavailable">Terminal unavailable on this platform</string>
+    <string name="shell_easy_actions_title">EASY ACTIONS</string>
+    <string name="easy_action_category_system">SYSTEM</string>
+    <string name="easy_action_category_display">DISPLAY</string>
+    <string name="easy_action_category_app">APP CONTROL</string>
+    <string name="easy_action_reboot">Reboot Device</string>
+    <string name="easy_action_recovery">Recovery Mode</string>
+    <string name="easy_action_clear_cache">Clear Cache</string>
+    <string name="easy_action_screenshot">Take Screenshot</string>
+    <string name="easy_action_screen_record">Screen Record</string>
+    <string name="easy_action_screen_record_stop">Stop Recording</string>
+    <string name="easy_action_force_stop">Force Stop App</string>
+    <string name="easy_action_clear_data">Clear Data</string>
+    <string name="shell_package_dialog_title">Package name</string>
+    <string name="shell_package_dialog_hint">com.example.app</string>
+    <string name="shell_package_dialog_confirm">Run</string>
+    <string name="shell_package_dialog_cancel">Cancel</string>
+    <string name="shell_confirm_recovery_title">Confirm action</string>
+    <string name="shell_confirm_recovery_message">This action may disrupt the device. Continue?</string>
+    <string name="shell_confirm_ok">Continue</string>
+    <string name="shell_confirm_cancel">Cancel</string>
 </resources>

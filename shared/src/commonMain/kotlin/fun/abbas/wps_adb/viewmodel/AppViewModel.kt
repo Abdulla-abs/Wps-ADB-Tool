@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import `fun`.abbas.wps_adb.data.AdbRepository
 import `fun`.abbas.wps_adb.data.AppLogFilter
 import `fun`.abbas.wps_adb.data.ApkMetadataResolver
+import `fun`.abbas.wps_adb.data.DeviceShellService
+import `fun`.abbas.wps_adb.data.NoOpDeviceShellService
 import `fun`.abbas.wps_adb.data.NoOpScrcpyMirrorService
 import `fun`.abbas.wps_adb.data.NoOpTabSessionManager
 import `fun`.abbas.wps_adb.data.ScrcpyMirrorService
@@ -12,12 +14,19 @@ import `fun`.abbas.wps_adb.data.TabSessionManager
 import `fun`.abbas.wps_adb.model.AdbLog
 import `fun`.abbas.wps_adb.model.ApkInstallResult
 import `fun`.abbas.wps_adb.model.ApkInstallToast
+import `fun`.abbas.wps_adb.model.ApkInstallToastKind
 import `fun`.abbas.wps_adb.model.AppLogMonitorState
+import `fun`.abbas.wps_adb.model.DebugApkLoadPhase
 import `fun`.abbas.wps_adb.model.AppSettings
 import `fun`.abbas.wps_adb.model.BatchActionParams
+import `fun`.abbas.wps_adb.model.DefaultEasyActions
 import `fun`.abbas.wps_adb.model.Device
 import `fun`.abbas.wps_adb.model.DeviceAction
+import `fun`.abbas.wps_adb.model.DeviceShellSession
+import `fun`.abbas.wps_adb.model.DeviceShellSessionState
 import `fun`.abbas.wps_adb.model.DeviceStatus
+import `fun`.abbas.wps_adb.model.DeviceWallRoute
+import `fun`.abbas.wps_adb.model.EasyActionKind
 import `fun`.abbas.wps_adb.model.MirrorSessionState
 import `fun`.abbas.wps_adb.model.ScrcpyConnectionOptions
 import `fun`.abbas.wps_adb.model.FilterTab
@@ -25,6 +34,7 @@ import `fun`.abbas.wps_adb.model.LogLevel
 import `fun`.abbas.wps_adb.model.NavTab
 import `fun`.abbas.wps_adb.model.PairingMethod
 import `fun`.abbas.wps_adb.model.QrPairingEvent
+import `fun`.abbas.wps_adb.model.SidePanelDrawerState
 import `fun`.abbas.wps_adb.model.SidePanelState
 import `fun`.abbas.wps_adb.model.SidePanelTab
 import `fun`.abbas.wps_adb.model.SortParam
@@ -43,6 +53,7 @@ class AppViewModel(
     private val repository: AdbRepository,
     private val tabSessionManager: TabSessionManager = NoOpTabSessionManager(),
     private val scrcpyMirrorService: ScrcpyMirrorService = NoOpScrcpyMirrorService(),
+    private val deviceShellService: DeviceShellService = NoOpDeviceShellService(),
 ) : ViewModel() {
     private val _localState = MutableStateFlow(AppUiState())
 
@@ -50,6 +61,11 @@ class AppViewModel(
         scrcpyMirrorService.setExitListener { tabId, exitCode, intentionalStop ->
             viewModelScope.launch {
                 handleScrcpyExit(tabId, exitCode, intentionalStop)
+            }
+        }
+        deviceShellService.setExitListener { sessionId, _ ->
+            viewModelScope.launch {
+                handleShellExit(sessionId)
             }
         }
     }
@@ -75,7 +91,12 @@ class AppViewModel(
     val logcatLogs = repository.logcatLogs
     val settings = repository.settings
 
-    fun setActiveTab(tab: NavTab) = _localState.update { it.copy(activeTab = tab) }
+    fun setActiveTab(tab: NavTab) {
+        if (tab != NavTab.WALL && _localState.value.deviceWallRoute is DeviceWallRoute.Shell) {
+            closeDeviceShell()
+        }
+        _localState.update { it.copy(activeTab = tab) }
+    }
     fun setFilterTab(tab: FilterTab) = _localState.update { it.copy(filterTab = tab) }
     fun setSearchQuery(query: String) = _localState.update { it.copy(searchQuery = query) }
     fun setSortParam(param: SortParam) = _localState.update { it.copy(sortParam = param) }
@@ -228,6 +249,18 @@ class AppViewModel(
         }
     }
 
+    fun toggleSidePanelDrawer() {
+        _localState.update { state ->
+            val panel = state.sidePanel
+            val nextState = when (panel.drawerState) {
+                SidePanelDrawerState.Expanded -> SidePanelDrawerState.Collapsed
+                SidePanelDrawerState.Collapsed -> SidePanelDrawerState.Expanded
+                SidePanelDrawerState.Hidden -> SidePanelDrawerState.Expanded
+            }
+            state.copy(sidePanel = panel.copy(drawerState = nextState))
+        }
+    }
+
     fun launchAppInTab(tabId: String) = viewModelScope.launch {
         val tab = findAppLogTab(tabId) ?: return@launch
         var packageName = tab.packageName ?: return@launch
@@ -372,11 +405,149 @@ class AppViewModel(
     }
 
     fun onTerminalDevice(device: Device) {
+        val route = _localState.value.deviceWallRoute
+        if (route is DeviceWallRoute.Shell && route.deviceId == device.id) return
+        closeDeviceShell()
+        val sessionId = SidePanelController.shellSessionId(device.id)
         _localState.update {
-            it.copy(isLogTrayOpen = true, logTrayMode = LogTrayMode.LOGCAT, logcatDeviceFilter = device.id)
+            it.copy(
+                deviceWallRoute = DeviceWallRoute.Shell(device.id),
+                shellSession = DeviceShellSession(
+                    deviceId = device.id,
+                    sessionState = DeviceShellSessionState.CONNECTING,
+                    terminalSurfaceReady = false,
+                ),
+            )
+        }
+        if (!deviceShellService.isAvailable()) {
+            updateShellSession {
+                it.copy(sessionState = DeviceShellSessionState.UNAVAILABLE, errorMessage = "ADB not available")
+            }
+            return
+        }
+        tabSessionManager.start(sessionId, TabListenKind.DEVICE_SHELL)
+        val result = deviceShellService.start(sessionId, device.serial)
+        updateShellSession {
+            it.copy(
+                sessionState = if (result.success) {
+                    DeviceShellSessionState.CONNECTED
+                } else {
+                    DeviceShellSessionState.ERROR
+                },
+                errorMessage = result.message.takeIf { !result.success },
+            )
+        }
+        if (result.success) {
+            repository.addLog(LogLevel.I, "DeviceShell", "Shell opened: ${device.serial}", device.id)
+        } else {
+            tabSessionManager.stop(sessionId, TabListenKind.DEVICE_SHELL)
+        }
+    }
+
+    fun closeDeviceShell() {
+        val session = _localState.value.shellSession ?: return
+        teardownDeviceShell(SidePanelController.shellSessionId(session.deviceId))
+        _localState.update {
+            it.copy(
+                deviceWallRoute = DeviceWallRoute.Grid,
+                shellSession = null,
+                pendingDestructiveAction = null,
+                pendingPackageAction = null,
+            )
+        }
+    }
+
+    fun markShellTerminalReady() {
+        updateShellSession { it.copy(terminalSurfaceReady = true) }
+    }
+
+    fun onShellTerminalMounted() {
+        val session = _localState.value.shellSession ?: return
+        deviceShellService.notifyTerminalMounted(SidePanelController.shellSessionId(session.deviceId))
+    }
+
+    fun shellTerminalComponent(): Any? {
+        val session = _localState.value.shellSession ?: return null
+        return deviceShellService.createTerminalComponent(SidePanelController.shellSessionId(session.deviceId))
+    }
+
+    fun openShellDeviceLogcat() {
+        val deviceId = _localState.value.shellSession?.deviceId ?: return
+        _localState.update {
+            it.copy(isLogTrayOpen = true, logTrayMode = LogTrayMode.LOGCAT, logcatDeviceFilter = deviceId)
         }
         if (repository.isAdbActive.value) {
-            repository.startGlobalLogcat(device.id)
+            repository.startGlobalLogcat(deviceId)
+        }
+    }
+
+    fun onEasyAction(kind: EasyActionKind) {
+        val definition = DefaultEasyActions.find { it.kind == kind } ?: return
+        when {
+            definition.requiresPackage -> _localState.update { it.copy(pendingPackageAction = kind) }
+            definition.destructive -> _localState.update { it.copy(pendingDestructiveAction = kind) }
+            else -> executeEasyAction(kind)
+        }
+    }
+
+    fun dismissEasyActionDialogs() {
+        _localState.update { it.copy(pendingDestructiveAction = null, pendingPackageAction = null) }
+    }
+
+    fun confirmDestructiveEasyAction() {
+        val kind = _localState.value.pendingDestructiveAction ?: return
+        _localState.update { it.copy(pendingDestructiveAction = null) }
+        executeEasyAction(kind)
+    }
+
+    fun confirmPackageEasyAction(packageName: String) {
+        val kind = _localState.value.pendingPackageAction ?: return
+        if (packageName.isBlank()) return
+        _localState.update { it.copy(pendingPackageAction = null) }
+        executeEasyAction(kind, packageName)
+    }
+
+    fun recentPackageNames(): List<String> =
+        _localState.value.sidePanel.tabs
+            .mapNotNull { tab ->
+                when (tab) {
+                    is SidePanelTab.AppLog -> tab.packageName
+                    else -> null
+                }
+            }
+            .distinct()
+            .take(5)
+
+    private fun executeEasyAction(kind: EasyActionKind, packageName: String? = null) {
+        val session = _localState.value.shellSession ?: return
+        val deviceId = session.deviceId
+        viewModelScope.launch {
+            when (kind) {
+                EasyActionKind.REBOOT -> repository.rebootDevice(deviceId)
+                EasyActionKind.RECOVERY_MODE -> repository.rebootToRecovery(deviceId)
+                EasyActionKind.CLEAR_APP_CACHE -> {
+                    val pkg = packageName ?: return@launch
+                    repository.clearAppCache(deviceId, pkg)
+                }
+                EasyActionKind.TAKE_SCREENSHOT -> repository.takeScreenshotToDownloads(deviceId)
+                EasyActionKind.SCREEN_RECORD -> {
+                    if (session.isScreenRecording) {
+                        repository.stopScreenRecord(deviceId)
+                        updateShellSession { it.copy(isScreenRecording = false) }
+                    } else {
+                        val started = repository.startScreenRecord(deviceId)
+                        if (started) updateShellSession { it.copy(isScreenRecording = true) }
+                    }
+                }
+                EasyActionKind.FORCE_STOP_APP -> {
+                    val pkg = packageName ?: return@launch
+                    repository.forceStopApp(deviceId, pkg)
+                }
+                EasyActionKind.CLEAR_APP_DATA -> {
+                    val pkg = packageName ?: return@launch
+                    repository.clearAppData(deviceId, pkg)
+                }
+            }
         }
     }
 
@@ -391,11 +562,88 @@ class AppViewModel(
 
     fun onDeviceAction(deviceId: String, action: DeviceAction) = viewModelScope.launch {
         when (action) {
-            DeviceAction.REBOOT -> repository.rebootDevice(deviceId)
+            DeviceAction.DEBUG -> openDebugTab(deviceId)
             DeviceAction.DISCONNECT -> {
                 repository.disconnectDevice(deviceId)
                 closeSidePanelTabsForDevice(deviceId)
             }
+        }
+    }
+
+    suspend fun installApkForDebugTab(tabId: String, apkPath: String) {
+        val tab = findAppLogTab(tabId) ?: return
+        if (!tab.awaitingApk) return
+        val fileName = apkPath.substringAfterLast('/').substringAfterLast('\\')
+        updateAppLogTab(tabId) { it.copy(apkLoadPhase = DebugApkLoadPhase.PARSING) }
+        try {
+            val metadata = repository.parseApkMetadata(apkPath)
+            if (metadata == null || ApkMetadataResolver.isMockPackage(metadata.packageName)) {
+                showApkInstallToast(
+                    ApkInstallToast(
+                        apkFileName = fileName,
+                        deviceName = tab.device.name,
+                        success = false,
+                        kind = ApkInstallToastKind.PARSE_FAILURE,
+                    ),
+                )
+                repository.addLog(
+                    LogLevel.E,
+                    "ApkParser",
+                    "Failed to parse APK metadata: $fileName",
+                    tab.device.id,
+                )
+                return
+            }
+
+            val alreadyInstalled = repository.isPackageInstalled(tab.device.id, metadata.packageName)
+            val result = if (alreadyInstalled) {
+                repository.addLog(
+                    LogLevel.I,
+                    "ApkInstaller",
+                    "Package ${metadata.packageName} already installed on ${tab.device.serial}, skipping install",
+                    tab.device.id,
+                )
+                ApkInstallResult(
+                    success = true,
+                    message = "Already installed",
+                    apkPath = apkPath,
+                    apkFileName = fileName,
+                    metadata = metadata,
+                )
+            } else {
+                updateAppLogTab(tabId) { it.copy(apkLoadPhase = DebugApkLoadPhase.INSTALLING) }
+                val installResult = repository.installApkOnDevice(tab.device.id, apkPath)
+                installResult.copy(metadata = installResult.metadata ?: metadata)
+            }
+
+            showApkInstallToast(
+                ApkInstallToast(
+                    apkFileName = result.apkFileName,
+                    deviceName = tab.device.name,
+                    success = result.success,
+                    kind = when {
+                        alreadyInstalled -> ApkInstallToastKind.ALREADY_INSTALLED
+                        else -> ApkInstallToastKind.INSTALL
+                    },
+                ),
+            )
+            if (!result.success) return
+
+            runCatching {
+                openAppLogTab(tab.device, result)
+                if (result.metadata == null || ApkMetadataResolver.isMockPackage(result.metadata.packageName)) {
+                    refreshAppLogTabMetadata(tab.device.id, result.apkFileName, apkPath)
+                }
+            }.onFailure { error ->
+                repository.addLog(
+                    LogLevel.E,
+                    "SidePanel",
+                    "APK ready but debug tab failed to update: ${error.message}",
+                    tab.device.id,
+                )
+            }
+        } finally {
+            updateAppLogTab(tabId) { it.copy(apkLoadPhase = null) }
         }
     }
 
@@ -449,12 +697,14 @@ class AppViewModel(
     fun refreshDevices() = viewModelScope.launch { repository.refreshDevices() }
 
     fun killAdb() = viewModelScope.launch {
+        closeDeviceShell()
         repository.stopGlobalLogcat()
         repository.killAdbServer()
         clearAllSidePanelTabs()
     }
 
     fun restartAdb() = viewModelScope.launch {
+        closeDeviceShell()
         _localState.update { it.copy(isRestartingAdb = true) }
         repository.restartAdbServer()
         clearAllSidePanelTabs()
@@ -491,9 +741,17 @@ class AppViewModel(
         repository.stopAllAppLogcatSessions()
         logcatCollectJobs.values.forEach { it.cancel() }
         logcatCollectJobs.clear()
+        deviceShellService.stopAll()
         scrcpyMirrorService.stopAll()
         tabSessionManager.stopAll()
         super.onCleared()
+    }
+
+    private fun openDebugTab(deviceId: String) {
+        val device = devices.value.find { it.id == deviceId } ?: return
+        val panelResult = SidePanelController.openDebugTab(_localState.value.sidePanel, device)
+        stopSessionsForTabs(panelResult.evictedTabIds)
+        _localState.update { it.copy(sidePanel = panelResult.state) }
     }
 
     private fun openAppLogTab(device: Device, result: ApkInstallResult) {
@@ -517,6 +775,9 @@ class AppViewModel(
     }
 
     private fun closeSidePanelTabsForDevice(deviceId: String) {
+        if (_localState.value.shellSession?.deviceId == deviceId) {
+            closeDeviceShell()
+        }
         val (newPanel, removedTabIds) = SidePanelController.closeTabsForDevice(
             _localState.value.sidePanel,
             deviceId,
@@ -545,10 +806,31 @@ class AppViewModel(
         updateAppLogTab(tabId) { it.copy(monitorState = AppLogMonitorState.IDLE) }
     }
 
+    private fun teardownDeviceShell(sessionId: String) {
+        deviceShellService.stop(sessionId)
+        tabSessionManager.stop(sessionId, TabListenKind.DEVICE_SHELL)
+    }
+
+    private fun handleShellExit(sessionId: String) {
+        val session = _localState.value.shellSession ?: return
+        if (SidePanelController.shellSessionId(session.deviceId) != sessionId) return
+        updateShellSession {
+            it.copy(sessionState = DeviceShellSessionState.DISCONNECTED, errorMessage = "Shell session ended")
+        }
+    }
+
+    private fun updateShellSession(transform: (DeviceShellSession) -> DeviceShellSession) {
+        _localState.update { state ->
+            val session = state.shellSession ?: return@update state
+            state.copy(shellSession = transform(session))
+        }
+    }
+
     private fun teardownTabListening(tabId: String) {
         logcatCollectJobs.remove(tabId)?.cancel()
         repository.stopAppLogcat(tabId)
         scrcpyMirrorService.stop(tabId)
+        deviceShellService.stop(tabId)
         tabSessionManager.stopAll(tabId)
         if (findAppLogTab(tabId)?.monitorState == AppLogMonitorState.MONITORING) {
             updateAppLogTab(tabId) { it.copy(monitorState = AppLogMonitorState.IDLE) }

@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,19 +12,29 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import `fun`.abbas.wps_adb.platform.apkDropTarget
+import `fun`.abbas.wps_adb.platform.pickApkFile
+import kotlinx.coroutines.launch
 import `fun`.abbas.wps_adb.data.AppLogFilter
 import `fun`.abbas.wps_adb.model.AppLogMonitorState
+import `fun`.abbas.wps_adb.model.DebugApkLoadPhase
 import `fun`.abbas.wps_adb.model.LogLevel
 import `fun`.abbas.wps_adb.model.SidePanelTab
 import `fun`.abbas.wps_adb.theme.CarbonColors
@@ -38,11 +49,15 @@ import wpsadbtool.shared.generated.resources.applog_action_launch
 import wpsadbtool.shared.generated.resources.applog_action_uninstall
 import wpsadbtool.shared.generated.resources.applog_action_monitor_start
 import wpsadbtool.shared.generated.resources.applog_action_monitor_stop
+import wpsadbtool.shared.generated.resources.applog_drop_apk_subtitle
+import wpsadbtool.shared.generated.resources.applog_drop_apk_title
 import wpsadbtool.shared.generated.resources.applog_filter_placeholder
 import wpsadbtool.shared.generated.resources.applog_logs_empty
 import wpsadbtool.shared.generated.resources.applog_logs_no_match
 import wpsadbtool.shared.generated.resources.applog_package_parsing
 import wpsadbtool.shared.generated.resources.applog_package_unknown
+import wpsadbtool.shared.generated.resources.applog_parsing_apk
+import wpsadbtool.shared.generated.resources.device_installing_apk
 import wpsadbtool.shared.generated.resources.mirror_device_subtitle
 
 @Composable
@@ -55,9 +70,10 @@ fun AppLogTabContent(
     onLogFilterQueryChange: (String) -> Unit,
     onToggleLogFilterLevel: (LogLevel) -> Unit,
     onClearLogs: () -> Unit,
+    onApkDropped: suspend (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val canLaunch = !tab.packageName.isNullOrBlank()
+    val canLaunch = !tab.awaitingApk && !tab.packageName.isNullOrBlank()
     val isMonitoring = tab.monitorState == AppLogMonitorState.MONITORING
     val isAutoScrollEnabled = tab.autoScrollEnabled
     val listState = rememberLazyListState()
@@ -84,16 +100,23 @@ fun AppLogTabContent(
                 fontFamily = FontFamily.Monospace,
                 color = CarbonColors.Outline,
             )
-            Text(tab.apkFileName, fontSize = 11.sp, color = CarbonColors.OnSurfaceVariant)
-            Text(
-                text = when {
-                    tab.packageName != null -> tab.packageName
-                    else -> stringResource(Res.string.applog_package_parsing)
-                },
-                fontSize = 10.sp,
-                fontFamily = FontFamily.Monospace,
-                color = if (tab.packageName != null) CarbonColors.Primary else CarbonColors.Outline,
-            )
+            if (tab.awaitingApk) {
+                ApkDebugDropZone(
+                    loadPhase = tab.apkLoadPhase,
+                    onApkDropped = onApkDropped,
+                )
+            } else {
+                Text(tab.apkFileName, fontSize = 11.sp, color = CarbonColors.OnSurfaceVariant)
+                Text(
+                    text = when {
+                        tab.packageName != null -> tab.packageName
+                        else -> stringResource(Res.string.applog_package_parsing)
+                    },
+                    fontSize = 10.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = if (tab.packageName != null) CarbonColors.Primary else CarbonColors.Outline,
+                )
+            }
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -209,6 +232,106 @@ fun AppLogTabContent(
                 )
             },
         )
+    }
+}
+
+@Composable
+private fun ApkDebugDropZone(
+    loadPhase: DebugApkLoadPhase?,
+    onApkDropped: suspend (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var isDragOver by remember { mutableStateOf(false) }
+    var isProcessing by remember { mutableStateOf(false) }
+    var processingFileName by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+    val isBusy = isProcessing || loadPhase != null
+
+    fun handleApkPath(path: String) {
+        val displayName = path.substringAfterLast('/').substringAfterLast('\\')
+        scope.launch {
+            isProcessing = true
+            processingFileName = displayName
+            try {
+                onApkDropped(path)
+            } finally {
+                isProcessing = false
+                processingFileName = null
+            }
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .apkDropTarget(
+                enabled = !isBusy,
+                onDragEnter = { isDragOver = true },
+                onDragExit = { isDragOver = false },
+                onApkDropped = { path ->
+                    isDragOver = false
+                    handleApkPath(path)
+                },
+            )
+            .border(
+                width = 2.dp,
+                color = when {
+                    isDragOver -> CarbonColors.Primary
+                    else -> CarbonColors.OutlineVariant
+                },
+                shape = RoundedCornerShape(12.dp),
+            )
+            .background(
+                if (isDragOver) CarbonColors.Primary.copy(alpha = 0.1f) else CarbonColors.SurfaceContainer,
+                RoundedCornerShape(12.dp),
+            )
+            .clickable(enabled = !isBusy) {
+                scope.launch {
+                    val path = pickApkFile() ?: return@launch
+                    handleApkPath(path)
+                }
+            }
+            .padding(16.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (isBusy) {
+            val statusText = when (loadPhase) {
+                DebugApkLoadPhase.PARSING -> stringResource(Res.string.applog_parsing_apk)
+                DebugApkLoadPhase.INSTALLING, null -> stringResource(Res.string.device_installing_apk)
+            }
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    statusText,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = CarbonColors.OnSurfaceVariant,
+                )
+                processingFileName?.let { fileName ->
+                    Text(fileName, fontSize = 10.sp, color = CarbonColors.Outline, modifier = Modifier.padding(top = 4.dp))
+                }
+                LinearProgressIndicator(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp),
+                    color = CarbonColors.Primary,
+                )
+            }
+        } else {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    stringResource(Res.string.applog_drop_apk_title),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = if (isDragOver) CarbonColors.Primary else CarbonColors.OnSurfaceVariant,
+                )
+                Text(
+                    stringResource(Res.string.applog_drop_apk_subtitle),
+                    fontSize = 9.sp,
+                    color = CarbonColors.Outline,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+        }
     }
 }
 

@@ -1,9 +1,13 @@
 package `fun`.abbas.wps_adb.viewmodel
 
 import `fun`.abbas.wps_adb.model.ApkInstallToast
+import `fun`.abbas.wps_adb.model.DeviceShellSession
+import `fun`.abbas.wps_adb.model.DeviceWallRoute
+import `fun`.abbas.wps_adb.model.EasyActionKind
 import `fun`.abbas.wps_adb.model.FilterTab
 import `fun`.abbas.wps_adb.model.NavTab
 import `fun`.abbas.wps_adb.model.PairingMethod
+import `fun`.abbas.wps_adb.model.ShellTransitionKind
 import `fun`.abbas.wps_adb.model.SidePanelState
 import `fun`.abbas.wps_adb.model.SortParam
 
@@ -14,7 +18,7 @@ data class AppUiState(
     val filterTab: FilterTab = FilterTab.ALL,
     val searchQuery: String = "",
     val sortParam: SortParam = SortParam.NAME,
-    val isLogTrayOpen: Boolean = true,
+    val isLogTrayOpen: Boolean = false,
     val logTrayMode: LogTrayMode = LogTrayMode.EVENTS,
     val logcatDeviceFilter: String? = null,
     val isPairingDialogOpen: Boolean = false,
@@ -24,4 +28,9 @@ data class AppUiState(
     val isRestartingAdb: Boolean = false,
     val isScanningDevices: Boolean = false,
     val apkInstallToast: ApkInstallToast? = null,
+    val deviceWallRoute: DeviceWallRoute = DeviceWallRoute.Grid,
+    val shellSession: DeviceShellSession? = null,
+    val shellTransitionKind: ShellTransitionKind = ShellTransitionKind.SHARED_ELEMENT,
+    val pendingDestructiveAction: EasyActionKind? = null,
+    val pendingPackageAction: EasyActionKind? = null,
 )

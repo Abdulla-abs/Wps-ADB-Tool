@@ -53,6 +53,7 @@ class JvmAdbRepository(
     private var qrPairingService: JvmWirelessQrPairingService? = null
     private var qrPairingCollectJob: Job? = null
     private var enrichJob: Job? = null
+    private val screenRecordSessions = mutableMapOf<String, ScreenRecordSession>()
     private var enrichGeneration = 0
     private var deviceScanJob: Job? = null
     private val hardwareSerialByTransport = mutableMapOf<String, String>()
@@ -334,6 +335,97 @@ class JvmAdbRepository(
         }
     }
 
+    override suspend fun rebootToRecovery(deviceId: String): Boolean = withContext(Dispatchers.IO) {
+        val target = _devices.value.find { it.id == deviceId } ?: return@withContext false
+        addLog(LogLevel.W, "EasyAction", "Rebooting ${target.serial} to recovery...", deviceId)
+        _devices.update { list -> list.map { if (it.id == deviceId) it.copy(status = DeviceStatus.OFFLINE) else it } }
+        val result = runner.run(listOf("reboot", "recovery"), serial = target.serial)
+        if (result.success) {
+            addLog(LogLevel.I, "EasyAction", "Recovery reboot sent to ${target.serial}", deviceId)
+        } else {
+            addLog(LogLevel.E, "EasyAction", "Recovery reboot failed: ${result.output}", deviceId)
+        }
+        result.success
+    }
+
+    override suspend fun clearAppCache(deviceId: String, packageName: String): Boolean = withContext(Dispatchers.IO) {
+        val serial = serialForDevice(deviceId) ?: return@withContext false
+        val primary = runner.run(JvmEasyActionCommands.clearAppCache(packageName), serial = serial)
+        if (primary.success) {
+            addLog(LogLevel.I, "EasyAction", "Cleared cache for $packageName on $serial", deviceId)
+            return@withContext true
+        }
+        val fallback = runner.run(JvmEasyActionCommands.clearAppCacheFallback(packageName), serial = serial)
+        if (fallback.success) {
+            addLog(LogLevel.I, "EasyAction", "Cleared cache (fallback) for $packageName on $serial", deviceId)
+            return@withContext true
+        }
+        addLog(LogLevel.W, "EasyAction", "clear-app-cache not supported for $packageName on $serial", deviceId)
+        false
+    }
+
+    override suspend fun takeScreenshotToDownloads(deviceId: String): String? = withContext(Dispatchers.IO) {
+        val target = _devices.value.find { it.id == deviceId } ?: return@withContext null
+        val tempFile = File(screenshotDir, "${safeSerialFileName(target.serial)}-export.png")
+        if (!runner.captureScreenshot(target.serial, tempFile)) {
+            addLog(LogLevel.E, "EasyAction", "Screenshot failed for ${target.serial}", deviceId)
+            return@withContext null
+        }
+        val downloadsDir = File(System.getProperty("user.home"), "Downloads").apply { mkdirs() }
+        val output = File(downloadsDir, "wps-adb-${safeSerialFileName(target.serial)}-${System.currentTimeMillis()}.png")
+        tempFile.copyTo(output, overwrite = true)
+        addLog(LogLevel.I, "EasyAction", "Screenshot saved: ${output.absolutePath}", deviceId)
+        output.absolutePath
+    }
+
+    override suspend fun startScreenRecord(deviceId: String): Boolean = withContext(Dispatchers.IO) {
+        val serial = serialForDevice(deviceId) ?: return@withContext false
+        if (screenRecordSessions.containsKey(deviceId)) return@withContext true
+        val remotePath = "/sdcard/wps-adb-${System.currentTimeMillis()}.mp4"
+        val process = runner.startBackground(
+            listOf("shell", "screenrecord", remotePath),
+            serial = serial,
+        ) ?: return@withContext false
+        screenRecordSessions[deviceId] = ScreenRecordSession(remotePath, process)
+        addLog(LogLevel.I, "EasyAction", "Screen recording started on $serial", deviceId)
+        true
+    }
+
+    override suspend fun stopScreenRecord(deviceId: String): String? = withContext(Dispatchers.IO) {
+        val serial = serialForDevice(deviceId) ?: return@withContext null
+        val session = screenRecordSessions.remove(deviceId) ?: return@withContext null
+        session.process.destroy()
+        delay(500)
+        val downloadsDir = File(System.getProperty("user.home"), "Downloads").apply { mkdirs() }
+        val localFile = File(downloadsDir, "wps-adb-record-${System.currentTimeMillis()}.mp4")
+        val pull = runner.run(listOf("pull", session.remotePath, localFile.absolutePath), serial = serial)
+        runner.run(listOf("shell", "rm", session.remotePath), serial = serial)
+        if (!pull.success || !localFile.exists()) {
+            addLog(LogLevel.E, "EasyAction", "Failed to pull screen recording: ${pull.output}", deviceId)
+            return@withContext null
+        }
+        addLog(LogLevel.I, "EasyAction", "Screen recording saved: ${localFile.absolutePath}", deviceId)
+        localFile.absolutePath
+    }
+
+    override suspend fun forceStopApp(deviceId: String, packageName: String): Boolean = withContext(Dispatchers.IO) {
+        val serial = serialForDevice(deviceId) ?: return@withContext false
+        val result = runner.run(listOf("shell", "am", "force-stop", packageName), serial = serial)
+        val success = result.success
+        val level = if (success) LogLevel.I else LogLevel.E
+        addLog(level, "EasyAction", "force-stop $packageName on $serial", deviceId)
+        success
+    }
+
+    override suspend fun clearAppData(deviceId: String, packageName: String): Boolean = withContext(Dispatchers.IO) {
+        val serial = serialForDevice(deviceId) ?: return@withContext false
+        val result = runner.run(listOf("shell", "pm", "clear", packageName), serial = serial)
+        val success = result.success
+        val level = if (success) LogLevel.I else LogLevel.E
+        addLog(level, "EasyAction", "pm clear $packageName on $serial", deviceId)
+        success
+    }
+
     override suspend fun disconnectDevice(deviceId: String) = withContext(Dispatchers.IO) {
         val target = _devices.value.find { it.id == deviceId } ?: return@withContext
         if (target.connectionType == ConnectionType.WIFI || ':' in target.serial) {
@@ -439,6 +531,13 @@ class JvmAdbRepository(
     override suspend fun parseApkMetadata(apkPath: String): ApkMetadata? = withContext(Dispatchers.IO) {
         val apkFile = resolveApkFile(apkPath) ?: return@withContext null
         apkMetadataParser.parse(apkFile.absolutePath, _settings.value.adbPath)
+    }
+
+    override suspend fun isPackageInstalled(deviceId: String, packageName: String): Boolean = withContext(Dispatchers.IO) {
+        val device = _devices.value.find { it.id == deviceId } ?: return@withContext false
+        if (device.status != DeviceStatus.ONLINE) return@withContext false
+        val result = runner.run(listOf("shell", "pm", "path", packageName), serial = device.serial)
+        result.success && result.output.contains("package:")
     }
 
     override suspend fun launchApp(
@@ -874,6 +973,9 @@ class JvmAdbRepository(
         }
     }
 
+    private fun serialForDevice(deviceId: String): String? =
+        _devices.value.find { it.id == deviceId }?.serial
+
     private fun safeSerialFileName(serial: String): String =
         serial.replace(Regex("""[^\w.-]"""), "_")
 
@@ -900,3 +1002,8 @@ class JvmAdbRepository(
         return null
     }
 }
+
+private data class ScreenRecordSession(
+    val remotePath: String,
+    val process: Process,
+)

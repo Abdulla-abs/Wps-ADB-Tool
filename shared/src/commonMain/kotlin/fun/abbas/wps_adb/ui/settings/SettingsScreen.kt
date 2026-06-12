@@ -3,6 +3,7 @@ package `fun`.abbas.wps_adb.ui.settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,8 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.OutlinedTextField
@@ -53,13 +53,32 @@ fun SettingsScreen(
     var autoApproveKey by remember(settings) { mutableStateOf(settings.autoApproveKey) }
     var showToast by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
+    val saveSettings = {
+        onSave(
+            AppSettings(
+                adbPath = adbPath,
+                scrcpyPath = scrcpyPath,
+                scrcpyConnection = settings.scrcpyConnection,
+                minPort = minPort.toIntOrNull() ?: 5555,
+                maxPort = maxPort.toIntOrNull() ?: 5585,
+                scanIntervalSec = scanInterval.toInt(),
+                parallelThreads = parallelThreads.toInt(),
+                logRetention = logRetention.toIntOrNull() ?: 2500,
+                autoApproveKey = autoApproveKey,
+                diagnosticTelemetry = settings.diagnosticTelemetry,
+            ),
+        )
+        showToast = true
+    }
+
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(start = 24.dp, top = 24.dp, end = 24.dp, bottom = 96.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
         Column {
             Text(stringResource(Res.string.settings_title), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = CarbonColors.OnSurface)
             Text(
@@ -151,33 +170,20 @@ fun SettingsScreen(
             OutlinedTextField(logRetention, { logRetention = it }, Modifier.fillMaxWidth(), singleLine = true, colors = fieldColors())
         }
 
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            Button(
-                onClick = {
-                    onSave(
-                        AppSettings(
-                            adbPath = adbPath,
-                            scrcpyPath = scrcpyPath,
-                            scrcpyConnection = settings.scrcpyConnection,
-                            minPort = minPort.toIntOrNull() ?: 5555,
-                            maxPort = maxPort.toIntOrNull() ?: 5585,
-                            scanIntervalSec = scanInterval.toInt(),
-                            parallelThreads = parallelThreads.toInt(),
-                            logRetention = logRetention.toIntOrNull() ?: 2500,
-                            autoApproveKey = autoApproveKey,
-                            diagnosticTelemetry = settings.diagnosticTelemetry,
-                        ),
-                    )
-                    showToast = true
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = CarbonColors.Primary, contentColor = CarbonColors.OnPrimary),
-            ) {
-                Text(stringResource(Res.string.settings_save), fontWeight = FontWeight.Bold)
-            }
-        }
-
         if (showToast) {
             Text(stringResource(Res.string.settings_save_success), fontSize = 12.sp, color = CarbonColors.Primary, fontWeight = FontWeight.Bold)
+        }
+        }
+
+        ExtendedFloatingActionButton(
+            onClick = saveSettings,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(24.dp),
+            containerColor = CarbonColors.Primary,
+            contentColor = CarbonColors.OnPrimary,
+        ) {
+            Text(stringResource(Res.string.settings_save), fontWeight = FontWeight.Bold)
         }
     }
 }

@@ -45,7 +45,7 @@
     <string name="device_app_label">应用: %1$s</string>
     <string name="device_action_mirror">投屏</string>
     <string name="device_action_shell">Shell</string>
-    <string name="device_action_reboot">重启</string>
+    <string name="device_action_debug">调试</string>
     <string name="device_action_drop">断开</string>
     <string name="device_drop_apk_hint">拖放 APK 到此处安装</string>
     <string name="device_installing_apk">正在安装 APK...</string>
@@ -180,6 +180,11 @@
     <string name="logs_clear_logcat">清空 logcat</string>
 
     <!-- App log side panel -->
+    <string name="sidepanel_action_expand">展开</string>
+    <string name="sidepanel_action_collapse">收起面板</string>
+    <string name="sidepanel_empty_title">暂无打开的标签页</string>
+    <string name="sidepanel_empty_subtitle">在设备墙上点击「投屏」或「调试」以开始会话。</string>
+    <string name="sidepanel_tab_count">%1$d</string>
     <string name="applog_action_launch">打开应用</string>
     <string name="applog_action_uninstall">卸载应用</string>
     <string name="applog_action_monitor_start">监听日志</string>
@@ -192,6 +197,11 @@
     <string name="applog_logs_empty">暂无应用日志。请先开始监听，再在设备上打开应用。</string>
     <string name="applog_logs_no_match">没有符合筛选条件的日志。</string>
     <string name="applog_filter_placeholder">按标签或内容筛选…</string>
+    <string name="applog_drop_apk_title">拖放 APK 到此处进行调试</string>
+    <string name="applog_drop_apk_subtitle">将安装到当前设备并开始调试</string>
+    <string name="applog_parsing_apk">正在解析 APK…</string>
+    <string name="apk_debug_skip_install_toast">%1$s 已安装在 %2$s 上</string>
+    <string name="apk_parse_toast_failure">解析 APK 失败：%1$s</string>
 
     <!-- Mirror -->
     <string name="mirror_title">屏幕投屏</string>
@@ -236,4 +246,36 @@
 
     <!-- File picker -->
     <string name="apk_picker_title">选择 APK</string>
+
+    <!-- Device Shell -->
+    <string name="shell_breadcrumb_wall">设备墙</string>
+    <string name="shell_breadcrumb_shell">Shell</string>
+    <string name="shell_action_view_logcat">查看 Logcat</string>
+    <string name="shell_header_connecting">连接中…</string>
+    <string name="shell_header_connected">已连接</string>
+    <string name="shell_header_disconnected">已断开</string>
+    <string name="shell_header_error">错误</string>
+    <string name="shell_terminal_loading">正在启动终端…</string>
+    <string name="shell_terminal_hint">请先点击终端区域，切换到英文输入法后直接输入命令（如 uptime），无需 adb shell 前缀。</string>
+    <string name="shell_terminal_unavailable">当前平台不可用终端</string>
+    <string name="shell_easy_actions_title">快捷操作</string>
+    <string name="easy_action_category_system">系统</string>
+    <string name="easy_action_category_display">显示</string>
+    <string name="easy_action_category_app">应用控制</string>
+    <string name="easy_action_reboot">重启设备</string>
+    <string name="easy_action_recovery">Recovery 模式</string>
+    <string name="easy_action_clear_cache">清除缓存</string>
+    <string name="easy_action_screenshot">截图</string>
+    <string name="easy_action_screen_record">录屏</string>
+    <string name="easy_action_screen_record_stop">停止录屏</string>
+    <string name="easy_action_force_stop">强制停止应用</string>
+    <string name="easy_action_clear_data">清除数据</string>
+    <string name="shell_package_dialog_title">包名</string>
+    <string name="shell_package_dialog_hint">com.example.app</string>
+    <string name="shell_package_dialog_confirm">执行</string>
+    <string name="shell_package_dialog_cancel">取消</string>
+    <string name="shell_confirm_recovery_title">确认操作</string>
+    <string name="shell_confirm_recovery_message">此操作可能影响设备正常运行，是否继续？</string>
+    <string name="shell_confirm_ok">继续</string>
+    <string name="shell_confirm_cancel">取消</string>
 </resources>

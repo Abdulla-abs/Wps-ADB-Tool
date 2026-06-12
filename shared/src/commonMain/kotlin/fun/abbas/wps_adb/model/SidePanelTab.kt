@@ -5,6 +5,11 @@ enum class AppLogMonitorState {
     MONITORING,
 }
 
+enum class DebugApkLoadPhase {
+    PARSING,
+    INSTALLING,
+}
+
 sealed class SidePanelTab {
     abstract val id: String
     abstract val title: String
@@ -14,8 +19,10 @@ sealed class SidePanelTab {
         override val id: String,
         override val title: String,
         override val device: Device,
-        val apkPath: String,
-        val apkFileName: String,
+        val apkPath: String = "",
+        val apkFileName: String = "",
+        val awaitingApk: Boolean = false,
+        val apkLoadPhase: DebugApkLoadPhase? = null,
         val packageName: String? = null,
         val launchActivity: String? = null,
         val appLabel: String? = null,

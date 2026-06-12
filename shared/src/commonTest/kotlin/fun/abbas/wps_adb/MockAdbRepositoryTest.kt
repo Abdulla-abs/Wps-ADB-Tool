@@ -23,6 +23,18 @@ class MockAdbRepositoryTest {
     }
 
     @Test
+    fun isPackageInstalled_returnsTrueAfterInstall() = runBlocking {
+        val repo = MockAdbRepository(initialScanDelayMs = 0)
+        repo.awaitDevicesLoaded()
+        val device = repo.devices.value.first { it.status == DeviceStatus.ONLINE }
+        val apkPath = "C:\\temp\\demo.apk"
+        assertEquals(false, repo.isPackageInstalled(device.id, "com.mock.demo"))
+        val result = repo.installApkOnDevice(device.id, apkPath)
+        assertTrue(result.success)
+        assertTrue(repo.isPackageInstalled(device.id, result.metadata!!.packageName))
+    }
+
+    @Test
     fun rebootDevice_marksOffline() = runBlocking {
         val repo = MockAdbRepository(initialScanDelayMs = 0)
         repo.awaitDevicesLoaded()

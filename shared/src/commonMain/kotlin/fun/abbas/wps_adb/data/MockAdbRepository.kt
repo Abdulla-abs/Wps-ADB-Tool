@@ -36,6 +36,7 @@ class MockAdbRepository(
     private val refreshDelayMs: Long = 600,
 ) : AdbRepository {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val installedPackages = mutableSetOf<Pair<String, String>>()
 
     private val _devices = MutableStateFlow<List<Device>>(emptyList())
     override val devices: StateFlow<List<Device>> = _devices.asStateFlow()
@@ -174,6 +175,43 @@ class MockAdbRepository(
         }
     }
 
+    override suspend fun rebootToRecovery(deviceId: String): Boolean {
+        val target = _devices.value.find { it.id == deviceId } ?: return false
+        addLog(LogLevel.W, "EasyAction", "Recovery reboot: ${target.serial}", deviceId)
+        _devices.update { list -> list.map { if (it.id == deviceId) it.copy(status = DeviceStatus.OFFLINE) else it } }
+        return true
+    }
+
+    override suspend fun clearAppCache(deviceId: String, packageName: String): Boolean {
+        addLog(LogLevel.I, "EasyAction", "Cleared cache for $packageName (mock)", deviceId)
+        return true
+    }
+
+    override suspend fun takeScreenshotToDownloads(deviceId: String): String? {
+        addLog(LogLevel.I, "EasyAction", "Screenshot saved (mock)", deviceId)
+        return "/mock/screenshot.png"
+    }
+
+    override suspend fun startScreenRecord(deviceId: String): Boolean {
+        addLog(LogLevel.I, "EasyAction", "Screen recording started (mock)", deviceId)
+        return true
+    }
+
+    override suspend fun stopScreenRecord(deviceId: String): String? {
+        addLog(LogLevel.I, "EasyAction", "Screen recording stopped (mock)", deviceId)
+        return "/mock/record.mp4"
+    }
+
+    override suspend fun forceStopApp(deviceId: String, packageName: String): Boolean {
+        addLog(LogLevel.I, "EasyAction", "force-stop $packageName (mock)", deviceId)
+        return true
+    }
+
+    override suspend fun clearAppData(deviceId: String, packageName: String): Boolean {
+        addLog(LogLevel.I, "EasyAction", "pm clear $packageName (mock)", deviceId)
+        return true
+    }
+
     override suspend fun disconnectDevice(deviceId: String) {
         val target = _devices.value.find { it.id == deviceId } ?: return
         addLog(LogLevel.E, "DeviceManager", "Forced disconnection socket drop on request: ${target.serial}", deviceId)
@@ -235,6 +273,7 @@ class MockAdbRepository(
             "Package ${metadata.packageName} successfully installed on interface: ${device.serial}",
             device.id,
         )
+        installedPackages.add(device.id to metadata.packageName)
         return ApkInstallResult(
             success = true,
             message = "Success",
@@ -242,6 +281,12 @@ class MockAdbRepository(
             apkFileName = fileName,
             metadata = metadata,
         )
+    }
+
+    override suspend fun isPackageInstalled(deviceId: String, packageName: String): Boolean {
+        if (installedPackages.contains(deviceId to packageName)) return true
+        val device = _devices.value.find { it.id == deviceId } ?: return false
+        return device.apps.any { it.packageName == packageName }
     }
 
     override suspend fun parseApkMetadata(apkPath: String): ApkMetadata? {

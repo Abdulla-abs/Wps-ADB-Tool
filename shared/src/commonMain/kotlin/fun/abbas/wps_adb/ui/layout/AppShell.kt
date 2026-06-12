@@ -16,19 +16,30 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import wpsadbtool.shared.generated.resources.Res
+import wpsadbtool.shared.generated.resources.apk_debug_skip_install_toast
 import wpsadbtool.shared.generated.resources.apk_install_toast_failure
 import wpsadbtool.shared.generated.resources.apk_install_toast_success
+import wpsadbtool.shared.generated.resources.apk_parse_toast_failure
+import `fun`.abbas.wps_adb.model.ApkInstallToastKind
 import wpsadbtool.shared.generated.resources.logs_logcat_filter_device
+import wpsadbtool.shared.generated.resources.shell_confirm_cancel
+import wpsadbtool.shared.generated.resources.shell_confirm_ok
+import wpsadbtool.shared.generated.resources.shell_confirm_recovery_message
+import wpsadbtool.shared.generated.resources.shell_confirm_recovery_title
 import `fun`.abbas.wps_adb.model.DeviceStatus
 import `fun`.abbas.wps_adb.model.NavTab
 import `fun`.abbas.wps_adb.theme.CarbonColors
-import `fun`.abbas.wps_adb.ui.device.DeviceWallScreen
+import `fun`.abbas.wps_adb.ui.device.DeviceWallHost
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import `fun`.abbas.wps_adb.ui.device.PackageNameDialog
 import `fun`.abbas.wps_adb.ui.groups.GroupManagementScreen
 import `fun`.abbas.wps_adb.ui.logs.TerminalLogsPanel
 import `fun`.abbas.wps_adb.ui.pairing.PairingDialog
 import `fun`.abbas.wps_adb.ui.settings.SettingsScreen
-import `fun`.abbas.wps_adb.ui.sidepanel.SIDE_PANEL_WIDTH
 import `fun`.abbas.wps_adb.ui.sidepanel.SidePanel
+import `fun`.abbas.wps_adb.ui.sidepanel.sidePanelContentInsetEnd
 import `fun`.abbas.wps_adb.viewmodel.AppViewModel
 
 @Composable
@@ -39,6 +50,7 @@ fun AppShell(viewModel: AppViewModel) {
     val logcatLogs by viewModel.logcatLogs.collectAsState()
     val settings by viewModel.settings.collectAsState()
     val onlineCount = devices.count { it.status == DeviceStatus.ONLINE }
+    val sidePanelEndInset = sidePanelContentInsetEnd(uiState.sidePanel)
 
     Box(modifier = Modifier.fillMaxSize().background(CarbonColors.Background)) {
         Row(modifier = Modifier.fillMaxSize()) {
@@ -47,8 +59,6 @@ fun AppShell(viewModel: AppViewModel) {
                 onTabChange = viewModel::setActiveTab,
                 onlineCount = onlineCount,
                 onApkInstall = viewModel::installApk,
-                isLogTrayOpen = uiState.isLogTrayOpen,
-                onToggleLogTray = viewModel::toggleLogTray,
                 modifier = Modifier.width(240.dp).fillMaxHeight(),
             )
 
@@ -63,36 +73,71 @@ fun AppShell(viewModel: AppViewModel) {
                     onSortChange = viewModel::setSortParam,
                     onRefresh = viewModel::refreshDevices,
                     onAddWireless = viewModel::openPairingDialog,
+                    endInset = sidePanelEndInset,
                 )
 
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(bottom = if (uiState.isLogTrayOpen) 280.dp else 32.dp),
-                ) {
-                    when (uiState.activeTab) {
-                        NavTab.WALL -> DeviceWallScreen(
-                            devices = devices,
-                            isScanningDevices = uiState.isScanningDevices,
-                            filterTab = uiState.filterTab,
-                            searchQuery = uiState.searchQuery,
-                            sortParam = uiState.sortParam,
-                            onMirror = viewModel::onMirrorDevice,
-                            onTerminal = viewModel::onTerminalDevice,
-                            onAction = viewModel::onDeviceAction,
-                            onApkDrop = viewModel::installApkOnDevice,
-                            onReconnect = viewModel::reconnectDevice,
-                            onRemove = viewModel::removeDevice,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                        NavTab.GROUPS -> GroupManagementScreen(
-                            devices = devices,
-                            onBatchAction = viewModel::runBatchAction,
-                        )
-                        NavTab.SETTINGS -> SettingsScreen(
-                            settings = settings,
-                            onSave = viewModel::saveSettings,
-                            modifier = Modifier.fillMaxSize(),
+                Box(modifier = Modifier.weight(1f)) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(bottom = if (uiState.isLogTrayOpen) 280.dp else 0.dp),
+                    ) {
+                        when (uiState.activeTab) {
+                            NavTab.WALL -> DeviceWallHost(
+                                route = uiState.deviceWallRoute,
+                                transitionKind = uiState.shellTransitionKind,
+                                devices = devices,
+                                shellSession = uiState.shellSession,
+                                terminalComponent = viewModel.shellTerminalComponent(),
+                                isScanningDevices = uiState.isScanningDevices,
+                                filterTab = uiState.filterTab,
+                                searchQuery = uiState.searchQuery,
+                                sortParam = uiState.sortParam,
+                                onMirror = viewModel::onMirrorDevice,
+                                onTerminal = viewModel::onTerminalDevice,
+                                onAction = viewModel::onDeviceAction,
+                                onApkDrop = viewModel::installApkOnDevice,
+                                onReconnect = viewModel::reconnectDevice,
+                                onRemove = viewModel::removeDevice,
+                                onShellBack = viewModel::closeDeviceShell,
+                                onOpenShellLogcat = viewModel::openShellDeviceLogcat,
+                                onShellTerminalMounted = viewModel::onShellTerminalMounted,
+                                onEasyAction = viewModel::onEasyAction,
+                                onShellTransitionComplete = viewModel::markShellTerminalReady,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                            NavTab.GROUPS -> GroupManagementScreen(
+                                devices = devices,
+                                onBatchAction = viewModel::runBatchAction,
+                            )
+                            NavTab.SETTINGS -> SettingsScreen(
+                                settings = settings,
+                                onSave = viewModel::saveSettings,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        }
+                    }
+
+                    if (uiState.isAdbActive && uiState.isLogTrayOpen) {
+                        val filterDeviceName = uiState.logcatDeviceFilter?.let { id ->
+                            devices.find { it.id == id }?.name
+                        }
+                        TerminalLogsPanel(
+                            mode = uiState.logTrayMode,
+                            onModeChange = viewModel::setLogTrayMode,
+                            eventLogs = logs,
+                            logcatLogs = logcatLogs,
+                            logcatFilterLabel = filterDeviceName?.let { name ->
+                                stringResource(Res.string.logs_logcat_filter_device, name)
+                            },
+                            onShowAllDevices = viewModel::showAllDevicesLogcat,
+                            onClearEvents = viewModel::clearLogs,
+                            onClearLogcat = viewModel::clearLogcatLogs,
+                            onClose = viewModel::toggleLogTray,
+                            logRetention = settings.logRetention,
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(end = sidePanelEndInset),
                         )
                     }
                 }
@@ -105,51 +150,46 @@ fun AppShell(viewModel: AppViewModel) {
                     onToggleLogTray = viewModel::toggleLogTray,
                     onKillAdb = viewModel::killAdb,
                     onRestartAdb = viewModel::restartAdb,
-                )
-            }
-
-            if (uiState.sidePanel.isVisible) {
-                SidePanel(
-                    state = uiState.sidePanel,
-                    onSelectTab = viewModel::selectSidePanelTab,
-                    onCloseTab = viewModel::closeSidePanelTab,
-                    onLaunchApp = viewModel::launchAppInTab,
-                    onUninstallApp = viewModel::uninstallAppInTab,
-                    onToggleMonitor = viewModel::toggleLogMonitorInTab,
-                    onToggleAutoScroll = viewModel::toggleAutoScrollInTab,
-                    onLogFilterQueryChange = viewModel::setAppLogFilterQuery,
-                    onToggleLogFilterLevel = viewModel::toggleAppLogFilterLevel,
-                    onClearLogs = viewModel::clearAppLogInTab,
-                    onStartMirror = viewModel::startScrcpyMirror,
-                    onStopMirror = viewModel::stopScrcpyMirror,
-                    onConnectionOptionsChange = viewModel::updateMirrorConnectionOptions,
-                    modifier = Modifier.width(SIDE_PANEL_WIDTH).fillMaxHeight(),
+                    endInset = sidePanelEndInset,
                 )
             }
         }
 
-        if (uiState.isAdbActive && uiState.isLogTrayOpen) {
-            val filterDeviceName = uiState.logcatDeviceFilter?.let { id -> devices.find { it.id == id }?.name }
-            TerminalLogsPanel(
-                mode = uiState.logTrayMode,
-                onModeChange = viewModel::setLogTrayMode,
-                eventLogs = logs,
-                logcatLogs = logcatLogs,
-                logcatFilterLabel = filterDeviceName?.let { name -> stringResource(Res.string.logs_logcat_filter_device, name) },
-                onShowAllDevices = viewModel::showAllDevicesLogcat,
-                onClearEvents = viewModel::clearLogs,
-                onClearLogcat = viewModel::clearLogcatLogs,
-                onClose = viewModel::toggleLogTray,
-                logRetention = settings.logRetention,
-                modifier = Modifier.align(androidx.compose.ui.Alignment.BottomCenter),
-            )
-        }
+        SidePanel(
+            state = uiState.sidePanel,
+            onSelectTab = viewModel::selectSidePanelTab,
+            onCloseTab = viewModel::closeSidePanelTab,
+            onLaunchApp = viewModel::launchAppInTab,
+            onUninstallApp = viewModel::uninstallAppInTab,
+            onToggleMonitor = viewModel::toggleLogMonitorInTab,
+            onToggleAutoScroll = viewModel::toggleAutoScrollInTab,
+            onLogFilterQueryChange = viewModel::setAppLogFilterQuery,
+            onToggleLogFilterLevel = viewModel::toggleAppLogFilterLevel,
+            onClearLogs = viewModel::clearAppLogInTab,
+            onDebugApkDrop = viewModel::installApkForDebugTab,
+            onStartMirror = viewModel::startScrcpyMirror,
+            onStopMirror = viewModel::stopScrcpyMirror,
+            onConnectionOptionsChange = viewModel::updateMirrorConnectionOptions,
+            onToggleDrawer = viewModel::toggleSidePanelDrawer,
+            modifier = Modifier.align(Alignment.CenterEnd),
+        )
 
         uiState.apkInstallToast?.let { toast ->
-            val message = if (toast.success) {
-                stringResource(Res.string.apk_install_toast_success, toast.apkFileName, toast.deviceName)
-            } else {
-                stringResource(Res.string.apk_install_toast_failure, toast.apkFileName, toast.deviceName)
+            val message = when (toast.kind) {
+                ApkInstallToastKind.ALREADY_INSTALLED -> stringResource(
+                    Res.string.apk_debug_skip_install_toast,
+                    toast.apkFileName,
+                    toast.deviceName,
+                )
+                ApkInstallToastKind.PARSE_FAILURE -> stringResource(
+                    Res.string.apk_parse_toast_failure,
+                    toast.apkFileName,
+                )
+                ApkInstallToastKind.INSTALL -> if (toast.success) {
+                    stringResource(Res.string.apk_install_toast_success, toast.apkFileName, toast.deviceName)
+                } else {
+                    stringResource(Res.string.apk_install_toast_failure, toast.apkFileName, toast.deviceName)
+                }
             }
             ToastBanner(
                 message = message,
@@ -157,6 +197,32 @@ fun AppShell(viewModel: AppViewModel) {
                 toastId = toast.id,
                 onDismiss = viewModel::dismissApkInstallToast,
                 modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
+            )
+        }
+
+        uiState.pendingPackageAction?.let {
+            PackageNameDialog(
+                recentPackages = viewModel.recentPackageNames(),
+                onDismiss = viewModel::dismissEasyActionDialogs,
+                onConfirm = viewModel::confirmPackageEasyAction,
+            )
+        }
+
+        uiState.pendingDestructiveAction?.let {
+            AlertDialog(
+                onDismissRequest = viewModel::dismissEasyActionDialogs,
+                title = { Text(stringResource(Res.string.shell_confirm_recovery_title)) },
+                text = { Text(stringResource(Res.string.shell_confirm_recovery_message)) },
+                confirmButton = {
+                    TextButton(onClick = viewModel::confirmDestructiveEasyAction) {
+                        Text(stringResource(Res.string.shell_confirm_ok))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = viewModel::dismissEasyActionDialogs) {
+                        Text(stringResource(Res.string.shell_confirm_cancel))
+                    }
+                },
             )
         }
 

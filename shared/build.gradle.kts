@@ -31,10 +31,14 @@ kotlin {
             implementation(libs.kotlinx.coroutinesSwing)
             implementation(libs.ktor.client.java)
             implementation(libs.jmdns)
+            implementation(libs.jediterm.core)
+            implementation(libs.jediterm.ui)
+            implementation(libs.pty4j)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
+            implementation(libs.compose.animation)
             implementation(libs.compose.material3)
             implementation(libs.compose.ui)
             implementation(libs.compose.components.resources)

@@ -16,4 +16,4 @@ enum class SortParam { NAME, SERIAL, BATTERY }
 
 enum class NavTab { WALL, GROUPS, SETTINGS }
 
-enum class DeviceAction { REBOOT, DISCONNECT }
+enum class DeviceAction { DEBUG, DISCONNECT }
