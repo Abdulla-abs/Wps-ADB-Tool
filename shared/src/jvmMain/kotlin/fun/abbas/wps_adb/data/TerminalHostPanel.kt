@@ -5,6 +5,8 @@ import java.awt.BorderLayout
 import java.awt.Component
 import java.awt.Container
 import java.awt.FocusTraversalPolicy
+import java.awt.event.ComponentAdapter
+import java.awt.event.ComponentEvent
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import javax.swing.JPanel
@@ -27,6 +29,14 @@ internal class TerminalHostPanel(
             object : MouseAdapter() {
                 override fun mousePressed(event: MouseEvent) {
                     requestTerminalFocus()
+                }
+            },
+        )
+
+        addComponentListener(
+            object : ComponentAdapter() {
+                override fun componentResized(event: ComponentEvent?) {
+                    JediTermSizeSync.scheduleSync(widget)
                 }
             },
         )

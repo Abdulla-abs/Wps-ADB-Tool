@@ -95,7 +95,10 @@ class JvmDeviceShellService(
             session.widget.start()
             session.sessionStarted = true
         }
-        SwingUtilities.invokeLater { session.hostPanel.requestTerminalFocus() }
+        SwingUtilities.invokeLater {
+            JediTermSizeSync.syncNow(session.widget)
+            session.hostPanel.requestTerminalFocus()
+        }
     }
 
     override fun setExitListener(listener: ((sessionId: String, exitCode: Int) -> Unit)?) {

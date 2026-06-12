@@ -16,7 +16,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import `fun`.abbas.wps_adb.theme.CarbonColors
@@ -33,7 +32,9 @@ fun StatusFooter(
     onToggleLogTray: () -> Unit,
     onKillAdb: () -> Unit,
     onRestartAdb: () -> Unit,
-    endInset: Dp = 0.dp,
+    isSidePanelExpanded: Boolean,
+    sidePanelTabCount: Int,
+    onOpenSidePanel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -88,8 +89,17 @@ fun StatusFooter(
                 stringResource(Res.string.footer_restart_adb),
                 onRestartAdb,
                 enabled = !isRestarting,
-                modifier = Modifier.padding(end = endInset),
             )
+            if (!isSidePanelExpanded) {
+                FooterAction(
+                    label = if (sidePanelTabCount > 0) {
+                        stringResource(Res.string.footer_open_sidepanel_with_count, sidePanelTabCount)
+                    } else {
+                        stringResource(Res.string.footer_open_sidepanel)
+                    },
+                    onClick = onOpenSidePanel,
+                )
+            }
         }
     }
 }

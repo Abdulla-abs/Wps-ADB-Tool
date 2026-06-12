@@ -32,6 +32,8 @@
     <string name="footer_cluster_status">Operational Cluster: %1$d Sockets connected</string>
     <string name="footer_kill_daemon">Kill Daemon Server</string>
     <string name="footer_restart_adb">Restart ADB</string>
+    <string name="footer_open_sidepanel">Open Side Panel</string>
+    <string name="footer_open_sidepanel_with_count">Open Side Panel (%1$d)</string>
 
     <!-- Device Wall -->
     <string name="device_wall_title">Device Wall Canvas</string>
@@ -258,6 +260,7 @@
     <string name="shell_terminal_loading">Starting terminal…</string>
     <string name="shell_terminal_hint">Click the terminal, switch to an English keyboard layout, then type commands directly (e.g. uptime). Do not prefix with adb shell.</string>
     <string name="shell_terminal_unavailable">Terminal unavailable on this platform</string>
+    <string name="shell_terminal_hidden_by_sidepanel">Terminal hidden while side panel is open. Close the side panel to continue.</string>
     <string name="shell_easy_actions_title">EASY ACTIONS</string>
     <string name="easy_action_category_system">SYSTEM</string>
     <string name="easy_action_category_display">DISPLAY</string>

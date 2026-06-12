@@ -32,6 +32,8 @@
     <string name="footer_cluster_status">运行集群: %1$d 个连接</string>
     <string name="footer_kill_daemon">终止守护进程</string>
     <string name="footer_restart_adb">重启 ADB</string>
+    <string name="footer_open_sidepanel">打开侧边栏</string>
+    <string name="footer_open_sidepanel_with_count">打开侧边栏(%1$d)</string>
 
     <!-- Device Wall -->
     <string name="device_wall_title">设备墙</string>
@@ -258,6 +260,7 @@
     <string name="shell_terminal_loading">正在启动终端…</string>
     <string name="shell_terminal_hint">请先点击终端区域，切换到英文输入法后直接输入命令（如 uptime），无需 adb shell 前缀。</string>
     <string name="shell_terminal_unavailable">当前平台不可用终端</string>
+    <string name="shell_terminal_hidden_by_sidepanel">侧边栏已打开，终端暂时隐藏。关闭侧边栏后可继续操作。</string>
     <string name="shell_easy_actions_title">快捷操作</string>
     <string name="easy_action_category_system">系统</string>
     <string name="easy_action_category_display">显示</string>

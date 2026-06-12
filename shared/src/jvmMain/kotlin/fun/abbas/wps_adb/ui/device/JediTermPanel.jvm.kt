@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.SwingPanel
 import androidx.compose.ui.unit.sp
+import `fun`.abbas.wps_adb.data.JediTermSizeSync
 import `fun`.abbas.wps_adb.data.TerminalHostPanel
 import `fun`.abbas.wps_adb.theme.CarbonColors
 import javax.swing.JComponent
@@ -31,7 +32,10 @@ actual fun JediTermPanel(
                 onMounted()
                 SwingUtilities.invokeLater {
                     when (component) {
-                        is TerminalHostPanel -> component.requestTerminalFocus()
+                        is TerminalHostPanel -> {
+                            JediTermSizeSync.scheduleSync(component.widget)
+                            component.requestTerminalFocus()
+                        }
                         else -> component.requestFocusInWindow()
                     }
                 }

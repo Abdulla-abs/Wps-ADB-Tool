@@ -21,10 +21,12 @@ internal class AdbShellTtyConnector(
     }
 
     override fun resize(termSize: TermSize) {
-        ptyProcess.setWinSize(WinSize(termSize.getRows(), termSize.getColumns()))
+        ptyProcess.setWinSize(termSizeToWinSize(termSize))
     }
 
     companion object {
+        internal fun termSizeToWinSize(termSize: TermSize): WinSize =
+            WinSize(termSize.getColumns(), termSize.getRows())
         internal fun normalizeLineEndings(input: String): String =
             when {
                 input == "\r" -> "\n"

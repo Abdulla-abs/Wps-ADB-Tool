@@ -13,12 +13,19 @@ import `fun`.abbas.wps_adb.model.SortParam
 
 enum class LogTrayMode { EVENTS, LOGCAT }
 
+object LogTrayHeightLimits {
+    const val DEFAULT = 280f
+    const val MIN = 120f
+    const val MAX = 600f
+}
+
 data class AppUiState(
     val activeTab: NavTab = NavTab.WALL,
     val filterTab: FilterTab = FilterTab.ALL,
     val searchQuery: String = "",
     val sortParam: SortParam = SortParam.NAME,
     val isLogTrayOpen: Boolean = false,
+    val logTrayHeightDp: Float = LogTrayHeightLimits.DEFAULT,
     val logTrayMode: LogTrayMode = LogTrayMode.EVENTS,
     val logcatDeviceFilter: String? = null,
     val isPairingDialogOpen: Boolean = false,

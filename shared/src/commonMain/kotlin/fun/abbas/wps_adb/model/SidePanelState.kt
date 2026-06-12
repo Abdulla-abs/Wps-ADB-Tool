@@ -11,9 +11,9 @@ data class SidePanelState(
     val activeTabId: String? = null,
     val drawerState: SidePanelDrawerState = SidePanelDrawerState.Hidden,
 ) {
-    val isVisible: Boolean get() = drawerState != SidePanelDrawerState.Hidden
-
     val isExpanded: Boolean get() = drawerState == SidePanelDrawerState.Expanded
+
+    val isVisible: Boolean get() = isExpanded
 
     val activeTab: SidePanelTab?
         get() = tabs.find { it.id == activeTabId } ?: tabs.lastOrNull()

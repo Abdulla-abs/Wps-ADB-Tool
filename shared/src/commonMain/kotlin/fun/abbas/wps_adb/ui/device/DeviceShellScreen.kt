@@ -43,6 +43,7 @@ import wpsadbtool.shared.generated.resources.shell_header_connecting
 import wpsadbtool.shared.generated.resources.shell_header_disconnected
 import wpsadbtool.shared.generated.resources.shell_header_error
 import wpsadbtool.shared.generated.resources.shell_terminal_hint
+import wpsadbtool.shared.generated.resources.shell_terminal_hidden_by_sidepanel
 import wpsadbtool.shared.generated.resources.shell_terminal_loading
 
 @OptIn(ExperimentalSharedTransitionApi::class)
@@ -59,6 +60,7 @@ fun DeviceShellScreen(
     onOpenLogcat: () -> Unit,
     onTerminalMounted: () -> Unit,
     onEasyAction: (EasyActionKind) -> Unit,
+    suppressTerminalSurface: Boolean = false,
     modifier: Modifier = Modifier,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
@@ -98,14 +100,17 @@ fun DeviceShellScreen(
                     .clip(RoundedCornerShape(8.dp))
                     .border(1.dp, CarbonColors.OutlineVariant, RoundedCornerShape(8.dp)),
             ) {
-                if (terminalSurfaceReady) {
-                    JediTermPanel(
+                when {
+                    suppressTerminalSurface -> ShellTerminalPlaceholder(
+                        message = stringResource(Res.string.shell_terminal_hidden_by_sidepanel),
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                    terminalSurfaceReady -> JediTermPanel(
                         terminalComponent = terminalComponent,
                         onMounted = onTerminalMounted,
                         modifier = Modifier.fillMaxSize(),
                     )
-                } else {
-                    ShellTerminalPlaceholder(modifier = Modifier.fillMaxSize())
+                    else -> ShellTerminalPlaceholder(modifier = Modifier.fillMaxSize())
                 }
             }
             EasyActionsPanel(
@@ -236,13 +241,16 @@ private fun DeviceShellHeader(
 }
 
 @Composable
-private fun ShellTerminalPlaceholder(modifier: Modifier = Modifier) {
+private fun ShellTerminalPlaceholder(
+    modifier: Modifier = Modifier,
+    message: String = stringResource(Res.string.shell_terminal_loading),
+) {
     Box(
         modifier = modifier.background(CarbonColors.SurfaceContainerLowest),
         contentAlignment = Alignment.Center,
     ) {
         Text(
-            text = stringResource(Res.string.shell_terminal_loading),
+            text = message,
             fontSize = 12.sp,
             color = CarbonColors.Outline,
             fontFamily = FontFamily.Monospace,

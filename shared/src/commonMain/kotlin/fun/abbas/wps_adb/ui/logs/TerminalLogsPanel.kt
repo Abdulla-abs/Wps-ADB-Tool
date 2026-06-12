@@ -2,16 +2,24 @@ package `fun`.abbas.wps_adb.ui.logs
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import `fun`.abbas.wps_adb.model.AdbLog
@@ -37,6 +45,8 @@ fun TerminalLogsPanel(
     onClearEvents: () -> Unit,
     onClearLogcat: () -> Unit,
     onClose: () -> Unit,
+    height: Dp,
+    onHeightChange: (deltaDp: Float) -> Unit,
     logRetention: Int = 2500,
     modifier: Modifier = Modifier,
 ) {
@@ -48,9 +58,10 @@ fun TerminalLogsPanel(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .height(280.dp)
+            .height(height)
             .background(CarbonColors.SurfaceContainerLowest),
     ) {
+        LogTrayResizeHandle(onHeightChange = onHeightChange)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -113,6 +124,31 @@ fun TerminalLogsPanel(
         SelectableLogList(
             logs = displayLogs.takeLast(logRetention.coerceAtLeast(1)),
             modifier = Modifier.weight(1f).padding(8.dp),
+        )
+    }
+}
+
+@Composable
+private fun LogTrayResizeHandle(
+    onHeightChange: (deltaDp: Float) -> Unit,
+) {
+    val density = LocalDensity.current
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(8.dp)
+            .pointerInput(density) {
+                detectDragGestures { _, dragAmount ->
+                    onHeightChange(-dragAmount.y / density.density)
+                }
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .width(40.dp)
+                .height(3.dp)
+                .background(CarbonColors.Outline.copy(alpha = 0.5f), RoundedCornerShape(2.dp)),
         )
     }
 }

@@ -39,6 +39,7 @@ import `fun`.abbas.wps_adb.ui.logs.TerminalLogsPanel
 import `fun`.abbas.wps_adb.ui.pairing.PairingDialog
 import `fun`.abbas.wps_adb.ui.settings.SettingsScreen
 import `fun`.abbas.wps_adb.ui.sidepanel.SidePanel
+import `fun`.abbas.wps_adb.ui.sidepanel.SidePanelScrim
 import `fun`.abbas.wps_adb.ui.sidepanel.sidePanelContentInsetEnd
 import `fun`.abbas.wps_adb.viewmodel.AppViewModel
 
@@ -51,6 +52,7 @@ fun AppShell(viewModel: AppViewModel) {
     val settings by viewModel.settings.collectAsState()
     val onlineCount = devices.count { it.status == DeviceStatus.ONLINE }
     val sidePanelEndInset = sidePanelContentInsetEnd(uiState.sidePanel)
+    val logTrayHeight = uiState.logTrayHeightDp.dp
 
     Box(modifier = Modifier.fillMaxSize().background(CarbonColors.Background)) {
         Row(modifier = Modifier.fillMaxSize()) {
@@ -80,7 +82,7 @@ fun AppShell(viewModel: AppViewModel) {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(bottom = if (uiState.isLogTrayOpen) 280.dp else 0.dp),
+                            .padding(bottom = if (uiState.isLogTrayOpen) logTrayHeight else 0.dp),
                     ) {
                         when (uiState.activeTab) {
                             NavTab.WALL -> DeviceWallHost(
@@ -104,6 +106,7 @@ fun AppShell(viewModel: AppViewModel) {
                                 onShellTerminalMounted = viewModel::onShellTerminalMounted,
                                 onEasyAction = viewModel::onEasyAction,
                                 onShellTransitionComplete = viewModel::markShellTerminalReady,
+                                suppressTerminalSurface = uiState.sidePanel.isExpanded,
                                 modifier = Modifier.fillMaxSize(),
                             )
                             NavTab.GROUPS -> GroupManagementScreen(
@@ -134,6 +137,8 @@ fun AppShell(viewModel: AppViewModel) {
                             onClearEvents = viewModel::clearLogs,
                             onClearLogcat = viewModel::clearLogcatLogs,
                             onClose = viewModel::toggleLogTray,
+                            height = logTrayHeight,
+                            onHeightChange = viewModel::adjustLogTrayHeight,
                             logRetention = settings.logRetention,
                             modifier = Modifier
                                 .align(Alignment.BottomCenter)
@@ -150,10 +155,17 @@ fun AppShell(viewModel: AppViewModel) {
                     onToggleLogTray = viewModel::toggleLogTray,
                     onKillAdb = viewModel::killAdb,
                     onRestartAdb = viewModel::restartAdb,
-                    endInset = sidePanelEndInset,
+                    isSidePanelExpanded = uiState.sidePanel.isExpanded,
+                    sidePanelTabCount = uiState.sidePanel.tabs.size,
+                    onOpenSidePanel = viewModel::openSidePanelDrawer,
                 )
             }
         }
+
+        SidePanelScrim(
+            visible = uiState.sidePanel.isExpanded,
+            onDismiss = viewModel::collapseSidePanelDrawer,
+        )
 
         SidePanel(
             state = uiState.sidePanel,

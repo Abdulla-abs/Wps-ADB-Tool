@@ -115,6 +115,15 @@ class AppViewModel(
         syncGlobalLogcat(willOpen)
     }
 
+    fun adjustLogTrayHeight(deltaDp: Float) {
+        _localState.update { state ->
+            state.copy(
+                logTrayHeightDp = (state.logTrayHeightDp + deltaDp)
+                    .coerceIn(LogTrayHeightLimits.MIN, LogTrayHeightLimits.MAX),
+            )
+        }
+    }
+
     private fun syncGlobalLogcat(trayOpen: Boolean) {
         val state = _localState.value
         if (trayOpen && state.isAdbActive && state.logTrayMode == LogTrayMode.LOGCAT) {
@@ -253,9 +262,34 @@ class AppViewModel(
         _localState.update { state ->
             val panel = state.sidePanel
             val nextState = when (panel.drawerState) {
-                SidePanelDrawerState.Expanded -> SidePanelDrawerState.Collapsed
+                SidePanelDrawerState.Expanded -> if (panel.tabs.isEmpty()) {
+                    SidePanelDrawerState.Hidden
+                } else {
+                    SidePanelDrawerState.Collapsed
+                }
                 SidePanelDrawerState.Collapsed -> SidePanelDrawerState.Expanded
                 SidePanelDrawerState.Hidden -> SidePanelDrawerState.Expanded
+            }
+            state.copy(sidePanel = panel.copy(drawerState = nextState))
+        }
+    }
+
+    fun openSidePanelDrawer() {
+        _localState.update { state ->
+            val panel = state.sidePanel
+            if (panel.drawerState == SidePanelDrawerState.Expanded) return@update state
+            state.copy(sidePanel = panel.copy(drawerState = SidePanelDrawerState.Expanded))
+        }
+    }
+
+    fun collapseSidePanelDrawer() {
+        _localState.update { state ->
+            val panel = state.sidePanel
+            if (panel.drawerState != SidePanelDrawerState.Expanded) return@update state
+            val nextState = if (panel.tabs.isEmpty()) {
+                SidePanelDrawerState.Hidden
+            } else {
+                SidePanelDrawerState.Collapsed
             }
             state.copy(sidePanel = panel.copy(drawerState = nextState))
         }
