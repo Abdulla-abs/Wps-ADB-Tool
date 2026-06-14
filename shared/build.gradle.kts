@@ -34,6 +34,11 @@ kotlin {
             implementation(libs.jediterm.core)
             implementation(libs.jediterm.ui)
             implementation(libs.pty4j)
+            implementation(libs.smali.dexlib2)
+            implementation(libs.smali.baksmali)
+            implementation(libs.smali.smali)
+            implementation(libs.jadx.core)
+            implementation(libs.rsyntaxtextarea)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)

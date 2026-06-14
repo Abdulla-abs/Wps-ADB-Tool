@@ -38,6 +38,7 @@ import `fun`.abbas.wps_adb.ui.groups.GroupManagementScreen
 import `fun`.abbas.wps_adb.ui.logs.TerminalLogsPanel
 import `fun`.abbas.wps_adb.ui.pairing.PairingDialog
 import `fun`.abbas.wps_adb.ui.settings.SettingsScreen
+import `fun`.abbas.wps_adb.ui.decompile.DecompileStudioScreen
 import `fun`.abbas.wps_adb.ui.sidepanel.SidePanel
 import `fun`.abbas.wps_adb.ui.sidepanel.SidePanelScrim
 import `fun`.abbas.wps_adb.ui.sidepanel.sidePanelContentInsetEnd
@@ -112,6 +113,11 @@ fun AppShell(viewModel: AppViewModel) {
                             NavTab.GROUPS -> GroupManagementScreen(
                                 devices = devices,
                                 onBatchAction = viewModel::runBatchAction,
+                            )
+                            NavTab.DECOMPILE -> DecompileStudioScreen(
+                                uiState = uiState,
+                                viewModel = viewModel,
+                                modifier = Modifier.fillMaxSize(),
                             )
                             NavTab.SETTINGS -> SettingsScreen(
                                 settings = settings,

@@ -6,6 +6,7 @@
     <!-- Sidebar -->
     <string name="nav_device_wall">设备墙</string>
     <string name="nav_group_command">分组命令</string>
+    <string name="nav_decompile">反编译</string>
     <string name="nav_global_settings">全局设置</string>
     <string name="sidebar_installing_apk">正在安装 APK...</string>
     <string name="sidebar_drop_apk_title">拖放 APK 安装</string>

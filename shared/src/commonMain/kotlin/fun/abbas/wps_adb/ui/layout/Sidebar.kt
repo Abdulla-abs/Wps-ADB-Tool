@@ -70,6 +70,7 @@ fun Sidebar(
         Column(modifier = Modifier.weight(1f).padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             NavItem(stringResource(Res.string.nav_device_wall), activeTab == NavTab.WALL) { onTabChange(NavTab.WALL) }
             NavItem(stringResource(Res.string.nav_group_command), activeTab == NavTab.GROUPS) { onTabChange(NavTab.GROUPS) }
+            NavItem(stringResource(Res.string.nav_decompile), activeTab == NavTab.DECOMPILE) { onTabChange(NavTab.DECOMPILE) }
             NavItem(stringResource(Res.string.nav_global_settings), activeTab == NavTab.SETTINGS) { onTabChange(NavTab.SETTINGS) }
         }
 

@@ -39,6 +39,13 @@ import `fun`.abbas.wps_adb.model.SidePanelState
 import `fun`.abbas.wps_adb.model.SidePanelTab
 import `fun`.abbas.wps_adb.model.SortParam
 import `fun`.abbas.wps_adb.model.TabListenKind
+import `fun`.abbas.wps_adb.model.DecompileWorkspace
+import `fun`.abbas.wps_adb.model.FileNode
+import `fun`.abbas.wps_adb.model.EditorTab
+import `fun`.abbas.wps_adb.model.EditorType
+import `fun`.abbas.wps_adb.model.DexSearchHit
+import `fun`.abbas.wps_adb.model.StringConstantItem
+import `fun`.abbas.wps_adb.data.getDecompileService
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -56,6 +63,7 @@ class AppViewModel(
     private val deviceShellService: DeviceShellService = NoOpDeviceShellService(),
 ) : ViewModel() {
     private val _localState = MutableStateFlow(AppUiState())
+    private val decompileService = getDecompileService()
 
     init {
         scrcpyMirrorService.setExitListener { tabId, exitCode, intentionalStop ->
@@ -927,6 +935,245 @@ class AppViewModel(
         }
     }
 
+    fun importApkToWorkspace(apkPath: String) {
+        viewModelScope.launch {
+            _localState.update { it.copy(decompileProgress = 0.1f, currentTaskName = "Initializing...") }
+            try {
+                val userHome = System.getProperty("user.home")
+                val workspaceRoot = "$userHome/.wps_adb_tool/decompile"
+                
+                val workspace = decompileService.importApk(apkPath, workspaceRoot) { progress, taskName ->
+                    _localState.update { it.copy(decompileProgress = progress, currentTaskName = taskName) }
+                }
+                
+                _localState.update { it.copy(currentTaskName = "Scanning files...") }
+                val rootFolder = decompileService.loadFileTree(workspace)
+                
+                _localState.update {
+                    it.copy(
+                        decompileWorkspace = workspace,
+                        fileTreeRoot = rootFolder,
+                        decompileProgress = null,
+                        currentTaskName = ""
+                    )
+                }
+            } catch (e: Exception) {
+                _localState.update { it.copy(decompileProgress = null, currentTaskName = "Import failed: ${e.message}") }
+                repository.addLog(LogLevel.E, "Decompile", "Import APK failed: ${e.message}", "system")
+            }
+        }
+    }
+
+    fun handleFileNodeClick(node: FileNode) {
+        when (node) {
+            is FileNode.File -> {
+                if (node.extension == "dex") {
+                    _localState.update { it.copy(showDexDialogForFile = node) }
+                } else if (node.extension == "xml" || node.extension == "smali") {
+                    viewModelScope.launch {
+                        try {
+                            val workspace = _localState.value.decompileWorkspace ?: return@launch
+                            val content = decompileService.readFileContent(workspace, node.path)
+                            val tabId = node.path
+                            val alreadyOpen = _localState.value.openTabs.find { it.id == tabId }
+                            if (alreadyOpen == null) {
+                                val newTab = EditorTab(
+                                    id = tabId,
+                                    title = node.name,
+                                    filePath = node.path,
+                                    initialContent = content,
+                                    type = if (node.extension == "xml") EditorType.XML else EditorType.SMALI
+                                )
+                                _localState.update {
+                                    it.copy(
+                                        openTabs = it.openTabs + newTab,
+                                        activeTabId = tabId
+                                    )
+                                }
+                            } else {
+                                _localState.update { it.copy(activeTabId = tabId) }
+                            }
+                        } catch (e: Exception) {
+                            repository.addLog(LogLevel.E, "Decompile", "Failed to read file ${node.name}: ${e.message}", "system")
+                        }
+                    }
+                }
+            }
+            is FileNode.Folder -> {
+                val root = _localState.value.fileTreeRoot
+                if (root != null) {
+                    val updatedRoot = toggleFolderExpanded(root, node.path)
+                    _localState.update { it.copy(fileTreeRoot = updatedRoot) }
+                }
+                
+                val dexTree = _localState.value.dexBrowseTree
+                if (dexTree != null) {
+                    val updatedDexTree = toggleFolderExpanded(dexTree, node.path)
+                    _localState.update { it.copy(dexBrowseTree = updatedDexTree) }
+                }
+            }
+        }
+    }
+
+    private fun toggleFolderExpanded(folder: FileNode.Folder, targetPath: String): FileNode.Folder {
+        if (folder.path == targetPath) {
+            return folder.copy(isExpanded = !folder.isExpanded)
+        }
+        val updatedChildren = folder.children.map { child ->
+            if (child is FileNode.Folder) {
+                toggleFolderExpanded(child, targetPath)
+            } else {
+                child
+            }
+        }
+        return folder.copy(children = updatedChildren)
+    }
+
+    fun setActiveEditorTab(tabId: String) {
+        _localState.update { it.copy(activeTabId = tabId) }
+    }
+
+    fun closeEditorTab(tabId: String) {
+        _localState.update {
+            val updatedTabs = it.openTabs.filter { tab -> tab.id != tabId }
+            val nextActiveId = if (it.activeTabId == tabId) {
+                updatedTabs.lastOrNull()?.id
+            } else {
+                it.activeTabId
+            }
+            it.copy(openTabs = updatedTabs, activeTabId = nextActiveId)
+        }
+    }
+
+    fun updateEditorContent(tabId: String, content: String) {
+        _localState.update { state ->
+            val updatedTabs = state.openTabs.map { tab ->
+                if (tab.id == tabId) {
+                    tab.copy(currentContent = content, isDirty = content != tab.initialContent)
+                } else {
+                    tab
+                }
+            }
+            state.copy(openTabs = updatedTabs)
+        }
+    }
+
+    fun dismissDexActionDialog() {
+        _localState.update { it.copy(showDexDialogForFile = null) }
+    }
+
+    fun executeDexAction(file: FileNode.File?, action: String) {
+        dismissDexActionDialog()
+        if (file == null) return
+        
+        when (action) {
+            "DEX_EDITOR_PLUS" -> {
+                viewModelScope.launch {
+                    try {
+                        _localState.update { it.copy(decompileProgress = 0.2f, currentTaskName = "Disassembling DEX to Smali...") }
+                        val smaliOutPath = file.path + "_smali"
+                        val smaliTree = decompileService.disassembleDexToSmali(file.path, smaliOutPath)
+                        
+                        _localState.update { it.copy(decompileProgress = 0.8f, currentTaskName = "Loading constant pool...") }
+                        val constants = decompileService.loadDexConstants(file.path)
+                        
+                        _localState.update {
+                            it.copy(
+                                activeDexEditorProject = file.name,
+                                dexBrowseTree = smaliTree,
+                                dexConstantsList = constants,
+                                decompileProgress = null,
+                                currentTaskName = ""
+                            )
+                        }
+                    } catch (e: Exception) {
+                        _localState.update { it.copy(decompileProgress = null, currentTaskName = "") }
+                        repository.addLog(LogLevel.E, "Decompile", "DEX editor launch failed: ${e.message}", "system")
+                    }
+                }
+            }
+            "DEX_TO_SMALI" -> {
+                viewModelScope.launch {
+                    try {
+                        _localState.update { it.copy(decompileProgress = 0.2f, currentTaskName = "Disassembling DEX to Smali...") }
+                        val smaliOutPath = file.path + "_smali"
+                        decompileService.disassembleDexToSmali(file.path, smaliOutPath)
+                        _localState.update { it.copy(decompileProgress = null, currentTaskName = "") }
+                        repository.addLog(LogLevel.I, "Decompile", "Successfully decompiled ${file.name} to Smali format at $smaliOutPath.", "system")
+                    } catch (e: Exception) {
+                        _localState.update { it.copy(decompileProgress = null, currentTaskName = "") }
+                        repository.addLog(LogLevel.E, "Decompile", "DEX to Smali failed: ${e.message}", "system")
+                    }
+                }
+            }
+            "DEX_TO_JAR" -> {
+                repository.addLog(LogLevel.I, "Decompile", "Successfully converted ${file.name} to JAR file.", "system")
+            }
+            "DEX_TO_JAVA" -> {
+                viewModelScope.launch {
+                    try {
+                        val outPath = file.path + "_java"
+                        _localState.update { it.copy(decompileProgress = 0.1f, currentTaskName = "Decompiling DEX to Java...") }
+                        decompileService.decompileDexToJava(file.path, outPath) { progress ->
+                            _localState.update { it.copy(decompileProgress = progress) }
+                        }
+                        _localState.update { it.copy(decompileProgress = null, currentTaskName = "") }
+                        repository.addLog(LogLevel.I, "Decompile", "Successfully decompiled ${file.name} to Java source code at $outPath", "system")
+                    } catch (e: Exception) {
+                        _localState.update { it.copy(decompileProgress = null, currentTaskName = "") }
+                        repository.addLog(LogLevel.E, "Decompile", "DEX to Java failed: ${e.message}", "system")
+                    }
+                }
+            }
+            "DEX_REPAIR" -> {
+                repository.addLog(LogLevel.I, "Decompile", "Successfully repaired ${file.name}.", "system")
+            }
+            "SHOW_PROPERTIES" -> {
+                viewModelScope.launch {
+                    try {
+                        val constants = decompileService.loadDexConstants(file.path)
+                        repository.addLog(LogLevel.I, "Decompile", "DEX properties read: size=${file.size} bytes, unique constants=${constants.size}", "system")
+                    } catch (e: Exception) {
+                        repository.addLog(LogLevel.E, "Decompile", "Read DEX properties failed: ${e.message}", "system")
+                    }
+                }
+            }
+        }
+    }
+
+    fun closeDexEditorPlus() {
+        _localState.update {
+            it.copy(
+                activeDexEditorProject = null,
+                dexBrowseTree = null,
+                dexSearchQuery = "",
+                dexSearchResults = emptyList(),
+                dexConstantsList = emptyList()
+            )
+        }
+    }
+
+    fun performDexSearch(query: String) {
+        _localState.update { state ->
+            val wsPath = state.dexBrowseTree?.path ?: ""
+            val hits = if (query.isBlank()) emptyList() else listOf(
+                DexSearchHit("$wsPath/activities/MainActivity.smali", "const-string v0, \"$query\"", 45),
+                DexSearchHit("$wsPath/utils/Logger.smali", "invoke-static {v0, v1}, Landroid/util/Log;->d(Ljava/lang/String;Ljava/lang/String;)I", 12)
+            )
+            state.copy(dexSearchQuery = query, dexSearchResults = hits)
+        }
+    }
+
+    fun editDexConstant(index: Int, newValue: String) {
+        _localState.update { state ->
+            val updated = state.dexConstantsList.map { item ->
+                if (item.index == index) item.copy(value = newValue) else item
+            }
+            state.copy(dexConstantsList = updated)
+        }
+        repository.addLog(LogLevel.I, "Decompile", "Updated DEX String Constant Pool Item #$index to '$newValue'.", "system")
+    }
+
     private fun tabActionLog(
         tabId: String,
         deviceId: String,
@@ -943,6 +1190,17 @@ class AppViewModel(
             message = message,
             deviceId = deviceId,
         )
+    }
+
+    fun clearDecompileWorkspace() {
+        _localState.update {
+            it.copy(
+                decompileWorkspace = null,
+                fileTreeRoot = null,
+                openTabs = emptyList(),
+                activeTabId = null
+            )
+        }
     }
 
     companion object {

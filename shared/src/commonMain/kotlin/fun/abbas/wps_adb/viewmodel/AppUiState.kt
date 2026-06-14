@@ -10,6 +10,11 @@ import `fun`.abbas.wps_adb.model.PairingMethod
 import `fun`.abbas.wps_adb.model.ShellTransitionKind
 import `fun`.abbas.wps_adb.model.SidePanelState
 import `fun`.abbas.wps_adb.model.SortParam
+import `fun`.abbas.wps_adb.model.DecompileWorkspace
+import `fun`.abbas.wps_adb.model.FileNode
+import `fun`.abbas.wps_adb.model.EditorTab
+import `fun`.abbas.wps_adb.model.DexSearchHit
+import `fun`.abbas.wps_adb.model.StringConstantItem
 
 enum class LogTrayMode { EVENTS, LOGCAT }
 
@@ -40,4 +45,19 @@ data class AppUiState(
     val shellTransitionKind: ShellTransitionKind = ShellTransitionKind.SHARED_ELEMENT,
     val pendingDestructiveAction: EasyActionKind? = null,
     val pendingPackageAction: EasyActionKind? = null,
+    
+    // Decompile state fields
+    val decompileWorkspace: DecompileWorkspace? = null,
+    val fileTreeRoot: FileNode.Folder? = null,
+    val openTabs: List<EditorTab> = emptyList(),
+    val activeTabId: String? = null,
+    val decompileProgress: Float? = null,
+    val currentTaskName: String = "",
+    val showDexDialogForFile: FileNode.File? = null,
+
+    val activeDexEditorProject: String? = null,
+    val dexBrowseTree: FileNode.Folder? = null,
+    val dexSearchQuery: String = "",
+    val dexSearchResults: List<DexSearchHit> = emptyList(),
+    val dexConstantsList: List<StringConstantItem> = emptyList()
 )

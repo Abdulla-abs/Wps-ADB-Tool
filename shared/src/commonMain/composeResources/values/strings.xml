@@ -6,6 +6,7 @@
     <!-- Sidebar -->
     <string name="nav_device_wall">Device Wall</string>
     <string name="nav_group_command">Group Command</string>
+    <string name="nav_decompile">Decompile</string>
     <string name="nav_global_settings">Global Settings</string>
     <string name="sidebar_installing_apk">Installing APK...</string>
     <string name="sidebar_drop_apk_title">DROP APK TO INSTALL</string>

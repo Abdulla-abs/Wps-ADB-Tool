@@ -20,6 +20,9 @@ jmdns = "3.5.9"
 qrcode-kotlin = "4.5.0"
 jediterm = "3.9"
 pty4j = "0.13.2"
+dexlib2 = "2.5.2"
+jadx = "1.5.0"
+rsyntaxtextarea = "3.4.0"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -53,6 +56,11 @@ compose-animation = { module = "org.jetbrains.compose.animation:animation", vers
 jediterm-core = { module = "org.jetbrains.jediterm:jediterm-core", version.ref = "jediterm" }
 jediterm-ui = { module = "org.jetbrains.jediterm:jediterm-ui", version.ref = "jediterm" }
 pty4j = { module = "org.jetbrains.pty4j:pty4j", version.ref = "pty4j" }
+smali-dexlib2 = { module = "org.smali:dexlib2", version.ref = "dexlib2" }
+smali-baksmali = { module = "org.smali:baksmali", version.ref = "dexlib2" }
+smali-smali = { module = "org.smali:smali", version.ref = "dexlib2" }
+jadx-core = { module = "io.github.skylot:jadx-core", version.ref = "jadx" }
+rsyntaxtextarea = { module = "com.fifesoft:rsyntaxtextarea", version.ref = "rsyntaxtextarea" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
