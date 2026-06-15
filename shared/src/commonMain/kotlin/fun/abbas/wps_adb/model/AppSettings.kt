@@ -11,4 +11,5 @@ data class AppSettings(
     val logRetention: Int = 2500,
     val autoApproveKey: Boolean = true,
     val diagnosticTelemetry: Boolean = false,
+    val dataCacheDir: String = "",
 )

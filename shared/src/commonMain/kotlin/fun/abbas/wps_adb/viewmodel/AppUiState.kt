@@ -14,6 +14,7 @@ import `fun`.abbas.wps_adb.model.DecompileWorkspace
 import `fun`.abbas.wps_adb.model.FileNode
 import `fun`.abbas.wps_adb.model.EditorTab
 import `fun`.abbas.wps_adb.model.DexSearchHit
+import `fun`.abbas.wps_adb.model.RecentDecompileProject
 import `fun`.abbas.wps_adb.model.StringConstantItem
 
 enum class LogTrayMode { EVENTS, LOGCAT }
@@ -59,5 +60,13 @@ data class AppUiState(
     val dexBrowseTree: FileNode.Folder? = null,
     val dexSearchQuery: String = "",
     val dexSearchResults: List<DexSearchHit> = emptyList(),
-    val dexConstantsList: List<StringConstantItem> = emptyList()
+    val dexConstantsList: List<StringConstantItem> = emptyList(),
+
+    val showDexMultiSelectDialog: Boolean = false,
+    val dexMultiSelectCandidates: List<FileNode.File> = emptyList(),
+    val dexMultiSelectDefaultPath: String? = null,
+    val dexEditorSourceDexFiles: List<FileNode.File> = emptyList(),
+
+    val recentDecompileProjects: List<RecentDecompileProject> = emptyList(),
+    val showDecompileProjectManager: Boolean = false,
 )

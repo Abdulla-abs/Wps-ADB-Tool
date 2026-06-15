@@ -25,7 +25,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import `fun`.abbas.wps_adb.model.FilterTab
-import `fun`.abbas.wps_adb.model.NavTab
 import `fun`.abbas.wps_adb.model.SortParam
 import `fun`.abbas.wps_adb.theme.CarbonColors
 import org.jetbrains.compose.resources.stringResource
@@ -34,7 +33,6 @@ import wpsadbtool.shared.generated.resources.Res
 
 @Composable
 fun AppHeader(
-    activeTab: NavTab,
     filterTab: FilterTab,
     searchQuery: String,
     sortParam: SortParam,
@@ -79,28 +77,24 @@ fun AppHeader(
                 shape = RoundedCornerShape(50),
             )
 
-            if (activeTab == NavTab.WALL) {
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    FilterChip(stringResource(Res.string.filter_all_devices), filterTab == FilterTab.ALL) { onFilterChange(FilterTab.ALL) }
-                    FilterChip(stringResource(Res.string.filter_physical), filterTab == FilterTab.PHYSICAL) { onFilterChange(FilterTab.PHYSICAL) }
-                    FilterChip(stringResource(Res.string.filter_emulators), filterTab == FilterTab.EMULATORS) { onFilterChange(FilterTab.EMULATORS) }
-                }
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                FilterChip(stringResource(Res.string.filter_all_devices), filterTab == FilterTab.ALL) { onFilterChange(FilterTab.ALL) }
+                FilterChip(stringResource(Res.string.filter_physical), filterTab == FilterTab.PHYSICAL) { onFilterChange(FilterTab.PHYSICAL) }
+                FilterChip(stringResource(Res.string.filter_emulators), filterTab == FilterTab.EMULATORS) { onFilterChange(FilterTab.EMULATORS) }
             }
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (activeTab == NavTab.WALL) {
-                SortSelector(sortParam, onSortChange)
-                Text(
-                    "↻",
-                    fontSize = 16.sp,
-                    color = CarbonColors.Outline,
-                    modifier = Modifier
-                        .border(1.dp, CarbonColors.OutlineVariant, RoundedCornerShape(8.dp))
-                        .clickable(onClick = onRefresh)
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                )
-            }
+            SortSelector(sortParam, onSortChange)
+            Text(
+                "↻",
+                fontSize = 16.sp,
+                color = CarbonColors.Outline,
+                modifier = Modifier
+                    .border(1.dp, CarbonColors.OutlineVariant, RoundedCornerShape(8.dp))
+                    .clickable(onClick = onRefresh)
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+            )
             Button(
                 onClick = onAddWireless,
                 modifier = Modifier.padding(end = endInset),

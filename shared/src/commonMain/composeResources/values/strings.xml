@@ -169,6 +169,12 @@
     <string name="settings_telemetry_subtitle">Transfer logs for diagnostics</string>
     <string name="settings_telemetry_hint">Coming soon — no diagnostic data is collected yet.</string>
     <string name="settings_log_retention">Logcat Retention Limit</string>
+    <string name="settings_data_and_cache">Data &amp; Cache</string>
+    <string name="settings_data_cache">Data Cache Directory</string>
+    <string name="settings_data_cache_hint">Decompile workspaces and app cache files. Changes apply to newly created data only.</string>
+    <string name="settings_data_cache_browse">Browse…</string>
+    <string name="settings_data_cache_reset">Use Default</string>
+    <string name="settings_data_cache_default">Default: %1$s</string>
     <string name="settings_save">Save Changes</string>
     <string name="settings_save_success">Local ADB configurations saved successfully!</string>
 
@@ -282,4 +288,38 @@
     <string name="shell_confirm_recovery_message">This action may disrupt the device. Continue?</string>
     <string name="shell_confirm_ok">Continue</string>
     <string name="shell_confirm_cancel">Cancel</string>
+
+    <!-- Decompile Studio -->
+    <string name="decompile_empty_title">Decompile - Waiting for APK</string>
+    <string name="decompile_tab_manifest">Manifest</string>
+    <string name="decompile_tab_smali">Smali View</string>
+    <string name="decompile_tab_resources">Resources</string>
+    <string name="decompile_search_placeholder">Search project symbols...</string>
+    <string name="decompile_new_session">New Session</string>
+    <string name="decompile_project_explorer">Project Explorer</string>
+    <string name="decompile_drop_title">Drop APK File</string>
+    <string name="decompile_drop_subtitle">Drop an APK here to decompile, or click to browse</string>
+    <string name="decompile_recent_project">Recent Project</string>
+    <string name="decompile_no_project_active">No project active</string>
+    <string name="decompile_no_project_hint">Please import an APK to begin the decompilation process. Once loaded, Smali source code, resources, and AndroidManifest will be accessible here.</string>
+    <string name="decompile_feature_jadx">JADX / Baksmali</string>
+    <string name="decompile_feature_scan">Vulnerability Scan</string>
+    <string name="decompile_feature_resign">Re-sign Tool</string>
+    <string name="decompile_feature_coming_soon">Coming soon</string>
+    <string name="decompile_exit_project">Exit project</string>
+    <string name="decompile_save_file">Save file</string>
+    <string name="decompile_editor_empty_title">No active editor session</string>
+    <string name="decompile_editor_empty_hint">Select a file from the project tree to view or edit XML, Smali, JSON, and other text files.</string>
+    <string name="decompile_dex_multi_select_title">Select DEX Files</string>
+    <string name="decompile_dex_multi_select_confirm">Confirm</string>
+    <string name="decompile_dex_multi_select_all">Select all</string>
+    <string name="decompile_dex_multi_select_none">Clear all</string>
+    <string name="decompile_workspace_title">Decompile — %1$s</string>
+    <string name="decompile_export_apk">Export Signed APK</string>
+    <string name="decompile_manage_projects">Manage Projects</string>
+    <string name="decompile_project_manager_title">Manage Projects</string>
+    <string name="decompile_project_manager_back">← Back</string>
+    <string name="decompile_project_manager_empty">No saved projects</string>
+    <string name="decompile_project_open">Open</string>
+    <string name="decompile_project_delete">Delete</string>
 </resources>

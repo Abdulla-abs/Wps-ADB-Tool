@@ -10,7 +10,11 @@ object CarbonColors {
 
     val Secondary = Color(0xFFADC6FF)
     val SecondaryContainer = Color(0xFF4B8EFF)
+    val OnSecondaryContainer = Color(0xFF00285C)
+
     val Tertiary = Color(0xFFFFD4D1)
+    val TertiaryContainer = Color(0xFFFFADA8)
+    val OnTertiaryContainer = Color(0xFFA3041A)
 
     val Error = Color(0xFFFFB4AB)
     val OnError = Color(0xFF690005)

@@ -17,11 +17,13 @@ actual fun CodeEditorBridge(
     content: String,
     onContentChange: (String) -> Unit,
     syntax: String,
-    modifier: Modifier
+    modifier: Modifier,
+    readOnly: Boolean,
 ) {
     BasicTextField(
         value = content,
         onValueChange = onContentChange,
+        readOnly = readOnly,
         textStyle = TextStyle(
             color = Color(226, 226, 230),
             fontSize = 13.sp,

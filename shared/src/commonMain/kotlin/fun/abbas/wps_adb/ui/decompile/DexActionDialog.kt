@@ -6,8 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,8 +25,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import `fun`.abbas.wps_adb.model.FileNode
 import `fun`.abbas.wps_adb.theme.CarbonColors
+import org.jetbrains.compose.resources.stringResource
+import wpsadbtool.shared.generated.resources.Res
+import wpsadbtool.shared.generated.resources.decompile_feature_coming_soon
 
-@OptIn(ExperimentalLayoutApi::class)
+private data class DexActionItem(
+    val label: String,
+    val action: String,
+    val enabled: Boolean = true,
+)
+
 @Composable
 fun DexActionDialog(
     dexFile: FileNode.File,
@@ -36,7 +42,6 @@ fun DexActionDialog(
     onAction: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Backdrop overlay
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -44,15 +49,13 @@ fun DexActionDialog(
             .clickable(onClick = onDismiss),
         contentAlignment = Alignment.Center
     ) {
-        // Dialog Card Container
         Column(
             modifier = Modifier
                 .width(480.dp)
                 .background(CarbonColors.SurfaceContainerLow, RoundedCornerShape(12.dp))
                 .border(1.dp, CarbonColors.OutlineVariant, RoundedCornerShape(12.dp))
-                .clickable(enabled = false, onClick = {}) // Stop click propagation
+                .clickable(enabled = false, onClick = {})
         ) {
-            // Header
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -95,22 +98,22 @@ fun DexActionDialog(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Actions Grid
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                val comingSoon = stringResource(Res.string.decompile_feature_coming_soon)
                 val actions = listOf(
-                    "dex编辑器++" to "DEX_EDITOR_PLUS",
-                    "dex转smali" to "DEX_TO_SMALI",
-                    "dex转jar" to "DEX_TO_JAR",
-                    "dex转java" to "DEX_TO_JAVA",
-                    "dex修复" to "DEX_REPAIR",
-                    "替换包名/类名" to "REPLACE_CLASS_NAME",
-                    "控制流混淆" to "OBFUSCATE",
-                    "dex属性" to "SHOW_PROPERTIES"
+                    DexActionItem("dex编辑器++", "DEX_EDITOR_PLUS"),
+                    DexActionItem("dex转smali", "DEX_TO_SMALI"),
+                    DexActionItem("dex转jar", "DEX_TO_JAR", enabled = false),
+                    DexActionItem("dex转java", "DEX_TO_JAVA"),
+                    DexActionItem("dex修复", "DEX_REPAIR", enabled = false),
+                    DexActionItem("替换包名/类名", "REPLACE_CLASS_NAME", enabled = false),
+                    DexActionItem("控制流混淆", "OBFUSCATE", enabled = false),
+                    DexActionItem("dex属性", "SHOW_PROPERTIES"),
                 )
 
                 for (i in 0 until 4) {
@@ -122,13 +125,17 @@ fun DexActionDialog(
                         val secondAction = actions[i * 2 + 1]
 
                         DexActionButton(
-                            label = firstAction.first,
-                            onClick = { onAction(firstAction.second) },
+                            label = firstAction.label,
+                            enabled = firstAction.enabled,
+                            comingSoonLabel = comingSoon,
+                            onClick = { onAction(firstAction.action) },
                             modifier = Modifier.weight(1f)
                         )
                         DexActionButton(
-                            label = secondAction.first,
-                            onClick = { onAction(secondAction.second) },
+                            label = secondAction.label,
+                            enabled = secondAction.enabled,
+                            comingSoonLabel = comingSoon,
+                            onClick = { onAction(secondAction.action) },
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -137,7 +144,6 @@ fun DexActionDialog(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Footer
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -162,14 +168,26 @@ fun DexActionDialog(
 @Composable
 private fun DexActionButton(
     label: String,
+    enabled: Boolean,
+    comingSoonLabel: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val backgroundColor = if (enabled) CarbonColors.SurfaceContainer else CarbonColors.SurfaceContainerLowest
+    val borderColor = if (enabled) CarbonColors.OutlineVariant else CarbonColors.OutlineVariant.copy(alpha = 0.4f)
+    val textColor = if (enabled) CarbonColors.OnSurface else CarbonColors.Outline
+
     Row(
         modifier = modifier
-            .background(CarbonColors.SurfaceContainer, RoundedCornerShape(8.dp))
-            .border(1.dp, CarbonColors.OutlineVariant, RoundedCornerShape(8.dp))
-            .clickable(onClick = onClick)
+            .background(backgroundColor, RoundedCornerShape(8.dp))
+            .border(1.dp, borderColor, RoundedCornerShape(8.dp))
+            .then(
+                if (enabled) {
+                    Modifier.clickable(onClick = onClick)
+                } else {
+                    Modifier
+                }
+            )
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -183,14 +201,23 @@ private fun DexActionButton(
             label.contains("混淆") -> "🌀"
             else -> "📊"
         }
-        
+
         Text(text = icon, fontSize = 16.sp)
         Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = label,
-            color = CarbonColors.OnSurface,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Medium
-        )
+        Column {
+            Text(
+                text = label,
+                color = textColor,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium
+            )
+            if (!enabled) {
+                Text(
+                    text = comingSoonLabel,
+                    color = CarbonColors.Outline,
+                    fontSize = 10.sp,
+                )
+            }
+        }
     }
 }

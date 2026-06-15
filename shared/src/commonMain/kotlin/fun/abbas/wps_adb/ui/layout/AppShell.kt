@@ -52,6 +52,7 @@ fun AppShell(viewModel: AppViewModel) {
     val logcatLogs by viewModel.logcatLogs.collectAsState()
     val settings by viewModel.settings.collectAsState()
     val onlineCount = devices.count { it.status == DeviceStatus.ONLINE }
+    val isDeviceWall = uiState.activeTab == NavTab.WALL
     val sidePanelEndInset = sidePanelContentInsetEnd(uiState.sidePanel)
     val logTrayHeight = uiState.logTrayHeightDp.dp
 
@@ -66,24 +67,25 @@ fun AppShell(viewModel: AppViewModel) {
             )
 
             Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                AppHeader(
-                    activeTab = uiState.activeTab,
-                    filterTab = uiState.filterTab,
-                    searchQuery = uiState.searchQuery,
-                    sortParam = uiState.sortParam,
-                    onFilterChange = viewModel::setFilterTab,
-                    onSearchChange = viewModel::setSearchQuery,
-                    onSortChange = viewModel::setSortParam,
-                    onRefresh = viewModel::refreshDevices,
-                    onAddWireless = viewModel::openPairingDialog,
-                    endInset = sidePanelEndInset,
-                )
+                if (isDeviceWall) {
+                    AppHeader(
+                        filterTab = uiState.filterTab,
+                        searchQuery = uiState.searchQuery,
+                        sortParam = uiState.sortParam,
+                        onFilterChange = viewModel::setFilterTab,
+                        onSearchChange = viewModel::setSearchQuery,
+                        onSortChange = viewModel::setSortParam,
+                        onRefresh = viewModel::refreshDevices,
+                        onAddWireless = viewModel::openPairingDialog,
+                        endInset = sidePanelEndInset,
+                    )
+                }
 
                 Box(modifier = Modifier.weight(1f)) {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(bottom = if (uiState.isLogTrayOpen) logTrayHeight else 0.dp),
+                            .padding(bottom = if (isDeviceWall && uiState.isLogTrayOpen) logTrayHeight else 0.dp),
                     ) {
                         when (uiState.activeTab) {
                             NavTab.WALL -> DeviceWallHost(
@@ -127,7 +129,7 @@ fun AppShell(viewModel: AppViewModel) {
                         }
                     }
 
-                    if (uiState.isAdbActive && uiState.isLogTrayOpen) {
+                    if (isDeviceWall && uiState.isAdbActive && uiState.isLogTrayOpen) {
                         val filterDeviceName = uiState.logcatDeviceFilter?.let { id ->
                             devices.find { it.id == id }?.name
                         }
@@ -153,18 +155,20 @@ fun AppShell(viewModel: AppViewModel) {
                     }
                 }
 
-                StatusFooter(
-                    isAdbActive = uiState.isAdbActive,
-                    isRestarting = uiState.isRestartingAdb,
-                    onlineCount = onlineCount,
-                    isLogTrayOpen = uiState.isLogTrayOpen,
-                    onToggleLogTray = viewModel::toggleLogTray,
-                    onKillAdb = viewModel::killAdb,
-                    onRestartAdb = viewModel::restartAdb,
-                    isSidePanelExpanded = uiState.sidePanel.isExpanded,
-                    sidePanelTabCount = uiState.sidePanel.tabs.size,
-                    onOpenSidePanel = viewModel::openSidePanelDrawer,
-                )
+                if (isDeviceWall) {
+                    StatusFooter(
+                        isAdbActive = uiState.isAdbActive,
+                        isRestarting = uiState.isRestartingAdb,
+                        onlineCount = onlineCount,
+                        isLogTrayOpen = uiState.isLogTrayOpen,
+                        onToggleLogTray = viewModel::toggleLogTray,
+                        onKillAdb = viewModel::killAdb,
+                        onRestartAdb = viewModel::restartAdb,
+                        isSidePanelExpanded = uiState.sidePanel.isExpanded,
+                        sidePanelTabCount = uiState.sidePanel.tabs.size,
+                        onOpenSidePanel = viewModel::openSidePanelDrawer,
+                    )
+                }
             }
         }
 

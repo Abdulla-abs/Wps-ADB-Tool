@@ -39,6 +39,7 @@ class AppSettingsStore(
                 logRetention = props.getProperty(KEY_LOG_RETENTION, "2500").toIntOrNull() ?: 2500,
                 autoApproveKey = props.getProperty(KEY_AUTO_APPROVE_KEY, "true").toBooleanStrictOrNull() ?: true,
                 diagnosticTelemetry = props.getProperty(KEY_DIAGNOSTIC_TELEMETRY, "false").toBooleanStrictOrNull() ?: false,
+                dataCacheDir = props.getProperty(KEY_DATA_CACHE_DIR, ""),
             )
         }
         return settings.withResolvedExecutablePaths()
@@ -82,6 +83,7 @@ class AppSettingsStore(
             setProperty(KEY_LOG_RETENTION, settings.logRetention.toString())
             setProperty(KEY_AUTO_APPROVE_KEY, settings.autoApproveKey.toString())
             setProperty(KEY_DIAGNOSTIC_TELEMETRY, settings.diagnosticTelemetry.toString())
+            setProperty(KEY_DATA_CACHE_DIR, settings.dataCacheDir)
         }
         storeFile.parentFile?.mkdirs()
         storeFile.outputStream().buffered().use { props.store(it, "WpsAdbTool settings") }
@@ -111,6 +113,7 @@ class AppSettingsStore(
         private const val KEY_LOG_RETENTION = "logRetention"
         private const val KEY_AUTO_APPROVE_KEY = "autoApproveKey"
         private const val KEY_DIAGNOSTIC_TELEMETRY = "diagnosticTelemetry"
+        private const val KEY_DATA_CACHE_DIR = "dataCacheDir"
 
         fun defaultStoreFile(): File {
             val dir = File(System.getProperty("user.home"), ".wps-adb-tool")

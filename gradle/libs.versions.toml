@@ -23,6 +23,7 @@ pty4j = "0.13.2"
 dexlib2 = "2.5.2"
 jadx = "1.5.0"
 rsyntaxtextarea = "3.4.0"
+apksig = "8.10.0"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -41,6 +42,7 @@ compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", v
 compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "material3" }
 compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMultiplatform" }
 compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatform" }
+compose-material-icons-extended = { module = "org.jetbrains.compose.material:material-icons-extended", version = "1.7.3" }
 compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatform" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
@@ -60,7 +62,10 @@ smali-dexlib2 = { module = "org.smali:dexlib2", version.ref = "dexlib2" }
 smali-baksmali = { module = "org.smali:baksmali", version.ref = "dexlib2" }
 smali-smali = { module = "org.smali:smali", version.ref = "dexlib2" }
 jadx-core = { module = "io.github.skylot:jadx-core", version.ref = "jadx" }
+jadx-dex-input = { module = "io.github.skylot:jadx-dex-input", version.ref = "jadx" }
+jadx-java-input = { module = "io.github.skylot:jadx-java-input", version.ref = "jadx" }
 rsyntaxtextarea = { module = "com.fifesoft:rsyntaxtextarea", version.ref = "rsyntaxtextarea" }
+apksig = { module = "com.android.tools.build:apksig", version.ref = "apksig" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

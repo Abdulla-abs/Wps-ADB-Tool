@@ -29,7 +29,10 @@ sealed interface FileNode {
     ) : FileNode
 }
 
-enum class EditorType { XML, SMALI, JAVA }
+enum class EditorType {
+    XML, SMALI, JAVA,
+    TEXT, JSON, PROPERTIES, MARKDOWN, YAML, HTML, CSS,
+}
 
 data class EditorTab(
     val id: String,
@@ -49,6 +52,10 @@ data class DexSearchHit(
 
 data class StringConstantItem(
     val index: Int,
-    var value: String,
-    val referenceCount: Int
-)
+    val originalValue: String,
+    var value: String = originalValue,
+    val referenceCount: Int,
+    val sourceDex: String = "",
+) {
+    val isDirty: Boolean get() = value != originalValue
+}

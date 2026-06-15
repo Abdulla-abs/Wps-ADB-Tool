@@ -8,5 +8,6 @@ expect fun CodeEditorBridge(
     content: String,
     onContentChange: (String) -> Unit,
     syntax: String, // "xml", "smali", "java"
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    readOnly: Boolean = false,
 )

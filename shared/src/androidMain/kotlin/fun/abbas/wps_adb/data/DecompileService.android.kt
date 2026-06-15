@@ -18,7 +18,21 @@ class NoOpDecompileService : DecompileService {
     }
     override suspend fun decompileDexToJava(dexPath: String, outputDir: String, onProgress: (Float) -> Unit): String = ""
     override suspend fun loadDexConstants(dexPath: String): List<StringConstantItem> = emptyList()
-    override suspend fun saveDexConstants(dexPath: String, constants: List<StringConstantItem>) {}
+    override suspend fun saveDexConstants(smaliRootsByDex: Map<String, String>, constants: List<StringConstantItem>) {}
+    override suspend fun saveFileContent(workspace: DecompileWorkspace, filePath: String, content: String) {
+        throw UnsupportedOperationException("Decompile is not available on Android")
+    }
+    override suspend fun closeWorkspace() {}
+    override suspend fun searchSmaliFiles(rootDir: String, query: String, maxResults: Int): List<DexSearchHit> = emptyList()
+    override suspend fun assembleSmaliToDex(smaliRoot: String, outputDexPath: String) {}
+    override suspend fun repackApk(workspace: DecompileWorkspace, outputApkPath: String) {}
+    override suspend fun signApk(
+        unsignedApkPath: String,
+        signedApkPath: String,
+        adbPath: String,
+        keystorePath: String,
+    ) {}
+    override suspend fun decompileSmaliToJava(smaliFilePath: String, requiresReassembly: Boolean): String = ""
 }
 
 actual fun getDecompileService(): DecompileService = NoOpDecompileService()

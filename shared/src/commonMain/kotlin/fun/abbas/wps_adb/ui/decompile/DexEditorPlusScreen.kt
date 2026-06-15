@@ -19,6 +19,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -49,7 +54,6 @@ fun DexEditorPlusScreen(
     modifier: Modifier = Modifier
 ) {
     var selectedSubTab by remember { mutableStateOf(0) } // 0: 浏览, 1: 搜索, 2: 常量
-    var showJadxProgressOverlay by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier.background(CarbonColors.Background)
@@ -81,21 +85,10 @@ fun DexEditorPlusScreen(
             )
         }
 
-        // Sub-Header / Editor Tabs
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(40.dp)
-                .background(CarbonColors.SurfaceContainerLowest)
-                .border(1.dp, CarbonColors.OutlineVariant, RoundedCornerShape(0.dp)),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(modifier = Modifier.fillMaxHeight()) {
-                TabItem("浏览", selectedSubTab == 0) { selectedSubTab = 0 }
-                TabItem("搜索", selectedSubTab == 1) { selectedSubTab = 1 }
-                TabItem("常量", selectedSubTab == 2) { selectedSubTab = 2 }
-            }
-        }
+        DexEditorTabRow(
+            selectedTab = selectedSubTab,
+            onTabSelected = { selectedSubTab = it },
+        )
 
         // Content
         Box(modifier = Modifier.weight(1f)) {
@@ -107,54 +100,47 @@ fun DexEditorPlusScreen(
                         ProjectExplorer(
                             rootFolder = uiState.dexBrowseTree,
                             onFileClick = { node -> viewModel.handleFileNodeClick(node) },
+                            showRootFolder = false,
                             modifier = Modifier.width(280.dp).fillMaxHeight()
                         )
                         // Right Editor Area
-                        val activeTab = uiState.openTabs.find { it.id == uiState.activeTabId && it.type == EditorType.SMALI }
+                        val activeTab = uiState.openTabs.find {
+                            it.id == uiState.activeTabId &&
+                                (it.type == EditorType.SMALI || it.type == EditorType.JAVA)
+                        }
                         if (activeTab != null) {
                             Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                                // Smali specific toolbar
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(36.dp)
-                                        .background(CarbonColors.SurfaceContainerLow)
-                                        .padding(horizontal = 12.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Row(
-                                            modifier = Modifier
-                                                .background(CarbonColors.SurfaceContainerHigh, RoundedCornerShape(4.dp))
-                                                .border(1.dp, CarbonColors.OutlineVariant, RoundedCornerShape(4.dp))
-                                                .clickable { showJadxProgressOverlay = true }
-                                                .padding(horizontal = 8.dp, vertical = 3.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text(text = "smali转java", color = CarbonColors.Primary, fontSize = 11.sp)
+                                if (activeTab.type == EditorType.SMALI) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(36.dp)
+                                            .background(CarbonColors.SurfaceContainerLow)
+                                            .padding(horizontal = 12.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            DexToolbarButton("smali转java") {
+                                                viewModel.decompileActiveSmaliToJava()
+                                            }
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            DexToolbarButton("重组 DEX") {
+                                                viewModel.reassembleDexFromEditor()
+                                            }
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            DexToolbarButton("导出", accent = CarbonColors.Secondary) {
+                                                viewModel.exportActiveSmaliFile()
+                                            }
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            Text(
+                                                text = "${activeTab.title} • utf-8",
+                                                color = CarbonColors.Outline,
+                                                fontSize = 11.sp,
+                                                fontFamily = FontFamily.Monospace
+                                            )
                                         }
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Row(
-                                            modifier = Modifier
-                                                .background(CarbonColors.SurfaceContainerHigh, RoundedCornerShape(4.dp))
-                                                .border(1.dp, CarbonColors.OutlineVariant, RoundedCornerShape(4.dp))
-                                                .clickable { /* Export code */ }
-                                                .padding(horizontal = 8.dp, vertical = 3.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text(text = "导出", color = CarbonColors.Secondary, fontSize = 11.sp)
-                                        }
-                                        Spacer(modifier = Modifier.width(12.dp))
-                                        Text(
-                                            text = "${activeTab.title} • utf-8",
-                                            color = CarbonColors.Outline,
-                                            fontSize = 11.sp,
-                                            fontFamily = FontFamily.Monospace
-                                        )
-                                    }
-                                    
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
+
                                         Text(
                                             text = "✕",
                                             color = CarbonColors.Outline,
@@ -162,21 +148,50 @@ fun DexEditorPlusScreen(
                                             modifier = Modifier.clickable { viewModel.closeEditorTab(activeTab.id) }
                                         )
                                     }
+                                } else {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(36.dp)
+                                            .background(CarbonColors.SurfaceContainerLow)
+                                            .padding(horizontal = 12.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                    ) {
+                                        Text(
+                                            text = "${activeTab.title} • Java preview",
+                                            color = CarbonColors.Outline,
+                                            fontSize = 11.sp,
+                                            fontFamily = FontFamily.Monospace,
+                                        )
+                                        Text(
+                                            text = "✕",
+                                            color = CarbonColors.Outline,
+                                            fontSize = 11.sp,
+                                            modifier = Modifier.clickable { viewModel.closeEditorTab(activeTab.id) },
+                                        )
+                                    }
                                 }
 
-                                if (showJadxProgressOverlay) {
+                                val isOverlayActive = uiState.decompileProgress != null
+                                if (isOverlayActive) {
                                     Box(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .weight(1f)
-                                            .background(CarbonColors.SurfaceContainerLowest)
+                                            .background(CarbonColors.SurfaceContainerLow),
                                     )
                                 } else {
                                     CodeEditorBridge(
                                         content = activeTab.currentContent,
-                                        onContentChange = { content -> viewModel.updateEditorContent(activeTab.id, content) },
-                                        syntax = "smali",
-                                        modifier = Modifier.fillMaxWidth().weight(1f)
+                                        onContentChange = { content ->
+                                            if (activeTab.type == EditorType.SMALI) {
+                                                viewModel.updateEditorContent(activeTab.id, content)
+                                            }
+                                        },
+                                        syntax = if (activeTab.type == EditorType.SMALI) "smali" else "java",
+                                        readOnly = activeTab.type == EditorType.JAVA,
+                                        modifier = Modifier.fillMaxWidth().weight(1f),
                                     )
                                 }
                             }
@@ -233,7 +248,8 @@ fun DexEditorPlusScreen(
                                         .background(CarbonColors.SurfaceContainerLow, RoundedCornerShape(6.dp))
                                         .border(1.dp, CarbonColors.OutlineVariant.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
                                         .clickable {
-                                            // Navigation back to browse mode can be implemented here
+                                            viewModel.openSmaliFromSearchHit(hit)
+                                            selectedSubTab = 0
                                         }
                                         .padding(12.dp)
                                 ) {
@@ -257,14 +273,22 @@ fun DexEditorPlusScreen(
                     }
                 }
                 2 -> {
-                    // Constants Tab Content
                     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                        Text(
-                            text = "String Constant Pool",
-                            color = CarbonColors.Primary,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = "String Constant Pool",
+                                color = CarbonColors.Primary,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            DexToolbarButton("保存常量") {
+                                viewModel.saveDexEditorConstants()
+                            }
+                        }
                         Spacer(modifier = Modifier.height(12.dp))
 
                         LazyColumn(
@@ -282,14 +306,19 @@ fun DexEditorPlusScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
+                                        val label = if (item.sourceDex.isNotEmpty()) {
+                                            "#${item.index} • ${item.sourceDex} (引用: ${item.referenceCount})"
+                                        } else {
+                                            "#${item.index} (引用次数: ${item.referenceCount})"
+                                        }
                                         Text(
-                                            text = "#${item.index} (引用次数: ${item.referenceCount})",
+                                            text = label,
                                             color = CarbonColors.Outline,
                                             fontSize = 10.sp,
                                             fontFamily = FontFamily.Monospace
                                         )
                                         Spacer(modifier = Modifier.height(2.dp))
-                                        var editingText by remember { mutableStateOf(item.value) }
+                                        var editingText by remember(item.index, item.value) { mutableStateOf(item.value) }
                                         BasicTextField(
                                             value = editingText,
                                             onValueChange = {
@@ -311,112 +340,70 @@ fun DexEditorPlusScreen(
                 }
             }
         }
-
-        // Generating JADX code overlay dialog
-        if (showJadxProgressOverlay) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color(0x990A0C0E)),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    modifier = Modifier
-                        .width(420.dp)
-                        .background(CarbonColors.SurfaceContainerLow, RoundedCornerShape(12.dp))
-                        .border(1.dp, CarbonColors.OutlineVariant, RoundedCornerShape(12.dp))
-                        .padding(24.dp)
-                ) {
-                    Text(
-                        text = "Generating Java Code",
-                        color = CarbonColors.Primary,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = "JADX Engine is processing the selected smali file.",
-                        color = CarbonColors.Outline,
-                        fontSize = 13.sp
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(120.dp)
-                            .background(CarbonColors.SurfaceContainerLowest, RoundedCornerShape(6.dp))
-                            .border(1.dp, CarbonColors.OutlineVariant, RoundedCornerShape(6.dp))
-                            .padding(12.dp)
-                    ) {
-                        Text(text = "> Initializing decompiler engine...", color = CarbonColors.Primary, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
-                        Text(text = "> Parsing class constant pool...", color = CarbonColors.OnSurface, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
-                        Text(text = "> Reconstructing control flow graph...", color = CarbonColors.OnSurface, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
-                        Text(text = "> Generating Java source...", color = CarbonColors.Outline, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
-                    }
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End
-                    ) {
-                        Text(
-                            text = "Cancel",
-                            color = CarbonColors.Outline,
-                            fontSize = 13.sp,
-                            modifier = Modifier
-                                .clickable { showJadxProgressOverlay = false }
-                                .padding(horizontal = 12.dp, vertical = 6.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = "Open Java View",
-                            color = CarbonColors.Primary,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier
-                                .clickable { showJadxProgressOverlay = false }
-                                .padding(horizontal = 12.dp, vertical = 6.dp)
-                        )
-                    }
-                }
-            }
-        }
     }
 }
 
 @Composable
-private fun TabItem(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit
+private fun DexEditorTabRow(
+    selectedTab: Int,
+    onTabSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxHeight()
-            .clickable(onClick = onClick)
-            .border(
-                width = 1.dp,
-                color = CarbonColors.OutlineVariant,
-                shape = RoundedCornerShape(0.dp)
-            )
-            .padding(horizontal = 24.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = label,
-                color = if (selected) CarbonColors.Primary else CarbonColors.Outline,
-                fontSize = 13.sp,
-                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
-            )
-            if (selected) {
-                Spacer(modifier = Modifier.height(2.dp))
-                Box(
-                    modifier = Modifier
-                        .width(24.dp)
-                        .height(2.dp)
-                        .background(CarbonColors.Primary)
+    val tabs = listOf("浏览", "搜索", "常量")
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        TabRow(
+            selectedTabIndex = selectedTab,
+            modifier = Modifier.fillMaxWidth().height(48.dp),
+            containerColor = CarbonColors.SurfaceContainerLowest,
+            contentColor = CarbonColors.Primary,
+            indicator = { tabPositions ->
+                if (selectedTab < tabPositions.size) {
+                    val currentTab = tabPositions[selectedTab]
+                    TabRowDefaults.PrimaryIndicator(
+                        modifier = Modifier.tabIndicatorOffset(currentTab),
+                        width = currentTab.width,
+                        color = CarbonColors.Primary,
+                        height = 3.dp,
+                    )
+                }
+            },
+            divider = {},
+        ) {
+            tabs.forEachIndexed { index, label ->
+                Tab(
+                    selected = selectedTab == index,
+                    onClick = { onTabSelected(index) },
+                    selectedContentColor = CarbonColors.Primary,
+                    unselectedContentColor = CarbonColors.OnSurfaceVariant,
+                    text = {
+                        Text(
+                            text = label,
+                            fontSize = 14.sp,
+                            fontWeight = if (selectedTab == index) FontWeight.Medium else FontWeight.Normal,
+                        )
+                    },
                 )
             }
         }
+        HorizontalDivider(color = CarbonColors.OutlineVariant, thickness = 1.dp)
+    }
+}
+
+@Composable
+private fun DexToolbarButton(
+    label: String,
+    accent: androidx.compose.ui.graphics.Color = CarbonColors.Primary,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .background(CarbonColors.SurfaceContainerHigh, RoundedCornerShape(4.dp))
+            .border(1.dp, CarbonColors.OutlineVariant, RoundedCornerShape(4.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(text = label, color = accent, fontSize = 11.sp)
     }
 }

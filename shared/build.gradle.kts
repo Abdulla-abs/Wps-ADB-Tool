@@ -38,13 +38,17 @@ kotlin {
             implementation(libs.smali.baksmali)
             implementation(libs.smali.smali)
             implementation(libs.jadx.core)
+            implementation(libs.jadx.dex.input)
+            implementation(libs.jadx.java.input)
             implementation(libs.rsyntaxtextarea)
+            implementation(libs.apksig)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.animation)
             implementation(libs.compose.material3)
+            implementation(libs.compose.material.icons.extended)
             implementation(libs.compose.ui)
             implementation(libs.compose.components.resources)
             implementation(libs.compose.uiToolingPreview)
