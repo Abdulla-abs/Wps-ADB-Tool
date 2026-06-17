@@ -34,14 +34,19 @@ val macSignEnabled = providers.environmentVariable("MACOS_SIGN")
     )
 
 tasks.withType<JavaExec>().configureEach {
-    val sharedClassesDir = layout.projectDirectory.dir("../shared/build/classes/kotlin/jvm/main")
+    val sharedKotlinClassesDir = layout.projectDirectory.dir("../shared/build/classes/kotlin/jvm/main")
+    val sharedJavaClassesDir = layout.projectDirectory.dir("../shared/build/classes/java/jvmMain")
     val sharedResourcesDir = layout.projectDirectory.dir("../shared/build/processedResources/jvm/main")
     dependsOn(
-        ":shared:compileKotlinJvm",
+        ":shared:jvmMainClasses",
         ":shared:jvmProcessResources",
     )
     doFirst {
-        val sharedOutputs = listOf(sharedClassesDir.asFile, sharedResourcesDir.asFile).filter { it.exists() }
+        val sharedOutputs = listOf(
+            sharedKotlinClassesDir.asFile,
+            sharedJavaClassesDir.asFile,
+            sharedResourcesDir.asFile,
+        ).filter { it.exists() }
         if (sharedOutputs.isEmpty()) return@doFirst
 
         classpath = files(sharedOutputs) + classpath.filter { file ->
@@ -70,6 +75,12 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+            modules(
+                "java.compiler",
+                "java.instrument",
+                "java.sql",
+                "jdk.unsupported",
+            )
             packageName = "WpsAdbTool"
             packageVersion = project.findProperty("wpsAdbTool.version")?.toString() ?: "1.0.0"
             description = "WPS ADB device management tool"

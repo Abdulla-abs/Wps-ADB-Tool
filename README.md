@@ -23,6 +23,7 @@
 | **Logcat 控制台** | 底部托盘双标签：**事件**（操作日志）与 **Logcat**（真实 `adb logcat` 流）；Shell 按钮聚焦单设备 |
 | **全局设置** | ADB / scrcpy 路径、端口范围、扫描间隔、并行线程、日志保留条数；设置持久化到 `~/.wps-adb/` |
 | **ADB 守护进程** | 底栏显示状态；支持终止 / 重启 ADB Server |
+| **Decompile Studio** | APK 导入、资源浏览、编辑保存、DEX→Smali/Java、DexEditor++（多 DEX/搜索/常量/导出）、**改码回编**（Smali→DEX 重组、重打包、debug 签名导出 APK）、常量写回 Smali、单文件 Smali→Java；**未实现**：DEX→JAR/修复、包名替换、控制流混淆 |
 
 ### Android App
 
@@ -35,7 +36,7 @@
 - SidePanel 内嵌 scrcpy 视频流（Desktop 已支持外部 scrcpy 窗口）  
 - 崩溃遥测上报（设置页已标注「即将推出」）  
 - Legacy 局域网自动扫描（保留手动 IP 输入）  
-- APK 反编译（apktool / jadx）
+- Decompile Studio 高级工具（DEX→JAR/修复、包名替换）— 改码回编已实现，见上表
 
 ---
 

@@ -70,4 +70,13 @@ class AppSettingsStoreTest {
         assertEquals("adb-new", store.load().adbPath)
         assertTrue(file.exists())
     }
+
+    @Test
+    fun saveAndLoad_persistsDataCacheDir() {
+        val file = File.createTempFile("wps-adb-settings", ".properties")
+        file.deleteOnExit()
+        val store = AppSettingsStore(file)
+        store.save(AppSettings(dataCacheDir = "D:\\WpsCache"))
+        assertEquals("D:\\WpsCache", AppSettingsStore(file).load().dataCacheDir)
+    }
 }

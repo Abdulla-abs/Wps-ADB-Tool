@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Slider
@@ -24,14 +25,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import `fun`.abbas.wps_adb.data.AppDataPaths
 import `fun`.abbas.wps_adb.model.AppSettings
+import `fun`.abbas.wps_adb.platform.pickDirectory
 import `fun`.abbas.wps_adb.theme.CarbonColors
 import org.jetbrains.compose.resources.stringResource
 import wpsadbtool.shared.generated.resources.*
@@ -51,7 +56,9 @@ fun SettingsScreen(
     var parallelThreads by remember(settings) { mutableStateOf(settings.parallelThreads.toFloat()) }
     var logRetention by remember(settings) { mutableStateOf(settings.logRetention.toString()) }
     var autoApproveKey by remember(settings) { mutableStateOf(settings.autoApproveKey) }
+    var dataCacheDir by remember(settings) { mutableStateOf(settings.dataCacheDir) }
     var showToast by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     val saveSettings = {
         onSave(
@@ -66,6 +73,7 @@ fun SettingsScreen(
                 logRetention = logRetention.toIntOrNull() ?: 2500,
                 autoApproveKey = autoApproveKey,
                 diagnosticTelemetry = settings.diagnosticTelemetry,
+                dataCacheDir = dataCacheDir.trim(),
             ),
         )
         showToast = true
@@ -129,6 +137,46 @@ fun SettingsScreen(
                     Text(stringResource(Res.string.settings_max_threads_value, parallelThreads.toInt()), fontSize = 10.sp, fontFamily = FontFamily.Monospace, color = CarbonColors.Primary)
                 }
                 Slider(parallelThreads, { parallelThreads = it }, valueRange = 1f..8f, steps = 6, colors = sliderColors())
+            }
+        }
+
+        SettingsCard(stringResource(Res.string.settings_data_and_cache), Modifier.fillMaxWidth()) {
+            FieldLabel(stringResource(Res.string.settings_data_cache))
+            OutlinedTextField(
+                value = dataCacheDir,
+                onValueChange = { dataCacheDir = it },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                colors = fieldColors(),
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedButton(
+                    onClick = {
+                        scope.launch {
+                            pickDirectory(dataCacheDir.ifBlank { null })?.let { dataCacheDir = it }
+                        }
+                    },
+                ) {
+                    Text(stringResource(Res.string.settings_data_cache_browse))
+                }
+                OutlinedButton(onClick = { dataCacheDir = "" }) {
+                    Text(stringResource(Res.string.settings_data_cache_reset))
+                }
+            }
+            Text(
+                stringResource(Res.string.settings_data_cache_hint),
+                fontSize = 10.sp,
+                color = CarbonColors.Outline,
+            )
+            if (dataCacheDir.isBlank()) {
+                Text(
+                    stringResource(
+                        Res.string.settings_data_cache_default,
+                        AppDataPaths.defaultCacheRoot().absolutePath,
+                    ),
+                    fontSize = 10.sp,
+                    color = CarbonColors.Outline,
+                )
             }
         }
 

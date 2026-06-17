@@ -241,7 +241,7 @@
 | RW-F05 | Settings 可选 `sdkPath` | side-panel §10 | S |
 | RW-F06 | `TabListenKind.MIRROR_FRAME` 截图帧会话 | side-panel + scrcpy | M |
 | RW-F07 | PC 扫描手机展示的 QR（反向流程） | qr-pairing §1.3 | L |
-| RW-F08 | 完整 APK 反编译（apktool/jadx） | side-panel §1.3 | L |
+| RW-F08 | Decompile Studio（部分实现） | side-panel §1.3 | L | 见 `docs/superpowers/specs/2026-06-15-decompile-module-backlog.md` |
 
 ---
 

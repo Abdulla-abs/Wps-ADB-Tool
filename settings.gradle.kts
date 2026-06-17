@@ -10,6 +10,7 @@ pluginManagement {
                 includeGroupAndSubgroups("com.google")
             }
         }
+        maven("https://maven.aliyun.com/repository/public")
         mavenCentral()
         gradlePluginPortal()
     }
@@ -24,6 +25,7 @@ dependencyResolutionManagement {
                 includeGroupAndSubgroups("com.google")
             }
         }
+        maven("https://maven.aliyun.com/repository/public")
         mavenCentral()
         maven("https://packages.jetbrains.team/maven/p/ij/intellij-dependencies")
     }

@@ -32,19 +32,24 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import `fun`.abbas.wps_adb.platform.ApkFileDetector
 import java.io.File
+import java.util.Collections
 
 class JvmAdbRepository(
     private val wirelessStore: WirelessDeviceStore = WirelessDeviceStore(),
     private val removedDeviceStore: RemovedDeviceStore = RemovedDeviceStore(),
+    private val disconnectedDeviceStore: DisconnectedDeviceStore = DisconnectedDeviceStore(),
     private val settingsStore: AppSettingsStore = AppSettingsStore(),
     private val apkMetadataParser: ApkMetadataParser = ApkMetadataParser(),
 ) : AdbRepository {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val deviceMutationLock = Mutex()
     private val _settings = MutableStateFlow(settingsStore.load())
     private val screenshotDir = File(System.getProperty("java.io.tmpdir"), "wps-adb-screenshots").apply { mkdirs() }
     private val logcatClosers = mutableMapOf<String, () -> Unit>()
@@ -52,11 +57,12 @@ class JvmAdbRepository(
     private var globalLogcatFilterDeviceId: String? = null
     private var qrPairingService: JvmWirelessQrPairingService? = null
     private var qrPairingCollectJob: Job? = null
-    private var enrichJob: Job? = null
+    private val enrichingSerials = Collections.synchronizedSet(mutableSetOf<String>())
     private val screenRecordSessions = mutableMapOf<String, ScreenRecordSession>()
-    private var enrichGeneration = 0
     private var deviceScanJob: Job? = null
     private val hardwareSerialByTransport = mutableMapOf<String, String>()
+
+    private fun isUserDisconnected(serial: String): Boolean = disconnectedDeviceStore.contains(serial)
 
     private val runner: JvmAdbRunner
         get() = JvmAdbRunner { _settings.value.adbPath }
@@ -130,7 +136,7 @@ class JvmAdbRepository(
         val saved = wirelessStore.load()
         if (saved.isEmpty()) return@withContext
         addLog(LogLevel.I, "AdbDaemon", "Reconnecting ${saved.size} saved wireless device(s)...", "system")
-        saved.forEach { device ->
+        saved.filterNot { removedDeviceStore.contains(it.endpoint) }.forEach { device ->
             val result = runner.run(listOf("connect", device.endpoint))
             val output = result.output.ifBlank { "No output" }
             val level = if (result.success || "connected" in output.lowercase()) LogLevel.I else LogLevel.W
@@ -149,20 +155,39 @@ class JvmAdbRepository(
         }
     }
 
-    private suspend fun refreshDevicesInternal() {
+    private suspend fun refreshDevicesInternal() = deviceMutationLock.withLock {
         val result = runner.run(listOf("devices", "-l"))
         if (!result.success) {
             addLog(LogLevel.E, "DeviceTracker", "adb devices failed: ${result.output}", "system")
-            return
+            return@withLock
         }
-        val parsed = DeviceTransportDeduplicator.dedupeParsedDevices(
-            JvmAdbDeviceParser.parseDevicesOutput(result.output),
-        ).filterNot { removedDeviceStore.contains(it.serial) }
+        val rawParsed = JvmAdbDeviceParser.parseDevicesOutput(result.output)
+        rawParsed.forEach { parsed ->
+            if (!isUserDisconnected(parsed.serial)) {
+                clearRemovalMark(parsed.serial)
+            }
+        }
+        val adjustedParsed = rawParsed.map { parsed ->
+            if (isUserDisconnected(parsed.serial) && parsed.status == DeviceStatus.ONLINE) {
+                parsed.copy(status = DeviceStatus.OFFLINE)
+            } else {
+                parsed
+            }
+        }
+        val parsed = DeviceTransportDeduplicator.dedupeParsedDevices(adjustedParsed)
         val previousBySerial = _devices.value.associateBy { it.serial }
         val basic = parsed.map { buildBasicDevice(it, previousBySerial[it.serial]) }
-        _devices.value = mergeWithSavedWirelessDevices(
-            DeviceTransportDeduplicator.dedupeDevices(basic, hardwareSerialByTransport),
-        )
+        val dedupedBasic = DeviceTransportDeduplicator.dedupeDevices(basic, hardwareSerialByTransport)
+        val parsedSerials = parsed.map { it.serial }.toSet()
+        val retainedDisconnected = previousBySerial.values.filter { device ->
+            isUserDisconnected(device.serial) &&
+                device.serial !in parsedSerials &&
+                device.status == DeviceStatus.OFFLINE
+        }
+        val connectedMerged = filterOfflineDuplicatesByHardware(mergeWithSavedWirelessDevices(dedupedBasic))
+        val connectedSerials = connectedMerged.map { it.serial }.toSet()
+        val merged = connectedMerged + retainedDisconnected.filterNot { it.serial in connectedSerials }
+        _devices.value = enforceUserDisconnectedStatus(merged)
         addLog(LogLevel.I, "DeviceTracker", "Discovered ${_devices.value.size} device(s)", "system")
         scheduleDeviceEnrichment(parsed)
     }
@@ -182,58 +207,117 @@ class JvmAdbRepository(
     }
 
     private fun scheduleDeviceEnrichment(parsed: List<ParsedAdbDevice>) {
-        val online = parsed.filter { it.status == DeviceStatus.ONLINE }
-        enrichJob?.cancel()
+        val online = parsed.filter {
+            it.status == DeviceStatus.ONLINE && !isUserDisconnected(it.serial)
+        }
         if (online.isEmpty()) return
-        val generation = ++enrichGeneration
-        enrichJob = scope.launch(Dispatchers.IO) {
-            coroutineScope {
-                online.map { device ->
-                    async {
-                        if (generation != enrichGeneration) return@async
-                        val enriched = enrichDevice(device)
-                        if (generation != enrichGeneration) return@async
-                        if (enriched.connectionType == ConnectionType.WIFI) {
-                            wirelessStore.updateFromDevice(enriched)
+        online.forEach { device ->
+            val serial = device.serial
+            if (!enrichingSerials.add(serial)) return@forEach
+            scope.launch(Dispatchers.IO) {
+                try {
+                    val metadata = enrichDeviceMetadata(device)
+                    if (shouldApplyEnrichment(serial)) {
+                        val existingScreenshot = _devices.value.find { it.serial == serial }?.screenshotUrl.orEmpty()
+                        applyEnrichedDevice(
+                            metadata.copy(screenshotUrl = metadata.screenshotUrl.ifBlank { existingScreenshot }),
+                        )
+                        if (metadata.connectionType == ConnectionType.WIFI) {
+                            wirelessStore.updateFromDevice(metadata)
                         }
-                        applyEnrichedDevice(enriched)
+                        deduplicateByHardwareSerial()
                     }
-                }.awaitAll()
+                    if (!shouldApplyEnrichment(serial)) return@launch
+                    val screenshotUrl = captureScreenshotUrl(serial)
+                    if (screenshotUrl.isNotBlank()) {
+                        applyEnrichedDevice(metadata.copy(screenshotUrl = screenshotUrl))
+                    }
+                } finally {
+                    enrichingSerials.remove(serial)
+                }
             }
-            deduplicateByHardwareSerial(generation)
         }
     }
 
-    private fun deduplicateByHardwareSerial(generation: Int) {
-        if (generation != enrichGeneration) return
+    private fun shouldApplyEnrichment(serial: String): Boolean =
+        !isUserDisconnected(serial) &&
+            _devices.value.any { it.serial == serial && it.status == DeviceStatus.ONLINE }
+
+    private fun deduplicateByHardwareSerial() {
         val current = _devices.value
         val deduped = DeviceTransportDeduplicator.dedupeDevices(current, hardwareSerialByTransport)
         val removedCount = current.size - deduped.size
-        if (removedCount <= 0) return
-
-        _devices.value = deduped
-        addLog(
-            LogLevel.I,
-            "DeviceTracker",
-            "Merged $removedCount duplicate transport(s) for the same hardware",
-            "system",
-        )
+        if (removedCount > 0) {
+            current.filter { device -> deduped.none { it.serial == device.serial } }.forEach { removed ->
+                if (':' in removed.serial) {
+                    wirelessStore.remove(removed.serial)
+                }
+            }
+            addLog(
+                LogLevel.I,
+                "DeviceTracker",
+                "Merged $removedCount duplicate transport(s) for the same hardware",
+                "system",
+            )
+        }
+        _devices.value = enforceUserDisconnectedStatus(filterOfflineDuplicatesByHardware(deduped))
     }
 
     private fun applyEnrichedDevice(enriched: Device) {
+        if (isUserDisconnected(enriched.serial)) return
         _devices.update { current ->
+            if (isUserDisconnected(enriched.serial)) return@update current
             val index = current.indexOfFirst { it.serial == enriched.serial }
             if (index < 0) return@update current
             current.toMutableList().apply { this[index] = enriched }
         }
     }
 
+    private fun enforceUserDisconnectedStatus(devices: List<Device>): List<Device> =
+        devices.map { device ->
+            if (isUserDisconnected(device.serial) && device.status == DeviceStatus.ONLINE) {
+                device.copy(status = DeviceStatus.OFFLINE)
+            } else {
+                device
+            }
+        }
+
+    private fun invalidateEnrichment() {
+        enrichingSerials.clear()
+    }
+
+    private fun markUserDisconnected(serial: String) {
+        disconnectedDeviceStore.add(serial)
+        invalidateEnrichment()
+    }
+
     private fun mergeWithSavedWirelessDevices(connected: List<Device>): List<Device> {
         val connectedSerials = connected.map { it.serial }.toSet()
+        val connectedHardware = connected.mapNotNull { device ->
+            hardwareSerialByTransport[device.serial]?.takeIf { it.isNotBlank() }
+        }.toSet()
         val offlineSaved = wirelessStore.load()
-            .filter { saved -> saved.endpoint !in connectedSerials && !removedDeviceStore.contains(saved.endpoint) }
+            .filter { savedDevice ->
+                savedDevice.endpoint !in connectedSerials &&
+                    !removedDeviceStore.contains(savedDevice.endpoint) &&
+                    savedDevice.endpoint.let { endpoint ->
+                        val savedHardware = hardwareSerialByTransport[endpoint]
+                        savedHardware == null || savedHardware !in connectedHardware
+                    }
+            }
             .map { it.toOfflineDevice() }
         return connected + offlineSaved
+    }
+
+    private fun filterOfflineDuplicatesByHardware(devices: List<Device>): List<Device> {
+        val onlineHardware = devices
+            .filter { it.status == DeviceStatus.ONLINE }
+            .mapNotNull { hardwareSerialByTransport[it.serial] }
+            .toSet()
+        return devices.filterNot { device ->
+            device.status == DeviceStatus.OFFLINE &&
+                hardwareSerialByTransport[device.serial]?.let { it in onlineHardware } == true
+        }
     }
 
     override suspend fun pairWirelessDevice(ip: String, port: Int): Result<Device> = withContext(Dispatchers.IO) {
@@ -253,11 +337,14 @@ class JvmAdbRepository(
             return@withContext Result.failure(IllegalStateException(result.output))
         }
         addLog(LogLevel.I, "AdbDaemon", result.output.ifBlank { "Connected to $target" }, "system")
+        clearRemovalMark(target)
         delay(800)
         refreshDevices()
         val device = _devices.value.find { it.serial == target }
             ?: _devices.value.find { ':' in it.serial && it.serial.startsWith(ip) }
         if (device != null) {
+            clearUserDisconnectMark(target)
+            clearUserDisconnectMark(device.serial)
             clearRemovalMark(device.serial)
             clearRemovalMark(target)
             wirelessStore.updateFromDevice(device)
@@ -378,6 +465,23 @@ class JvmAdbRepository(
         output.absolutePath
     }
 
+    override suspend fun takeScreenshotToClipboard(deviceId: String): Boolean = withContext(Dispatchers.IO) {
+        val target = _devices.value.find { it.id == deviceId } ?: return@withContext false
+        val bytes = runner.captureScreenshotBytes(target.serial) ?: run {
+            addLog(LogLevel.E, "EasyAction", "Screenshot failed for ${target.serial}", deviceId)
+            return@withContext false
+        }
+        val copied = JvmSystemClipboard.copyPngImage(bytes)
+        val level = if (copied) LogLevel.I else LogLevel.E
+        val message = if (copied) {
+            "Screenshot copied to clipboard for ${target.serial}"
+        } else {
+            "Failed to copy screenshot to clipboard for ${target.serial}"
+        }
+        addLog(level, "EasyAction", message, deviceId)
+        copied
+    }
+
     override suspend fun startScreenRecord(deviceId: String): Boolean = withContext(Dispatchers.IO) {
         val serial = serialForDevice(deviceId) ?: return@withContext false
         if (screenRecordSessions.containsKey(deviceId)) return@withContext true
@@ -427,12 +531,17 @@ class JvmAdbRepository(
     }
 
     override suspend fun disconnectDevice(deviceId: String) = withContext(Dispatchers.IO) {
-        val target = _devices.value.find { it.id == deviceId } ?: return@withContext
-        if (target.connectionType == ConnectionType.WIFI || ':' in target.serial) {
-            runner.run(listOf("disconnect", target.serial))
+        deviceMutationLock.withLock {
+            val target = _devices.value.find { it.id == deviceId } ?: return@withLock
+            markUserDisconnected(target.serial)
+            dismissFromAdb(target)
+            _devices.update { list ->
+                enforceUserDisconnectedStatus(
+                    list.map { if (it.id == deviceId) it.copy(status = DeviceStatus.OFFLINE) else it },
+                )
+            }
+            addLog(LogLevel.E, "DeviceManager", "Disconnected ${target.serial}", deviceId)
         }
-        _devices.update { list -> list.map { if (it.id == deviceId) it.copy(status = DeviceStatus.OFFLINE) else it } }
-        addLog(LogLevel.E, "DeviceManager", "Disconnected ${target.serial}", deviceId)
     }
 
     override suspend fun reconnectDevice(deviceId: String) = withContext(Dispatchers.IO) {
@@ -448,14 +557,21 @@ class JvmAdbRepository(
         if (':' in target.serial) {
             val host = target.serial.substringBeforeLast(':')
             val port = target.serial.substringAfterLast(':').toIntOrNull() ?: 5555
-            pairWirelessDevice(host, port)
+            if (pairWirelessDevice(host, port).isSuccess) {
+                clearUserDisconnectMark(target.serial)
+            }
         } else {
             refreshDevices()
+            val reconnected = _devices.value.find { it.id == deviceId && it.status == DeviceStatus.ONLINE }
+            if (reconnected != null) {
+                clearUserDisconnectMark(target.serial)
+            }
         }
     }
 
     override suspend fun removeDevice(deviceId: String) = withContext(Dispatchers.IO) {
         val target = _devices.value.find { it.id == deviceId } ?: return@withContext
+        clearUserDisconnectMark(target.serial)
         removedDeviceStore.add(target.serial)
         removeWirelessPersistence(target)
         dismissFromAdb(target)
@@ -486,6 +602,11 @@ class JvmAdbRepository(
     private fun clearRemovalMark(serial: String) {
         if (serial.isBlank()) return
         removedDeviceStore.remove(serial)
+    }
+
+    private fun clearUserDisconnectMark(serial: String) {
+        if (serial.isBlank()) return
+        disconnectedDeviceStore.remove(serial)
     }
 
     override suspend fun installApk(fileName: String) = withContext(Dispatchers.IO) {
@@ -924,7 +1045,7 @@ class JvmAdbRepository(
         }
     }
 
-    private fun enrichDevice(parsed: ParsedAdbDevice): Device {
+    private fun enrichDeviceMetadata(parsed: ParsedAdbDevice): Device {
         if (parsed.status != DeviceStatus.ONLINE) {
             return JvmAdbDeviceParser.toDevice(parsed)
         }
@@ -952,12 +1073,11 @@ class JvmAdbRepository(
             screenWidthPx = screenWidthPx,
             screenHeightPx = screenHeightPx,
         )
-        val screenshotUrl = captureScreenshotUrl(parsed.serial)
         return JvmAdbDeviceParser.toDevice(
             parsed = parsed,
             androidVersion = androidVersion,
             batteryLevel = batteryLevel,
-            screenshotUrl = screenshotUrl,
+            screenshotUrl = "",
             formFactor = formFactor,
             screenWidthPx = screenWidthPx,
             screenHeightPx = screenHeightPx,

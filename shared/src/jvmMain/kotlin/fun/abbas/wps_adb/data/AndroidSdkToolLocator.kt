@@ -35,6 +35,10 @@ object AndroidSdkToolLocator {
 
     fun resolveBuildToolsBinary(adbPath: String, binaryName: String): String? {
         val sdkRoot = resolveSdkRoot(adbPath) ?: return null
+        return resolveBuildToolsInSdk(sdkRoot, binaryName)
+    }
+
+    private fun resolveBuildToolsInSdk(sdkRoot: File, binaryName: String): String? {
         val buildToolsDir = File(sdkRoot, "build-tools")
         if (!buildToolsDir.isDirectory) return null
         val versionDirs = buildToolsDir.listFiles()

@@ -35,6 +35,7 @@ import wpsadbtool.shared.generated.resources.easy_action_recovery
 import wpsadbtool.shared.generated.resources.easy_action_screen_record
 import wpsadbtool.shared.generated.resources.easy_action_screen_record_stop
 import wpsadbtool.shared.generated.resources.easy_action_screenshot
+import wpsadbtool.shared.generated.resources.easy_action_screenshot_clipboard
 import wpsadbtool.shared.generated.resources.shell_easy_actions_title
 
 @Composable
@@ -116,6 +117,7 @@ private fun easyActionLabel(kind: EasyActionKind): String = when (kind) {
     EasyActionKind.RECOVERY_MODE -> stringResource(Res.string.easy_action_recovery)
     EasyActionKind.CLEAR_APP_CACHE -> stringResource(Res.string.easy_action_clear_cache)
     EasyActionKind.TAKE_SCREENSHOT -> stringResource(Res.string.easy_action_screenshot)
+    EasyActionKind.TAKE_SCREENSHOT_TO_CLIPBOARD -> stringResource(Res.string.easy_action_screenshot_clipboard)
     EasyActionKind.SCREEN_RECORD -> stringResource(Res.string.easy_action_screen_record)
     EasyActionKind.FORCE_STOP_APP -> stringResource(Res.string.easy_action_force_stop)
     EasyActionKind.CLEAR_APP_DATA -> stringResource(Res.string.easy_action_clear_data)

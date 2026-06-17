@@ -28,6 +28,7 @@ interface AdbRepository {
     suspend fun rebootToRecovery(deviceId: String): Boolean
     suspend fun clearAppCache(deviceId: String, packageName: String): Boolean
     suspend fun takeScreenshotToDownloads(deviceId: String): String?
+    suspend fun takeScreenshotToClipboard(deviceId: String): Boolean
     suspend fun startScreenRecord(deviceId: String): Boolean
     suspend fun stopScreenRecord(deviceId: String): String?
     suspend fun forceStopApp(deviceId: String, packageName: String): Boolean

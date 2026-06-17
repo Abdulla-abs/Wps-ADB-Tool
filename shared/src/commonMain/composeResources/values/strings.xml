@@ -6,6 +6,7 @@
     <!-- Sidebar -->
     <string name="nav_device_wall">Device Wall</string>
     <string name="nav_group_command">Group Command</string>
+    <string name="nav_decompile">Decompile</string>
     <string name="nav_global_settings">Global Settings</string>
     <string name="sidebar_installing_apk">Installing APK...</string>
     <string name="sidebar_drop_apk_title">DROP APK TO INSTALL</string>
@@ -168,6 +169,12 @@
     <string name="settings_telemetry_subtitle">Transfer logs for diagnostics</string>
     <string name="settings_telemetry_hint">Coming soon — no diagnostic data is collected yet.</string>
     <string name="settings_log_retention">Logcat Retention Limit</string>
+    <string name="settings_data_and_cache">Data &amp; Cache</string>
+    <string name="settings_data_cache">Data Cache Directory</string>
+    <string name="settings_data_cache_hint">Decompile workspaces and app cache files. Changes apply to newly created data only.</string>
+    <string name="settings_data_cache_browse">Browse…</string>
+    <string name="settings_data_cache_reset">Use Default</string>
+    <string name="settings_data_cache_default">Default: %1$s</string>
     <string name="settings_save">Save Changes</string>
     <string name="settings_save_success">Local ADB configurations saved successfully!</string>
 
@@ -188,6 +195,7 @@
     <string name="sidepanel_empty_subtitle">Tap Mirror or Debug on a device card to start a session.</string>
     <string name="sidepanel_tab_count">%1$d</string>
     <string name="applog_action_launch">Launch App</string>
+    <string name="applog_action_force_stop">Kill App</string>
     <string name="applog_action_uninstall">Uninstall App</string>
     <string name="applog_action_monitor_start">Monitor Logs</string>
     <string name="applog_action_monitor_stop">Stop Monitor</string>
@@ -269,6 +277,7 @@
     <string name="easy_action_recovery">Recovery Mode</string>
     <string name="easy_action_clear_cache">Clear Cache</string>
     <string name="easy_action_screenshot">Take Screenshot</string>
+    <string name="easy_action_screenshot_clipboard">Screenshot to Clipboard</string>
     <string name="easy_action_screen_record">Screen Record</string>
     <string name="easy_action_screen_record_stop">Stop Recording</string>
     <string name="easy_action_force_stop">Force Stop App</string>
@@ -277,8 +286,51 @@
     <string name="shell_package_dialog_hint">com.example.app</string>
     <string name="shell_package_dialog_confirm">Run</string>
     <string name="shell_package_dialog_cancel">Cancel</string>
-    <string name="shell_confirm_recovery_title">Confirm action</string>
-    <string name="shell_confirm_recovery_message">This action may disrupt the device. Continue?</string>
+    <string name="shell_confirm_recovery_title">Recovery mode</string>
+    <string name="shell_confirm_recovery_message">The device will reboot into recovery and disconnect. Continue?</string>
+    <string name="shell_confirm_reboot_title">Reboot device</string>
+    <string name="shell_confirm_reboot_message">The device will restart immediately. Continue?</string>
+    <string name="shell_confirm_clear_data_title">Clear app data</string>
+    <string name="shell_confirm_clear_data_message">All data for %1$s will be erased. Continue?</string>
     <string name="shell_confirm_ok">Continue</string>
     <string name="shell_confirm_cancel">Cancel</string>
+    <string name="shell_terminal_hidden_by_dialog">Dialog open — terminal hidden. Close the dialog to continue.</string>
+    <string name="easy_action_toast_screenshot_success">Screenshot saved to Downloads for %1$s</string>
+    <string name="easy_action_toast_screenshot_failure">Screenshot failed for %1$s</string>
+    <string name="easy_action_toast_screenshot_clipboard_success">Screenshot copied to clipboard from %1$s</string>
+    <string name="easy_action_toast_screenshot_clipboard_failure">Failed to copy screenshot from %1$s</string>
+
+    <!-- Decompile Studio -->
+    <string name="decompile_empty_title">Decompile - Waiting for APK</string>
+    <string name="decompile_tab_manifest">Manifest</string>
+    <string name="decompile_tab_smali">Smali View</string>
+    <string name="decompile_tab_resources">Resources</string>
+    <string name="decompile_search_placeholder">Search project symbols...</string>
+    <string name="decompile_new_session">New Session</string>
+    <string name="decompile_project_explorer">Project Explorer</string>
+    <string name="decompile_drop_title">Drop APK File</string>
+    <string name="decompile_drop_subtitle">Drop an APK here to decompile, or click to browse</string>
+    <string name="decompile_recent_project">Recent Project</string>
+    <string name="decompile_no_project_active">No project active</string>
+    <string name="decompile_no_project_hint">Please import an APK to begin the decompilation process. Once loaded, Smali source code, resources, and AndroidManifest will be accessible here.</string>
+    <string name="decompile_feature_jadx">JADX / Baksmali</string>
+    <string name="decompile_feature_scan">Vulnerability Scan</string>
+    <string name="decompile_feature_resign">Re-sign Tool</string>
+    <string name="decompile_feature_coming_soon">Coming soon</string>
+    <string name="decompile_exit_project">Exit project</string>
+    <string name="decompile_save_file">Save file</string>
+    <string name="decompile_editor_empty_title">No active editor session</string>
+    <string name="decompile_editor_empty_hint">Select a file from the project tree to view or edit XML, Smali, JSON, and other text files.</string>
+    <string name="decompile_dex_multi_select_title">Select DEX Files</string>
+    <string name="decompile_dex_multi_select_confirm">Confirm</string>
+    <string name="decompile_dex_multi_select_all">Select all</string>
+    <string name="decompile_dex_multi_select_none">Clear all</string>
+    <string name="decompile_workspace_title">Decompile — %1$s</string>
+    <string name="decompile_export_apk">Export Signed APK</string>
+    <string name="decompile_manage_projects">Manage Projects</string>
+    <string name="decompile_project_manager_title">Manage Projects</string>
+    <string name="decompile_project_manager_back">← Back</string>
+    <string name="decompile_project_manager_empty">No saved projects</string>
+    <string name="decompile_project_open">Open</string>
+    <string name="decompile_project_delete">Delete</string>
 </resources>
