@@ -1,6 +1,7 @@
 package `fun`.abbas.wps_adb.viewmodel
 
 import `fun`.abbas.wps_adb.model.ApkInstallToast
+import `fun`.abbas.wps_adb.model.EasyActionToast
 import `fun`.abbas.wps_adb.model.DeviceShellSession
 import `fun`.abbas.wps_adb.model.DeviceWallRoute
 import `fun`.abbas.wps_adb.model.EasyActionKind
@@ -41,11 +42,13 @@ data class AppUiState(
     val isRestartingAdb: Boolean = false,
     val isScanningDevices: Boolean = false,
     val apkInstallToast: ApkInstallToast? = null,
+    val easyActionToast: EasyActionToast? = null,
     val deviceWallRoute: DeviceWallRoute = DeviceWallRoute.Grid,
     val shellSession: DeviceShellSession? = null,
     val shellTransitionKind: ShellTransitionKind = ShellTransitionKind.SHARED_ELEMENT,
     val pendingDestructiveAction: EasyActionKind? = null,
     val pendingPackageAction: EasyActionKind? = null,
+    val pendingEasyActionPackageName: String? = null,
     
     // Decompile state fields
     val decompileWorkspace: DecompileWorkspace? = null,

@@ -21,6 +21,13 @@ class JvmAdbRunner(
     fun isAvailable(): Boolean = run(listOf("version")).success
 
     fun captureScreenshot(serial: String, outputFile: File): Boolean {
+        val bytes = captureScreenshotBytes(serial) ?: return false
+        outputFile.parentFile?.mkdirs()
+        outputFile.writeBytes(bytes)
+        return true
+    }
+
+    fun captureScreenshotBytes(serial: String): ByteArray? {
         val command = buildList {
             add(resolveAdbPath())
             add("-s")
@@ -33,13 +40,11 @@ class JvmAdbRunner(
                 .start()
             val bytes = process.inputStream.use { it.readBytes() }
             val exitCode = process.waitFor()
-            if (exitCode != 0 || bytes.size < 8) return false
-            if (bytes[0] != 0x89.toByte() || bytes[1] != 0x50.toByte()) return false
-            outputFile.parentFile?.mkdirs()
-            outputFile.writeBytes(bytes)
-            true
+            if (exitCode != 0 || bytes.size < 8) return null
+            if (bytes[0] != 0x89.toByte() || bytes[1] != 0x50.toByte()) return null
+            bytes
         } catch (_: Exception) {
-            false
+            null
         }
     }
 

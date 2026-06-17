@@ -5,6 +5,8 @@ import `fun`.abbas.wps_adb.data.NoOpDeviceShellService
 import `fun`.abbas.wps_adb.viewmodel.LogTrayMode
 import `fun`.abbas.wps_adb.model.DeviceShellSessionState
 import `fun`.abbas.wps_adb.model.DeviceWallRoute
+import `fun`.abbas.wps_adb.model.EasyActionKind
+import `fun`.abbas.wps_adb.model.EasyActionToastKind
 import `fun`.abbas.wps_adb.viewmodel.AppViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -19,6 +21,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -81,6 +84,54 @@ class AppViewModelDeviceShellTest {
         assertTrue(vm.uiState.value.isLogTrayOpen)
         assertEquals(LogTrayMode.LOGCAT, vm.uiState.value.logTrayMode)
         assertEquals(device.id, vm.uiState.value.logcatDeviceFilter)
+        stateCollector.cancel()
+    }
+
+    @Test
+    fun `clear app data requires package then destructive confirmation`() = runTest(dispatcher) {
+        val repo = MockAdbRepository(initialScanDelayMs = 0)
+        val vm = AppViewModel(repo, deviceShellService = FakeDeviceShellService())
+        val stateCollector = launch { vm.uiState.collect { } }
+        advanceUntilIdle()
+        vm.onTerminalDevice(repo.devices.value.first())
+        advanceUntilIdle()
+
+        vm.onEasyAction(EasyActionKind.CLEAR_APP_DATA)
+        advanceUntilIdle()
+        assertEquals(EasyActionKind.CLEAR_APP_DATA, vm.uiState.value.pendingPackageAction)
+        assertNull(vm.uiState.value.pendingDestructiveAction)
+
+        vm.confirmPackageEasyAction("com.example.app")
+        advanceUntilIdle()
+        assertNull(vm.uiState.value.pendingPackageAction)
+        assertEquals(EasyActionKind.CLEAR_APP_DATA, vm.uiState.value.pendingDestructiveAction)
+        assertEquals("com.example.app", vm.uiState.value.pendingEasyActionPackageName)
+
+        vm.confirmDestructiveEasyAction()
+        advanceUntilIdle()
+        assertNull(vm.uiState.value.pendingDestructiveAction)
+        assertNull(vm.uiState.value.pendingEasyActionPackageName)
+        stateCollector.cancel()
+    }
+
+    @Test
+    fun `take screenshot shows success toast`() = runTest(dispatcher) {
+        val repo = MockAdbRepository(initialScanDelayMs = 0)
+        val vm = AppViewModel(repo, deviceShellService = FakeDeviceShellService())
+        val stateCollector = launch { vm.uiState.collect { } }
+        advanceUntilIdle()
+        val device = repo.devices.value.first()
+        vm.onTerminalDevice(device)
+        advanceUntilIdle()
+
+        vm.onEasyAction(EasyActionKind.TAKE_SCREENSHOT)
+        advanceUntilIdle()
+
+        val toast = vm.uiState.value.easyActionToast
+        assertNotNull(toast)
+        assertEquals(EasyActionToastKind.SCREENSHOT_SAVED, toast.kind)
+        assertEquals(device.name, toast.deviceName)
+        assertTrue(toast.success)
         stateCollector.cancel()
     }
 }

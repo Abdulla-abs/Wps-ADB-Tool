@@ -192,6 +192,11 @@ class MockAdbRepository(
         return "/mock/screenshot.png"
     }
 
+    override suspend fun takeScreenshotToClipboard(deviceId: String): Boolean {
+        addLog(LogLevel.I, "EasyAction", "Screenshot copied to clipboard (mock)", deviceId)
+        return true
+    }
+
     override suspend fun startScreenRecord(deviceId: String): Boolean {
         addLog(LogLevel.I, "EasyAction", "Screen recording started (mock)", deviceId)
         return true

@@ -75,6 +75,12 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+            modules(
+                "java.compiler",
+                "java.instrument",
+                "java.sql",
+                "jdk.unsupported",
+            )
             packageName = "WpsAdbTool"
             packageVersion = project.findProperty("wpsAdbTool.version")?.toString() ?: "1.0.0"
             description = "WPS ADB device management tool"

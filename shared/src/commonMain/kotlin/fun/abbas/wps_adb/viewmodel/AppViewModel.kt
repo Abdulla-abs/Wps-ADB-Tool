@@ -27,6 +27,8 @@ import `fun`.abbas.wps_adb.model.DeviceShellSessionState
 import `fun`.abbas.wps_adb.model.DeviceStatus
 import `fun`.abbas.wps_adb.model.DeviceWallRoute
 import `fun`.abbas.wps_adb.model.EasyActionKind
+import `fun`.abbas.wps_adb.model.EasyActionToast
+import `fun`.abbas.wps_adb.model.EasyActionToastKind
 import `fun`.abbas.wps_adb.model.MirrorSessionState
 import `fun`.abbas.wps_adb.model.ScrcpyConnectionOptions
 import `fun`.abbas.wps_adb.model.FilterTab
@@ -94,6 +96,8 @@ class AppViewModel(
     private val _qrPairingPayload = MutableStateFlow<String?>(null)
     private var qrPairingCollectJob: Job? = null
     private var apkInstallToastSeq = 0L
+    private var easyActionToastSeq = 0L
+    private val suppressReconnectUntilByDevice = mutableMapOf<String, Long>()
 
     val qrPairingEvent: StateFlow<QrPairingEvent?> = _qrPairingEvent.asStateFlow()
     val qrPairingPayload: StateFlow<String?> = _qrPairingPayload.asStateFlow()
@@ -361,6 +365,37 @@ class AppViewModel(
             }
     }
 
+    fun forceStopAppInTab(tabId: String) = viewModelScope.launch {
+        val tab = findAppLogTab(tabId) ?: return@launch
+        var packageName = tab.packageName ?: return@launch
+
+        if (ApkMetadataResolver.isMockPackage(packageName)) {
+            repository.parseApkMetadata(tab.apkPath)?.let { metadata ->
+                if (!ApkMetadataResolver.isMockPackage(metadata.packageName)) {
+                    packageName = metadata.packageName
+                    updateAppLogTab(tabId) { current ->
+                        current.copy(
+                            packageName = packageName,
+                            launchActivity = metadata.launchActivity,
+                            appLabel = metadata.appLabel ?: current.appLabel,
+                        )
+                    }
+                }
+            }
+        }
+
+        val success = repository.forceStopApp(tab.device.id, packageName)
+        appendAppLog(
+            tabId,
+            tabActionLog(
+                tabId = tabId,
+                deviceId = tab.device.id,
+                level = if (success) LogLevel.I else LogLevel.E,
+                message = if (success) "Force-stopped $packageName" else "Failed to force-stop $packageName",
+            ),
+        )
+    }
+
     fun uninstallAppInTab(tabId: String) = viewModelScope.launch {
         val tab = findAppLogTab(tabId) ?: return@launch
         var packageName = tab.packageName ?: return@launch
@@ -507,6 +542,7 @@ class AppViewModel(
                 shellSession = null,
                 pendingDestructiveAction = null,
                 pendingPackageAction = null,
+                pendingEasyActionPackageName = null,
             )
         }
     }
@@ -545,20 +581,41 @@ class AppViewModel(
     }
 
     fun dismissEasyActionDialogs() {
-        _localState.update { it.copy(pendingDestructiveAction = null, pendingPackageAction = null) }
+        _localState.update {
+            it.copy(
+                pendingDestructiveAction = null,
+                pendingPackageAction = null,
+                pendingEasyActionPackageName = null,
+            )
+        }
     }
 
     fun confirmDestructiveEasyAction() {
         val kind = _localState.value.pendingDestructiveAction ?: return
-        _localState.update { it.copy(pendingDestructiveAction = null) }
-        executeEasyAction(kind)
+        val packageName = _localState.value.pendingEasyActionPackageName
+        _localState.update {
+            it.copy(pendingDestructiveAction = null, pendingEasyActionPackageName = null)
+        }
+        executeEasyAction(kind, packageName)
     }
 
     fun confirmPackageEasyAction(packageName: String) {
         val kind = _localState.value.pendingPackageAction ?: return
-        if (packageName.isBlank()) return
-        _localState.update { it.copy(pendingPackageAction = null) }
-        executeEasyAction(kind, packageName)
+        val trimmed = packageName.trim()
+        if (trimmed.isBlank()) return
+        val definition = DefaultEasyActions.find { it.kind == kind } ?: return
+        if (definition.destructive) {
+            _localState.update {
+                it.copy(
+                    pendingPackageAction = null,
+                    pendingDestructiveAction = kind,
+                    pendingEasyActionPackageName = trimmed,
+                )
+            }
+        } else {
+            _localState.update { it.copy(pendingPackageAction = null) }
+            executeEasyAction(kind, trimmed)
+        }
     }
 
     fun recentPackageNames(): List<String> =
@@ -575,6 +632,7 @@ class AppViewModel(
     private fun executeEasyAction(kind: EasyActionKind, packageName: String? = null) {
         val session = _localState.value.shellSession ?: return
         val deviceId = session.deviceId
+        val deviceName = devices.value.find { it.id == deviceId }?.name ?: deviceId
         viewModelScope.launch {
             when (kind) {
                 EasyActionKind.REBOOT -> repository.rebootDevice(deviceId)
@@ -583,7 +641,27 @@ class AppViewModel(
                     val pkg = packageName ?: return@launch
                     repository.clearAppCache(deviceId, pkg)
                 }
-                EasyActionKind.TAKE_SCREENSHOT -> repository.takeScreenshotToDownloads(deviceId)
+                EasyActionKind.TAKE_SCREENSHOT -> {
+                    val path = repository.takeScreenshotToDownloads(deviceId)
+                    showEasyActionToast(
+                        EasyActionToast(
+                            kind = EasyActionToastKind.SCREENSHOT_SAVED,
+                            deviceName = deviceName,
+                            success = path != null,
+                            filePath = path,
+                        ),
+                    )
+                }
+                EasyActionKind.TAKE_SCREENSHOT_TO_CLIPBOARD -> {
+                    val copied = repository.takeScreenshotToClipboard(deviceId)
+                    showEasyActionToast(
+                        EasyActionToast(
+                            kind = EasyActionToastKind.SCREENSHOT_CLIPBOARD,
+                            deviceName = deviceName,
+                            success = copied,
+                        ),
+                    )
+                }
                 EasyActionKind.SCREEN_RECORD -> {
                     if (session.isScreenRecording) {
                         repository.stopScreenRecord(deviceId)
@@ -618,6 +696,7 @@ class AppViewModel(
         when (action) {
             DeviceAction.DEBUG -> openDebugTab(deviceId)
             DeviceAction.DISCONNECT -> {
+                suppressReconnectUntilByDevice[deviceId] = System.currentTimeMillis() + 800L
                 repository.disconnectDevice(deviceId)
                 closeSidePanelTabsForDevice(deviceId)
             }
@@ -702,6 +781,11 @@ class AppViewModel(
     }
 
     fun reconnectDevice(deviceId: String) = viewModelScope.launch {
+        val suppressUntil = suppressReconnectUntilByDevice[deviceId] ?: 0L
+        if (System.currentTimeMillis() < suppressUntil) {
+            return@launch
+        }
+        suppressReconnectUntilByDevice.remove(deviceId)
         repository.reconnectDevice(deviceId)
     }
 
@@ -743,9 +827,16 @@ class AppViewModel(
 
     fun dismissApkInstallToast() = _localState.update { it.copy(apkInstallToast = null) }
 
+    fun dismissEasyActionToast() = _localState.update { it.copy(easyActionToast = null) }
+
     private fun showApkInstallToast(toast: ApkInstallToast) {
         apkInstallToastSeq++
         _localState.update { it.copy(apkInstallToast = toast.copy(id = apkInstallToastSeq)) }
+    }
+
+    private fun showEasyActionToast(toast: EasyActionToast) {
+        easyActionToastSeq++
+        _localState.update { it.copy(easyActionToast = toast.copy(id = easyActionToastSeq)) }
     }
 
     fun refreshDevices() = viewModelScope.launch { repository.refreshDevices() }

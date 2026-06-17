@@ -14,9 +14,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
@@ -61,6 +61,8 @@ import coil3.compose.SubcomposeAsyncImage
 import org.jetbrains.compose.resources.stringResource
 import wpsadbtool.shared.generated.resources.*
 import wpsadbtool.shared.generated.resources.Res
+
+private val DeviceCardWidth = 260.dp
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -228,11 +230,11 @@ fun DeviceGrid(
             }
         }
     } else {
-        LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = 260.dp),
+        LazyVerticalStaggeredGrid(
+            columns = StaggeredGridCells.Adaptive(minSize = DeviceCardWidth),
             modifier = modifier.fillMaxSize(),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalItemSpacing = 16.dp,
         ) {
             items(filtered, key = { it.id }) { device ->
                 DeviceCard(
@@ -262,6 +264,7 @@ fun DeviceCard(
     onApkDrop: suspend (deviceId: String, apkPath: String) -> Unit,
     onReconnect: (String) -> Unit,
     onRemove: (String) -> Unit,
+    modifier: Modifier = Modifier,
     transitionKind: ShellTransitionKind = ShellTransitionKind.SLIDE,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
@@ -269,9 +272,10 @@ fun DeviceCard(
     val isOnline = device.status == DeviceStatus.ONLINE
     var isDragOver by remember(device.id) { mutableStateOf(false) }
     var installingApk by remember(device.id) { mutableStateOf<String?>(null) }
+    var suppressReconnectUntil by remember(device.id) { mutableStateOf(0L) }
     val scope = rememberCoroutineScope()
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .apkDropTarget(
                 enabled = isOnline && installingApk == null,
@@ -442,7 +446,10 @@ fun DeviceCard(
                 }
                 isOnline -> ScreenshotFallback(device)
                 else -> OfflineDevicePrompt(
-                    onReconnect = { onReconnect(device.id) },
+                    onReconnect = {
+                        if (System.currentTimeMillis() < suppressReconnectUntil) return@OfflineDevicePrompt
+                        onReconnect(device.id)
+                    },
                     onRemove = { onRemove(device.id) },
                 )
             }
@@ -492,7 +499,10 @@ fun DeviceCard(
                     Text(stringResource(Res.string.device_action_mirror), fontSize = 11.sp, color = CarbonColors.Primary, modifier = Modifier.clickable { onMirror(device) })
                     Text(stringResource(Res.string.device_action_shell), fontSize = 11.sp, color = CarbonColors.OnSurface, modifier = Modifier.clickable { onTerminal(device) })
                     Text(stringResource(Res.string.device_action_debug), fontSize = 11.sp, color = CarbonColors.OnSurface, modifier = Modifier.clickable { onAction(device.id, DeviceAction.DEBUG) })
-                    Text(stringResource(Res.string.device_action_drop), fontSize = 11.sp, color = CarbonColors.Error, modifier = Modifier.clickable { onAction(device.id, DeviceAction.DISCONNECT) })
+                    Text(stringResource(Res.string.device_action_drop), fontSize = 11.sp, color = CarbonColors.Error, modifier = Modifier.clickable {
+                        suppressReconnectUntil = System.currentTimeMillis() + 800L
+                        onAction(device.id, DeviceAction.DISCONNECT)
+                    })
                 }
             }
         }

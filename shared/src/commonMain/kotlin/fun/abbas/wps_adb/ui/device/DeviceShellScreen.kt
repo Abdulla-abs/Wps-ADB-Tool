@@ -61,6 +61,7 @@ fun DeviceShellScreen(
     onTerminalMounted: () -> Unit,
     onEasyAction: (EasyActionKind) -> Unit,
     suppressTerminalSurface: Boolean = false,
+    terminalHiddenMessage: String? = null,
     modifier: Modifier = Modifier,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
@@ -102,7 +103,7 @@ fun DeviceShellScreen(
             ) {
                 when {
                     suppressTerminalSurface -> ShellTerminalPlaceholder(
-                        message = stringResource(Res.string.shell_terminal_hidden_by_sidepanel),
+                        message = terminalHiddenMessage ?: stringResource(Res.string.shell_terminal_hidden_by_sidepanel),
                         modifier = Modifier.fillMaxSize(),
                     )
                     terminalSurfaceReady -> JediTermPanel(

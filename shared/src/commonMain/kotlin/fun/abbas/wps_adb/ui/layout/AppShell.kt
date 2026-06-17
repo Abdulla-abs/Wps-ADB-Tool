@@ -21,11 +21,23 @@ import wpsadbtool.shared.generated.resources.apk_install_toast_failure
 import wpsadbtool.shared.generated.resources.apk_install_toast_success
 import wpsadbtool.shared.generated.resources.apk_parse_toast_failure
 import `fun`.abbas.wps_adb.model.ApkInstallToastKind
+import `fun`.abbas.wps_adb.model.EasyActionKind
+import `fun`.abbas.wps_adb.model.EasyActionToastKind
+import wpsadbtool.shared.generated.resources.easy_action_toast_screenshot_clipboard_failure
+import wpsadbtool.shared.generated.resources.easy_action_toast_screenshot_clipboard_success
+import wpsadbtool.shared.generated.resources.easy_action_toast_screenshot_failure
+import wpsadbtool.shared.generated.resources.easy_action_toast_screenshot_success
 import wpsadbtool.shared.generated.resources.logs_logcat_filter_device
 import wpsadbtool.shared.generated.resources.shell_confirm_cancel
+import wpsadbtool.shared.generated.resources.shell_confirm_clear_data_message
+import wpsadbtool.shared.generated.resources.shell_confirm_clear_data_title
 import wpsadbtool.shared.generated.resources.shell_confirm_ok
+import wpsadbtool.shared.generated.resources.shell_confirm_reboot_message
+import wpsadbtool.shared.generated.resources.shell_confirm_reboot_title
 import wpsadbtool.shared.generated.resources.shell_confirm_recovery_message
 import wpsadbtool.shared.generated.resources.shell_confirm_recovery_title
+import wpsadbtool.shared.generated.resources.shell_terminal_hidden_by_dialog
+import wpsadbtool.shared.generated.resources.shell_terminal_hidden_by_sidepanel
 import `fun`.abbas.wps_adb.model.DeviceStatus
 import `fun`.abbas.wps_adb.model.NavTab
 import `fun`.abbas.wps_adb.theme.CarbonColors
@@ -55,6 +67,13 @@ fun AppShell(viewModel: AppViewModel) {
     val isDeviceWall = uiState.activeTab == NavTab.WALL
     val sidePanelEndInset = sidePanelContentInsetEnd(uiState.sidePanel)
     val logTrayHeight = uiState.logTrayHeightDp.dp
+    val easyActionDialogOpen = uiState.pendingPackageAction != null || uiState.pendingDestructiveAction != null
+    val suppressTerminalSurface = uiState.sidePanel.isExpanded || easyActionDialogOpen
+    val terminalHiddenMessage = when {
+        easyActionDialogOpen -> stringResource(Res.string.shell_terminal_hidden_by_dialog)
+        uiState.sidePanel.isExpanded -> stringResource(Res.string.shell_terminal_hidden_by_sidepanel)
+        else -> null
+    }
 
     Box(modifier = Modifier.fillMaxSize().background(CarbonColors.Background)) {
         Row(modifier = Modifier.fillMaxSize()) {
@@ -109,7 +128,8 @@ fun AppShell(viewModel: AppViewModel) {
                                 onShellTerminalMounted = viewModel::onShellTerminalMounted,
                                 onEasyAction = viewModel::onEasyAction,
                                 onShellTransitionComplete = viewModel::markShellTerminalReady,
-                                suppressTerminalSurface = uiState.sidePanel.isExpanded,
+                                suppressTerminalSurface = suppressTerminalSurface,
+                                terminalHiddenMessage = terminalHiddenMessage,
                                 modifier = Modifier.fillMaxSize(),
                             )
                             NavTab.GROUPS -> GroupManagementScreen(
@@ -182,6 +202,7 @@ fun AppShell(viewModel: AppViewModel) {
             onSelectTab = viewModel::selectSidePanelTab,
             onCloseTab = viewModel::closeSidePanelTab,
             onLaunchApp = viewModel::launchAppInTab,
+            onForceStopApp = viewModel::forceStopAppInTab,
             onUninstallApp = viewModel::uninstallAppInTab,
             onToggleMonitor = viewModel::toggleLogMonitorInTab,
             onToggleAutoScroll = viewModel::toggleAutoScrollInTab,
@@ -222,6 +243,28 @@ fun AppShell(viewModel: AppViewModel) {
             )
         }
 
+        uiState.easyActionToast?.let { toast ->
+            val message = when (toast.kind) {
+                EasyActionToastKind.SCREENSHOT_SAVED -> if (toast.success) {
+                    stringResource(Res.string.easy_action_toast_screenshot_success, toast.deviceName)
+                } else {
+                    stringResource(Res.string.easy_action_toast_screenshot_failure, toast.deviceName)
+                }
+                EasyActionToastKind.SCREENSHOT_CLIPBOARD -> if (toast.success) {
+                    stringResource(Res.string.easy_action_toast_screenshot_clipboard_success, toast.deviceName)
+                } else {
+                    stringResource(Res.string.easy_action_toast_screenshot_clipboard_failure, toast.deviceName)
+                }
+            }
+            ToastBanner(
+                message = message,
+                isSuccess = toast.success,
+                toastId = toast.id,
+                onDismiss = viewModel::dismissEasyActionToast,
+                modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
+            )
+        }
+
         uiState.pendingPackageAction?.let {
             PackageNameDialog(
                 recentPackages = viewModel.recentPackageNames(),
@@ -230,11 +273,42 @@ fun AppShell(viewModel: AppViewModel) {
             )
         }
 
-        uiState.pendingDestructiveAction?.let {
+        uiState.pendingDestructiveAction?.let { kind ->
+            val packageName = uiState.pendingEasyActionPackageName
+            val (titleRes, messageRes, messageArgs) = when (kind) {
+                EasyActionKind.REBOOT -> Triple(
+                    Res.string.shell_confirm_reboot_title,
+                    Res.string.shell_confirm_reboot_message,
+                    emptyArray<Any>(),
+                )
+                EasyActionKind.RECOVERY_MODE -> Triple(
+                    Res.string.shell_confirm_recovery_title,
+                    Res.string.shell_confirm_recovery_message,
+                    emptyArray<Any>(),
+                )
+                EasyActionKind.CLEAR_APP_DATA -> Triple(
+                    Res.string.shell_confirm_clear_data_title,
+                    Res.string.shell_confirm_clear_data_message,
+                    arrayOf<Any>(packageName.orEmpty()),
+                )
+                else -> Triple(
+                    Res.string.shell_confirm_recovery_title,
+                    Res.string.shell_confirm_recovery_message,
+                    emptyArray<Any>(),
+                )
+            }
             AlertDialog(
                 onDismissRequest = viewModel::dismissEasyActionDialogs,
-                title = { Text(stringResource(Res.string.shell_confirm_recovery_title)) },
-                text = { Text(stringResource(Res.string.shell_confirm_recovery_message)) },
+                title = { Text(stringResource(titleRes)) },
+                text = {
+                    Text(
+                        if (messageArgs.isEmpty()) {
+                            stringResource(messageRes)
+                        } else {
+                            stringResource(messageRes, *messageArgs)
+                        },
+                    )
+                },
                 confirmButton = {
                     TextButton(onClick = viewModel::confirmDestructiveEasyAction) {
                         Text(stringResource(Res.string.shell_confirm_ok))

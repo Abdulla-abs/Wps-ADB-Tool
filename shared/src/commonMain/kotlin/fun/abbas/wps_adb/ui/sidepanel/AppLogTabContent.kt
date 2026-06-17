@@ -45,6 +45,7 @@ import wpsadbtool.shared.generated.resources.Res
 import wpsadbtool.shared.generated.resources.applog_action_autoscroll_start
 import wpsadbtool.shared.generated.resources.applog_action_autoscroll_stop
 import wpsadbtool.shared.generated.resources.applog_action_clear
+import wpsadbtool.shared.generated.resources.applog_action_force_stop
 import wpsadbtool.shared.generated.resources.applog_action_launch
 import wpsadbtool.shared.generated.resources.applog_action_uninstall
 import wpsadbtool.shared.generated.resources.applog_action_monitor_start
@@ -64,6 +65,7 @@ import wpsadbtool.shared.generated.resources.mirror_device_subtitle
 fun AppLogTabContent(
     tab: SidePanelTab.AppLog,
     onLaunchApp: () -> Unit,
+    onForceStopApp: () -> Unit,
     onUninstallApp: () -> Unit,
     onToggleMonitor: () -> Unit,
     onToggleAutoScroll: () -> Unit,
@@ -125,6 +127,12 @@ fun AppLogTabContent(
                 enabled = canLaunch,
                 selected = false,
                 onClick = onLaunchApp,
+            )
+            ActionChip(
+                label = stringResource(Res.string.applog_action_force_stop),
+                enabled = canLaunch,
+                selected = false,
+                onClick = onForceStopApp,
             )
             ActionChip(
                 label = stringResource(Res.string.applog_action_uninstall),

@@ -195,6 +195,7 @@
     <string name="sidepanel_empty_subtitle">在设备墙上点击「投屏」或「调试」以开始会话。</string>
     <string name="sidepanel_tab_count">%1$d</string>
     <string name="applog_action_launch">打开应用</string>
+    <string name="applog_action_force_stop">杀死应用</string>
     <string name="applog_action_uninstall">卸载应用</string>
     <string name="applog_action_monitor_start">监听日志</string>
     <string name="applog_action_monitor_stop">停止监听</string>
@@ -276,6 +277,7 @@
     <string name="easy_action_recovery">Recovery 模式</string>
     <string name="easy_action_clear_cache">清除缓存</string>
     <string name="easy_action_screenshot">截图</string>
+    <string name="easy_action_screenshot_clipboard">截屏并导入剪贴板</string>
     <string name="easy_action_screen_record">录屏</string>
     <string name="easy_action_screen_record_stop">停止录屏</string>
     <string name="easy_action_force_stop">强制停止应用</string>
@@ -284,10 +286,19 @@
     <string name="shell_package_dialog_hint">com.example.app</string>
     <string name="shell_package_dialog_confirm">执行</string>
     <string name="shell_package_dialog_cancel">取消</string>
-    <string name="shell_confirm_recovery_title">确认操作</string>
-    <string name="shell_confirm_recovery_message">此操作可能影响设备正常运行，是否继续？</string>
+    <string name="shell_confirm_recovery_title">进入 Recovery 模式</string>
+    <string name="shell_confirm_recovery_message">设备将重启进入 Recovery 并断开连接，是否继续？</string>
+    <string name="shell_confirm_reboot_title">重启设备</string>
+    <string name="shell_confirm_reboot_message">设备将立即重启，是否继续？</string>
+    <string name="shell_confirm_clear_data_title">清除应用数据</string>
+    <string name="shell_confirm_clear_data_message">将清除 %1$s 的全部数据，是否继续？</string>
     <string name="shell_confirm_ok">继续</string>
     <string name="shell_confirm_cancel">取消</string>
+    <string name="shell_terminal_hidden_by_dialog">对话框已打开，终端暂时隐藏。关闭对话框后可继续操作。</string>
+    <string name="easy_action_toast_screenshot_success">%1$s 截图已保存到 Downloads</string>
+    <string name="easy_action_toast_screenshot_failure">%1$s 截图失败</string>
+    <string name="easy_action_toast_screenshot_clipboard_success">%1$s 截图已复制到电脑剪贴板</string>
+    <string name="easy_action_toast_screenshot_clipboard_failure">%1$s 截图复制到剪贴板失败</string>
 
     <!-- Decompile Studio -->
     <string name="decompile_empty_title">反编译 - 等待导入 APK</string>

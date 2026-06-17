@@ -50,6 +50,7 @@ fun DeviceWallHost(
     onEasyAction: (EasyActionKind) -> Unit,
     onShellTransitionComplete: () -> Unit,
     suppressTerminalSurface: Boolean = false,
+    terminalHiddenMessage: String? = null,
     modifier: Modifier = Modifier,
 ) {
     LaunchedEffect(route) {
@@ -90,6 +91,7 @@ fun DeviceWallHost(
                         onShellTerminalMounted = onShellTerminalMounted,
                         onEasyAction = onEasyAction,
                         suppressTerminalSurface = suppressTerminalSurface,
+                        terminalHiddenMessage = terminalHiddenMessage,
                         sharedTransitionScope = this@SharedTransitionLayout,
                         animatedVisibilityScope = this@AnimatedContent,
                     )
@@ -136,6 +138,7 @@ fun DeviceWallHost(
                     onShellTerminalMounted = onShellTerminalMounted,
                     onEasyAction = onEasyAction,
                     suppressTerminalSurface = suppressTerminalSurface,
+                    terminalHiddenMessage = terminalHiddenMessage,
                     sharedTransitionScope = null,
                     animatedVisibilityScope = null,
                 )
@@ -167,6 +170,7 @@ private fun DeviceWallRouteContent(
     onShellTerminalMounted: () -> Unit,
     onEasyAction: (EasyActionKind) -> Unit,
     suppressTerminalSurface: Boolean,
+    terminalHiddenMessage: String?,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
 ) {
@@ -205,6 +209,7 @@ private fun DeviceWallRouteContent(
                     onTerminalMounted = onShellTerminalMounted,
                     onEasyAction = onEasyAction,
                     suppressTerminalSurface = suppressTerminalSurface,
+                    terminalHiddenMessage = terminalHiddenMessage,
                     sharedTransitionScope = sharedTransitionScope,
                     animatedVisibilityScope = animatedVisibilityScope,
                     modifier = Modifier.fillMaxSize(),

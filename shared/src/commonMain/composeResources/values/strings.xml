@@ -195,6 +195,7 @@
     <string name="sidepanel_empty_subtitle">Tap Mirror or Debug on a device card to start a session.</string>
     <string name="sidepanel_tab_count">%1$d</string>
     <string name="applog_action_launch">Launch App</string>
+    <string name="applog_action_force_stop">Kill App</string>
     <string name="applog_action_uninstall">Uninstall App</string>
     <string name="applog_action_monitor_start">Monitor Logs</string>
     <string name="applog_action_monitor_stop">Stop Monitor</string>
@@ -276,6 +277,7 @@
     <string name="easy_action_recovery">Recovery Mode</string>
     <string name="easy_action_clear_cache">Clear Cache</string>
     <string name="easy_action_screenshot">Take Screenshot</string>
+    <string name="easy_action_screenshot_clipboard">Screenshot to Clipboard</string>
     <string name="easy_action_screen_record">Screen Record</string>
     <string name="easy_action_screen_record_stop">Stop Recording</string>
     <string name="easy_action_force_stop">Force Stop App</string>
@@ -284,10 +286,19 @@
     <string name="shell_package_dialog_hint">com.example.app</string>
     <string name="shell_package_dialog_confirm">Run</string>
     <string name="shell_package_dialog_cancel">Cancel</string>
-    <string name="shell_confirm_recovery_title">Confirm action</string>
-    <string name="shell_confirm_recovery_message">This action may disrupt the device. Continue?</string>
+    <string name="shell_confirm_recovery_title">Recovery mode</string>
+    <string name="shell_confirm_recovery_message">The device will reboot into recovery and disconnect. Continue?</string>
+    <string name="shell_confirm_reboot_title">Reboot device</string>
+    <string name="shell_confirm_reboot_message">The device will restart immediately. Continue?</string>
+    <string name="shell_confirm_clear_data_title">Clear app data</string>
+    <string name="shell_confirm_clear_data_message">All data for %1$s will be erased. Continue?</string>
     <string name="shell_confirm_ok">Continue</string>
     <string name="shell_confirm_cancel">Cancel</string>
+    <string name="shell_terminal_hidden_by_dialog">Dialog open — terminal hidden. Close the dialog to continue.</string>
+    <string name="easy_action_toast_screenshot_success">Screenshot saved to Downloads for %1$s</string>
+    <string name="easy_action_toast_screenshot_failure">Screenshot failed for %1$s</string>
+    <string name="easy_action_toast_screenshot_clipboard_success">Screenshot copied to clipboard from %1$s</string>
+    <string name="easy_action_toast_screenshot_clipboard_failure">Failed to copy screenshot from %1$s</string>
 
     <!-- Decompile Studio -->
     <string name="decompile_empty_title">Decompile - Waiting for APK</string>
