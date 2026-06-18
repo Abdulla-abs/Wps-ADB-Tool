@@ -15,7 +15,7 @@
 | `WpsAdbTool-*-macos-arm64.dmg` | Apple Silicon（M1/M2/M3/M4） |
 | `WpsAdbTool-*-macos-x64.dmg` | Intel Mac |
 
-打 `v*` 标签（如 `v1.0.0`）也会自动触发构建，并**默认尝试签名与公证**（需事先配置全部 Secrets；未配置时该步骤会失败）。
+打 `v*` 标签（如 `v1.0.0`）也会自动触发构建，版本号取自标签名（去掉 `v` 前缀）。标签触发默认产出**未签名** DMG；需要签名与公证时，请在 Actions 中手动触发 workflow 并勾选 **notarize**（需事先配置全部 Secrets）。
 
 ## 签名与公证
 

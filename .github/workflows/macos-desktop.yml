@@ -35,7 +35,7 @@ jobs:
       inputs.target == 'arm64'
     runs-on: macos-14
     env:
-      SHOULD_SIGN: ${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.notarize)) && 'true' || 'false' }}
+      SHOULD_SIGN: ${{ github.event_name == 'workflow_dispatch' && inputs.notarize && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -91,7 +91,7 @@ jobs:
       inputs.target == 'x64'
     runs-on: macos-14
     env:
-      SHOULD_SIGN: ${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.notarize)) && 'true' || 'false' }}
+      SHOULD_SIGN: ${{ github.event_name == 'workflow_dispatch' && inputs.notarize && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@v4
 

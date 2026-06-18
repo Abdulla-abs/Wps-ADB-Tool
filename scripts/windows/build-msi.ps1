@@ -26,7 +26,11 @@ if ($env:JAVA_HOME) {
 }
 
 Write-Host "Building release MSI (version $Version)..."
-& .\gradlew.bat "-PwpsAdbTool.version=$Version" :desktopApp:packageReleaseMsi
+$GradleArgs = @("-PwpsAdbTool.version=$Version", ":desktopApp:packageReleaseMsi")
+if ($env:CI -eq "true") {
+    $GradleArgs += "--no-configuration-cache"
+}
+& .\gradlew.bat @GradleArgs
 if ($LASTEXITCODE -ne 0) {
     throw "Gradle packageReleaseMsi failed with exit code $LASTEXITCODE"
 }

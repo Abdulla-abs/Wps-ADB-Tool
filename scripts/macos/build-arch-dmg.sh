@@ -30,6 +30,9 @@ ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 VERSION="${WPS_ADB_TOOL_VERSION:-1.0.0}"
 OUTPUT_DIR="$ROOT_DIR/desktopApp/build/ci-artifacts"
 GRADLE=(bash gradlew -Dorg.gradle.java.home="$JAVA_HOME" "-PwpsAdbTool.version=$VERSION")
+if [[ "${CI:-}" == "true" ]]; then
+  GRADLE+=(--no-configuration-cache)
+fi
 
 cd "$ROOT_DIR"
 
