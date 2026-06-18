@@ -7,6 +7,46 @@
 
 ---
 
+## 界面预览
+
+### 设备墙
+
+多设备网格监控：在线/离线状态、屏幕预览、投屏 / Shell / 调试 / 断开，侧栏支持 APK 拖放批量安装。
+
+![设备墙](./screenshot/DevicesWall.png)
+
+### Shell 终端
+
+JediTerm 集成终端与右侧快捷操作（重启、截图、清缓存等）；点击终端即可输入命令，无需 `adb shell` 前缀。
+
+![Shell 终端](./screenshot/ShellTerminal.png)
+
+### 分组命令
+
+按分组选择目标设备，批量侧载 APK、清除缓存、重启、电池巡测；命令输出实时显示在面板下方。
+
+![分组命令](./screenshot/GroupingCommand.png)
+
+### 全局设置
+
+ADB / scrcpy 路径、端口范围、扫描间隔与并行线程、数据缓存目录、RSA 自动信任等，保存至 `~/.wps-adb/`。
+
+![全局设置](./screenshot/Settings.png)
+
+### Decompile Studio
+
+拖拽或选择 APK 开始反编译；浏览 Smali、资源与 AndroidManifest，管理最近项目。
+
+![Decompile Studio](./screenshot/DecompileModule.png)
+
+### DEX 编辑器 Plus
+
+项目浏览器 + Smali 编辑器；支持 Smali→Java、重组 DEX、常量搜索与导出。
+
+![DEX 编辑器 Plus](./screenshot/DexEditor.png)
+
+---
+
 ## 功能概览
 
 ### Desktop 已实现
