@@ -27,6 +27,7 @@ import wpsadbtool.shared.generated.resources.easy_action_toast_screenshot_clipbo
 import wpsadbtool.shared.generated.resources.easy_action_toast_screenshot_clipboard_success
 import wpsadbtool.shared.generated.resources.easy_action_toast_screenshot_failure
 import wpsadbtool.shared.generated.resources.easy_action_toast_screenshot_success
+import wpsadbtool.shared.generated.resources.settings_save_success
 import wpsadbtool.shared.generated.resources.logs_logcat_filter_device
 import wpsadbtool.shared.generated.resources.shell_confirm_cancel
 import wpsadbtool.shared.generated.resources.shell_confirm_clear_data_message
@@ -117,6 +118,8 @@ fun AppShell(viewModel: AppViewModel) {
                                 filterTab = uiState.filterTab,
                                 searchQuery = uiState.searchQuery,
                                 sortParam = uiState.sortParam,
+                                deviceCustomOrder = uiState.deviceCustomOrder,
+                                onReorderDevices = viewModel::reorderDevices,
                                 onMirror = viewModel::onMirrorDevice,
                                 onTerminal = viewModel::onTerminalDevice,
                                 onAction = viewModel::onDeviceAction,
@@ -261,6 +264,25 @@ fun AppShell(viewModel: AppViewModel) {
                 isSuccess = toast.success,
                 toastId = toast.id,
                 onDismiss = viewModel::dismissEasyActionToast,
+                modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
+            )
+        }
+
+        uiState.settingsSaveToast?.let { toast ->
+            ToastBanner(
+                message = stringResource(Res.string.settings_save_success),
+                isSuccess = true,
+                toastId = toast.id,
+                onDismiss = viewModel::dismissSettingsSaveToast,
+                modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
+            )
+        }
+
+        uiState.apkReinstallPrompt?.let { prompt ->
+            ApkReinstallPromptBanner(
+                promptId = prompt.id,
+                onConfirm = viewModel::confirmApkReinstall,
+                onDismiss = viewModel::dismissApkReinstallPrompt,
                 modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
             )
         }

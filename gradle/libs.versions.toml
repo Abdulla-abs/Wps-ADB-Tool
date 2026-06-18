@@ -24,6 +24,7 @@ dexlib2 = "2.5.2"
 jadx = "1.5.0"
 rsyntaxtextarea = "3.4.0"
 apksig = "8.10.0"
+reorderable = "3.0.0"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -66,6 +67,7 @@ jadx-dex-input = { module = "io.github.skylot:jadx-dex-input", version.ref = "ja
 jadx-java-input = { module = "io.github.skylot:jadx-java-input", version.ref = "jadx" }
 rsyntaxtextarea = { module = "com.fifesoft:rsyntaxtextarea", version.ref = "rsyntaxtextarea" }
 apksig = { module = "com.android.tools.build:apksig", version.ref = "apksig" }
+reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

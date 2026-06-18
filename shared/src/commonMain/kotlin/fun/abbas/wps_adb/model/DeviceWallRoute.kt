@@ -16,4 +16,5 @@ data class DeviceShellSession(
     val errorMessage: String? = null,
     val isScreenRecording: Boolean = false,
     val terminalSurfaceReady: Boolean = false,
+    val developerOptionStates: Map<EasyActionKind, Boolean> = emptyMap(),
 )

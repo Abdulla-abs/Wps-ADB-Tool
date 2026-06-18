@@ -12,6 +12,7 @@ import `fun`.abbas.wps_adb.model.Device
 import `fun`.abbas.wps_adb.model.DeviceScreenMetrics
 import `fun`.abbas.wps_adb.model.DeviceStatus
 import `fun`.abbas.wps_adb.model.DeviceType
+import `fun`.abbas.wps_adb.model.EasyActionKind
 import `fun`.abbas.wps_adb.model.FilterTab
 import `fun`.abbas.wps_adb.model.LogLevel
 import `fun`.abbas.wps_adb.model.QrPairingEvent
@@ -40,6 +41,8 @@ import kotlinx.coroutines.withContext
 import `fun`.abbas.wps_adb.platform.ApkFileDetector
 import java.io.File
 import java.util.Collections
+
+private const val WIRELESS_CONNECT_TIMEOUT_MS = 4_000L
 
 class JvmAdbRepository(
     private val wirelessStore: WirelessDeviceStore = WirelessDeviceStore(),
@@ -97,10 +100,14 @@ class JvmAdbRepository(
             _isScanningDevices.value = true
             try {
                 addLog(LogLevel.I, "AdbDaemon", "ADB server connected (desktop real mode)", "system")
-                reconnectSavedWirelessDevices()
                 refreshDevicesInternal()
             } finally {
                 _isScanningDevices.value = false
+            }
+            try {
+                reconnectSavedWirelessDevices()
+                refreshDevicesInternal()
+            } catch (_: Exception) {
             }
         }
         restartDeviceScanJob()
@@ -135,12 +142,23 @@ class JvmAdbRepository(
     private suspend fun reconnectSavedWirelessDevices() = withContext(Dispatchers.IO) {
         val saved = wirelessStore.load()
         if (saved.isEmpty()) return@withContext
-        addLog(LogLevel.I, "AdbDaemon", "Reconnecting ${saved.size} saved wireless device(s)...", "system")
-        saved.filterNot { removedDeviceStore.contains(it.endpoint) }.forEach { device ->
-            val result = runner.run(listOf("connect", device.endpoint))
-            val output = result.output.ifBlank { "No output" }
-            val level = if (result.success || "connected" in output.lowercase()) LogLevel.I else LogLevel.W
-            addLog(level, "AdbDaemon", "${device.endpoint}: $output", "system")
+        val targets = saved.filterNot {
+            removedDeviceStore.contains(it.endpoint) || isUserDisconnected(it.endpoint)
+        }
+        if (targets.isEmpty()) return@withContext
+        addLog(LogLevel.I, "AdbDaemon", "Reconnecting ${targets.size} saved wireless device(s)...", "system")
+        coroutineScope {
+            targets.map { device ->
+                async {
+                    val result = runner.runWithTimeout(
+                        args = listOf("connect", device.endpoint),
+                        timeoutMs = WIRELESS_CONNECT_TIMEOUT_MS,
+                    )
+                    val output = result.output.ifBlank { "No output" }
+                    val level = if (result.success || "connected" in output.lowercase()) LogLevel.I else LogLevel.W
+                    addLog(level, "AdbDaemon", "${device.endpoint}: $output", "system")
+                }
+            }.awaitAll()
         }
         delay(500)
     }
@@ -163,7 +181,10 @@ class JvmAdbRepository(
         }
         val rawParsed = JvmAdbDeviceParser.parseDevicesOutput(result.output)
         rawParsed.forEach { parsed ->
-            if (!isUserDisconnected(parsed.serial)) {
+            if (parsed.status == DeviceStatus.ONLINE) {
+                clearUserDisconnectMark(parsed.serial)
+                clearRemovalMark(parsed.serial)
+            } else if (!isUserDisconnected(parsed.serial)) {
                 clearRemovalMark(parsed.serial)
             }
         }
@@ -298,12 +319,11 @@ class JvmAdbRepository(
         }.toSet()
         val offlineSaved = wirelessStore.load()
             .filter { savedDevice ->
-                savedDevice.endpoint !in connectedSerials &&
-                    !removedDeviceStore.contains(savedDevice.endpoint) &&
-                    savedDevice.endpoint.let { endpoint ->
-                        val savedHardware = hardwareSerialByTransport[endpoint]
-                        savedHardware == null || savedHardware !in connectedHardware
-                    }
+                if (savedDevice.endpoint in connectedSerials) return@filter false
+                if (removedDeviceStore.contains(savedDevice.endpoint)) return@filter false
+                if (isUserDisconnected(savedDevice.endpoint)) return@filter true
+                val savedHardware = hardwareSerialByTransport[savedDevice.endpoint]
+                savedHardware == null || savedHardware !in connectedHardware
             }
             .map { it.toOfflineDevice() }
         return connected + offlineSaved
@@ -316,6 +336,7 @@ class JvmAdbRepository(
             .toSet()
         return devices.filterNot { device ->
             device.status == DeviceStatus.OFFLINE &&
+                !isUserDisconnected(device.serial) &&
                 hardwareSerialByTransport[device.serial]?.let { it in onlineHardware } == true
         }
     }
@@ -529,6 +550,48 @@ class JvmAdbRepository(
         addLog(level, "EasyAction", "pm clear $packageName on $serial", deviceId)
         success
     }
+
+    override suspend fun queryDeveloperOptionStates(deviceId: String): Map<EasyActionKind, Boolean> =
+        withContext(Dispatchers.IO) {
+            val serial = serialForDevice(deviceId) ?: return@withContext emptyMap()
+            JvmDeveloperOptionCommands.allToggleKinds().mapNotNull { kind ->
+                val query = JvmDeveloperOptionCommands.queryState(kind) ?: return@mapNotNull null
+                val result = runner.run(query, serial = serial)
+                val enabled = JvmDeveloperOptionCommands.parseEnabled(kind, result.output) ?: false
+                kind to enabled
+            }.toMap()
+        }
+
+    override suspend fun toggleDeveloperOption(deviceId: String, kind: EasyActionKind): Boolean? =
+        withContext(Dispatchers.IO) {
+            val serial = serialForDevice(deviceId) ?: return@withContext null
+            val query = JvmDeveloperOptionCommands.queryState(kind) ?: return@withContext null
+            val currentResult = runner.run(query, serial = serial)
+            val current = JvmDeveloperOptionCommands.parseEnabled(kind, currentResult.output) ?: false
+            val target = !current
+            val commands = JvmDeveloperOptionCommands.applyEnabled(kind, target)
+            var success = true
+            for (command in commands) {
+                val result = runner.run(command, serial = serial)
+                if (!result.success) {
+                    success = false
+                    addLog(
+                        LogLevel.W,
+                        "DeveloperOption",
+                        "Command failed (${kind.name}): ${result.output}",
+                        deviceId,
+                    )
+                }
+            }
+            if (!success) return@withContext null
+            addLog(
+                LogLevel.I,
+                "DeveloperOption",
+                "${kind.name} ${if (target) "enabled" else "disabled"} on $serial",
+                deviceId,
+            )
+            target
+        }
 
     override suspend fun disconnectDevice(deviceId: String) = withContext(Dispatchers.IO) {
         deviceMutationLock.withLock {

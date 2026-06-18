@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import `fun`.abbas.wps_adb.data.AdbRepository
 import `fun`.abbas.wps_adb.data.AppLogFilter
+import `fun`.abbas.wps_adb.data.ApkInstallConflictDetector
 import `fun`.abbas.wps_adb.data.ApkMetadataResolver
 import `fun`.abbas.wps_adb.data.DeviceShellService
 import `fun`.abbas.wps_adb.data.NoOpDeviceShellService
@@ -15,22 +16,28 @@ import `fun`.abbas.wps_adb.model.AdbLog
 import `fun`.abbas.wps_adb.model.ApkInstallResult
 import `fun`.abbas.wps_adb.model.ApkInstallToast
 import `fun`.abbas.wps_adb.model.ApkInstallToastKind
+import `fun`.abbas.wps_adb.model.ApkReinstallPrompt
 import `fun`.abbas.wps_adb.model.AppLogMonitorState
 import `fun`.abbas.wps_adb.model.DebugApkLoadPhase
 import `fun`.abbas.wps_adb.model.AppSettings
 import `fun`.abbas.wps_adb.model.BatchActionParams
 import `fun`.abbas.wps_adb.model.DefaultEasyActions
+import `fun`.abbas.wps_adb.model.isDeveloperOptionToggle
+import `fun`.abbas.wps_adb.model.isShellInfoQuery
+import `fun`.abbas.wps_adb.model.ShellInfoCommands
 import `fun`.abbas.wps_adb.model.Device
 import `fun`.abbas.wps_adb.model.DeviceAction
 import `fun`.abbas.wps_adb.model.DeviceShellSession
 import `fun`.abbas.wps_adb.model.DeviceShellSessionState
 import `fun`.abbas.wps_adb.model.DeviceStatus
+import `fun`.abbas.wps_adb.model.DeviceWallPreferences
 import `fun`.abbas.wps_adb.model.DeviceWallRoute
 import `fun`.abbas.wps_adb.model.EasyActionKind
 import `fun`.abbas.wps_adb.model.EasyActionToast
 import `fun`.abbas.wps_adb.model.EasyActionToastKind
 import `fun`.abbas.wps_adb.model.MirrorSessionState
 import `fun`.abbas.wps_adb.model.ScrcpyConnectionOptions
+import `fun`.abbas.wps_adb.model.SettingsSaveToast
 import `fun`.abbas.wps_adb.model.FilterTab
 import `fun`.abbas.wps_adb.model.LogLevel
 import `fun`.abbas.wps_adb.model.NavTab
@@ -50,6 +57,8 @@ import `fun`.abbas.wps_adb.model.RecentDecompileProject
 import `fun`.abbas.wps_adb.ui.decompile.DecompileOpenableFileTypes
 import `fun`.abbas.wps_adb.ui.editor.DecompileEditorFlush
 import `fun`.abbas.wps_adb.model.StringConstantItem
+import `fun`.abbas.wps_adb.data.DeviceCustomOrder
+import `fun`.abbas.wps_adb.data.DeviceWallPreferencesStore
 import `fun`.abbas.wps_adb.data.AppDataPaths
 import `fun`.abbas.wps_adb.data.DecompileWorkspaceStore
 import `fun`.abbas.wps_adb.data.getDecompileService
@@ -77,8 +86,20 @@ class AppViewModel(
     private val decompileService = getDecompileService()
 
     init {
+        val deviceWallPrefs = DeviceWallPreferencesStore.load()
+        _localState.update {
+            it.copy(
+                sortParam = deviceWallPrefs.sortParam,
+                deviceCustomOrder = deviceWallPrefs.customOrder,
+            )
+        }
         _localState.update {
             it.copy(recentDecompileProjects = DecompileWorkspaceStore.loadRecent(dataPaths().recentProjectsFile()))
+        }
+        viewModelScope.launch {
+            repository.devices.collect { deviceList ->
+                syncDeviceCustomOrder(deviceList.map { device -> device.serial })
+            }
         }
         scrcpyMirrorService.setExitListener { tabId, exitCode, intentionalStop ->
             viewModelScope.launch {
@@ -96,7 +117,9 @@ class AppViewModel(
     private val _qrPairingPayload = MutableStateFlow<String?>(null)
     private var qrPairingCollectJob: Job? = null
     private var apkInstallToastSeq = 0L
+    private var apkReinstallPromptSeq = 0L
     private var easyActionToastSeq = 0L
+    private var settingsSaveToastSeq = 0L
     private val suppressReconnectUntilByDevice = mutableMapOf<String, Long>()
 
     val qrPairingEvent: StateFlow<QrPairingEvent?> = _qrPairingEvent.asStateFlow()
@@ -123,7 +146,47 @@ class AppViewModel(
     }
     fun setFilterTab(tab: FilterTab) = _localState.update { it.copy(filterTab = tab) }
     fun setSearchQuery(query: String) = _localState.update { it.copy(searchQuery = query) }
-    fun setSortParam(param: SortParam) = _localState.update { it.copy(sortParam = param) }
+    fun setSortParam(param: SortParam) {
+        _localState.update { it.copy(sortParam = param) }
+        persistDeviceWallPreferences()
+    }
+
+    fun reorderDevices(filteredSerialsInDisplayOrder: List<String>, fromIndex: Int, toIndex: Int) {
+        if (fromIndex == toIndex) return
+        val currentDevices = devices.value
+        val newOrder = DeviceCustomOrder.reorderAfterDrag(
+            allDevices = currentDevices,
+            filteredSerialsInDisplayOrder = filteredSerialsInDisplayOrder,
+            customOrder = _localState.value.deviceCustomOrder,
+            sortParam = _localState.value.sortParam,
+            fromIndex = fromIndex,
+            toIndex = toIndex,
+        )
+        _localState.update {
+            it.copy(
+                sortParam = SortParam.CUSTOM,
+                deviceCustomOrder = newOrder,
+            )
+        }
+        persistDeviceWallPreferences()
+    }
+
+    private fun syncDeviceCustomOrder(currentSerials: List<String>) {
+        val merged = DeviceCustomOrder.mergeNewDevices(_localState.value.deviceCustomOrder, currentSerials)
+        if (merged == _localState.value.deviceCustomOrder) return
+        _localState.update { it.copy(deviceCustomOrder = merged) }
+        persistDeviceWallPreferences()
+    }
+
+    private fun persistDeviceWallPreferences() {
+        val state = _localState.value
+        DeviceWallPreferencesStore.save(
+            DeviceWallPreferences(
+                customOrder = state.deviceCustomOrder,
+                sortParam = state.sortParam,
+            ),
+        )
+    }
     fun setLogTrayMode(mode: LogTrayMode) {
         _localState.update { it.copy(logTrayMode = mode) }
         if (mode == LogTrayMode.LOGCAT && _localState.value.isLogTrayOpen && uiState.value.isAdbActive) {
@@ -528,6 +591,7 @@ class AppViewModel(
         }
         if (result.success) {
             repository.addLog(LogLevel.I, "DeviceShell", "Shell opened: ${device.serial}", device.id)
+            refreshDeveloperOptionStates(device.id)
         } else {
             tabSessionManager.stop(sessionId, TabListenKind.DEVICE_SHELL)
         }
@@ -679,7 +743,39 @@ class AppViewModel(
                     val pkg = packageName ?: return@launch
                     repository.clearAppData(deviceId, pkg)
                 }
+                else -> {
+                    when {
+                        kind.isDeveloperOptionToggle() -> {
+                            val enabled = repository.toggleDeveloperOption(deviceId, kind) ?: return@launch
+                            updateShellSession {
+                                it.copy(developerOptionStates = it.developerOptionStates + (kind to enabled))
+                            }
+                        }
+                        kind.isShellInfoQuery() -> executeShellInfoQuery(kind)
+                    }
+                }
             }
+        }
+    }
+
+    private fun executeShellInfoQuery(kind: EasyActionKind) {
+        val session = _localState.value.shellSession ?: return
+        val input = ShellInfoCommands.wrappedShellInput(kind) ?: return
+        val sessionId = SidePanelController.shellSessionId(session.deviceId)
+        if (!deviceShellService.writeToShell(sessionId, input)) {
+            repository.addLog(
+                LogLevel.W,
+                "ShellInfo",
+                "Failed to run query in shell terminal",
+                session.deviceId,
+            )
+        }
+    }
+
+    private fun refreshDeveloperOptionStates(deviceId: String) {
+        viewModelScope.launch {
+            val states = repository.queryDeveloperOptionStates(deviceId)
+            updateShellSession { it.copy(developerOptionStates = states) }
         }
     }
 
@@ -790,7 +886,14 @@ class AppViewModel(
     }
 
     fun removeDevice(deviceId: String) = viewModelScope.launch {
+        val serial = devices.value.find { it.id == deviceId }?.serial
         repository.removeDevice(deviceId)
+        if (serial != null) {
+            _localState.update { state ->
+                state.copy(deviceCustomOrder = DeviceCustomOrder.removeSerial(state.deviceCustomOrder, serial))
+            }
+            persistDeviceWallPreferences()
+        }
         closeSidePanelTabsForDevice(deviceId)
     }
 
@@ -801,6 +904,32 @@ class AppViewModel(
     suspend fun installApkOnDevice(deviceId: String, apkPath: String) {
         val result = repository.installApkOnDevice(deviceId, apkPath)
         val device = devices.value.find { it.id == deviceId }
+        if (!result.success) {
+            val packageName = result.metadata?.packageName
+            if (packageName != null &&
+                ApkInstallConflictDetector.isExistingPackageConflict(result.message) &&
+                repository.isPackageInstalled(deviceId, packageName)
+            ) {
+                showApkReinstallPrompt(
+                    ApkReinstallPrompt(
+                        deviceId = deviceId,
+                        deviceName = device?.name ?: deviceId,
+                        apkPath = apkPath,
+                        apkFileName = result.apkFileName,
+                        packageName = packageName,
+                    ),
+                )
+                return
+            }
+            showApkInstallToast(
+                ApkInstallToast(
+                    apkFileName = result.apkFileName,
+                    deviceName = device?.name ?: deviceId,
+                    success = false,
+                ),
+            )
+            return
+        }
         showApkInstallToast(
             ApkInstallToast(
                 apkFileName = result.apkFileName,
@@ -808,7 +937,6 @@ class AppViewModel(
                 success = result.success,
             ),
         )
-        if (!result.success) return
         if (device == null) return
         runCatching {
             openAppLogTab(device, result)
@@ -825,18 +953,48 @@ class AppViewModel(
         }
     }
 
+    fun dismissApkReinstallPrompt() = _localState.update { it.copy(apkReinstallPrompt = null) }
+
+    fun confirmApkReinstall() = viewModelScope.launch {
+        val prompt = _localState.value.apkReinstallPrompt ?: return@launch
+        dismissApkReinstallPrompt()
+        repository.uninstallApp(prompt.deviceId, prompt.packageName)
+            .onSuccess { installApkOnDevice(prompt.deviceId, prompt.apkPath) }
+            .onFailure {
+                showApkInstallToast(
+                    ApkInstallToast(
+                        apkFileName = prompt.apkFileName,
+                        deviceName = prompt.deviceName,
+                        success = false,
+                    ),
+                )
+            }
+    }
+
     fun dismissApkInstallToast() = _localState.update { it.copy(apkInstallToast = null) }
 
     fun dismissEasyActionToast() = _localState.update { it.copy(easyActionToast = null) }
+
+    fun dismissSettingsSaveToast() = _localState.update { it.copy(settingsSaveToast = null) }
 
     private fun showApkInstallToast(toast: ApkInstallToast) {
         apkInstallToastSeq++
         _localState.update { it.copy(apkInstallToast = toast.copy(id = apkInstallToastSeq)) }
     }
 
+    private fun showApkReinstallPrompt(prompt: ApkReinstallPrompt) {
+        apkReinstallPromptSeq++
+        _localState.update { it.copy(apkReinstallPrompt = prompt.copy(id = apkReinstallPromptSeq)) }
+    }
+
     private fun showEasyActionToast(toast: EasyActionToast) {
         easyActionToastSeq++
         _localState.update { it.copy(easyActionToast = toast.copy(id = easyActionToastSeq)) }
+    }
+
+    private fun showSettingsSaveToast() {
+        settingsSaveToastSeq++
+        _localState.update { it.copy(settingsSaveToast = SettingsSaveToast(id = settingsSaveToastSeq)) }
     }
 
     fun refreshDevices() = viewModelScope.launch { repository.refreshDevices() }
@@ -870,6 +1028,7 @@ class AppViewModel(
                 "system",
             )
         }
+        showSettingsSaveToast()
     }
 
     suspend fun runBatchAction(

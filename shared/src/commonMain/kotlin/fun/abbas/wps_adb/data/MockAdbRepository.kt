@@ -11,6 +11,8 @@ import `fun`.abbas.wps_adb.model.Device
 import `fun`.abbas.wps_adb.model.DeviceApp
 import `fun`.abbas.wps_adb.model.DeviceStatus
 import `fun`.abbas.wps_adb.model.DeviceType
+import `fun`.abbas.wps_adb.model.DeveloperOptionKinds
+import `fun`.abbas.wps_adb.model.EasyActionKind
 import `fun`.abbas.wps_adb.model.FilterTab
 import `fun`.abbas.wps_adb.model.LogLevel
 import `fun`.abbas.wps_adb.model.QrPairingEvent
@@ -37,6 +39,7 @@ class MockAdbRepository(
 ) : AdbRepository {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val installedPackages = mutableSetOf<Pair<String, String>>()
+    private val developerOptionStates = mutableMapOf<Pair<String, EasyActionKind>, Boolean>()
 
     private val _devices = MutableStateFlow<List<Device>>(emptyList())
     override val devices: StateFlow<List<Device>> = _devices.asStateFlow()
@@ -215,6 +218,22 @@ class MockAdbRepository(
     override suspend fun clearAppData(deviceId: String, packageName: String): Boolean {
         addLog(LogLevel.I, "EasyAction", "pm clear $packageName (mock)", deviceId)
         return true
+    }
+
+    override suspend fun queryDeveloperOptionStates(deviceId: String): Map<EasyActionKind, Boolean> =
+        DeveloperOptionKinds.associateWith { false }
+
+    override suspend fun toggleDeveloperOption(deviceId: String, kind: EasyActionKind): Boolean? {
+        val current = developerOptionStates.getOrDefault(deviceId to kind, false)
+        val next = !current
+        developerOptionStates[deviceId to kind] = next
+        addLog(
+            LogLevel.I,
+            "DeveloperOption",
+            "${kind.name} ${if (next) "enabled" else "disabled"} (mock)",
+            deviceId,
+        )
+        return next
     }
 
     override suspend fun disconnectDevice(deviceId: String) {

@@ -24,10 +24,16 @@ class FakeDeviceShellService : DeviceShellService {
 
     override fun createTerminalComponent(sessionId: String): Any? = null
 
+    val writtenInputs = mutableListOf<String>()
     var mountedCount = 0
 
     override fun notifyTerminalMounted(sessionId: String) {
         mountedCount++
+    }
+
+    override fun writeToShell(sessionId: String, input: String): Boolean {
+        writtenInputs += input
+        return true
     }
 
     override fun setExitListener(listener: ((sessionId: String, exitCode: Int) -> Unit)?) = Unit

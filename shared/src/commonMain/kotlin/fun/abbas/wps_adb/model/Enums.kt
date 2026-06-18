@@ -12,7 +12,7 @@ enum class LogLevel { V, D, I, W, E }
 
 enum class FilterTab { ALL, PHYSICAL, EMULATORS }
 
-enum class SortParam { NAME, SERIAL, BATTERY }
+enum class SortParam { NAME, SERIAL, BATTERY, CUSTOM }
 
 enum class NavTab { WALL, GROUPS, DECOMPILE, SETTINGS }
 

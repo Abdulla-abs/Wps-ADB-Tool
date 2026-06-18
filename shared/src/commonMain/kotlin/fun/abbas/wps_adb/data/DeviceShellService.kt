@@ -13,6 +13,7 @@ interface DeviceShellService {
     fun isRunning(sessionId: String): Boolean
     fun createTerminalComponent(sessionId: String): Any?
     fun notifyTerminalMounted(sessionId: String)
+    fun writeToShell(sessionId: String, input: String): Boolean
     fun setExitListener(listener: ((sessionId: String, exitCode: Int) -> Unit)?)
 }
 
@@ -31,6 +32,8 @@ class NoOpDeviceShellService : DeviceShellService {
     override fun createTerminalComponent(sessionId: String): Any? = null
 
     override fun notifyTerminalMounted(sessionId: String) = Unit
+
+    override fun writeToShell(sessionId: String, input: String): Boolean = false
 
     override fun setExitListener(listener: ((sessionId: String, exitCode: Int) -> Unit)?) = Unit
 }

@@ -4,6 +4,10 @@ enum class EasyActionCategory {
     SYSTEM,
     DISPLAY,
     APP_CONTROL,
+    DEVELOPER,
+    DEVICE_HARDWARE,
+    SYSTEM_SOFTWARE,
+    STORAGE_MEMORY,
 }
 
 enum class EasyActionKind {
@@ -15,6 +19,32 @@ enum class EasyActionKind {
     SCREEN_RECORD,
     FORCE_STOP_APP,
     CLEAR_APP_DATA,
+    TOGGLE_SHOW_REFRESH_RATE,
+    TOGGLE_POINTER_LOCATION,
+    TOGGLE_SHOW_SURFACE_UPDATES,
+    TOGGLE_SHOW_VIEW_UPDATES,
+    TOGGLE_GPU_OVERDRAW,
+    TOGGLE_STRICT_MODE,
+    TOGGLE_GPU_PROFILE_BARS,
+    TOGGLE_DONT_KEEP_ACTIVITIES,
+    TOGGLE_SHOW_LAYOUT_BOUNDS,
+    INFO_DEVICE_MODEL,
+    INFO_DEVICE_BRAND,
+    INFO_DEVICE_MANUFACTURER,
+    INFO_HARDWARE_PLATFORM,
+    INFO_CPU_ABI,
+    INFO_SCREEN_SIZE,
+    INFO_SCREEN_DENSITY,
+    INFO_BATTERY_LEVEL,
+    INFO_BATTERY_STATUS,
+    INFO_ANDROID_VERSION,
+    INFO_SDK_VERSION,
+    INFO_SECURITY_PATCH,
+    INFO_BUILD_ID,
+    INFO_KERNEL_VERSION,
+    INFO_DATA_STORAGE,
+    INFO_TOTAL_MEMORY,
+    INFO_AVAILABLE_MEMORY,
 }
 
 data class EasyActionDefinition(
@@ -22,6 +52,7 @@ data class EasyActionDefinition(
     val category: EasyActionCategory,
     val requiresPackage: Boolean = false,
     val destructive: Boolean = false,
+    val isToggle: Boolean = false,
 )
 
 val DefaultEasyActions: List<EasyActionDefinition> = listOf(
@@ -33,4 +64,42 @@ val DefaultEasyActions: List<EasyActionDefinition> = listOf(
     EasyActionDefinition(EasyActionKind.CLEAR_APP_CACHE, EasyActionCategory.APP_CONTROL, requiresPackage = true),
     EasyActionDefinition(EasyActionKind.FORCE_STOP_APP, EasyActionCategory.APP_CONTROL, requiresPackage = true),
     EasyActionDefinition(EasyActionKind.CLEAR_APP_DATA, EasyActionCategory.APP_CONTROL, requiresPackage = true, destructive = true),
+    EasyActionDefinition(EasyActionKind.TOGGLE_SHOW_REFRESH_RATE, EasyActionCategory.DEVELOPER, isToggle = true),
+    EasyActionDefinition(EasyActionKind.TOGGLE_POINTER_LOCATION, EasyActionCategory.DEVELOPER, isToggle = true),
+    EasyActionDefinition(EasyActionKind.TOGGLE_SHOW_SURFACE_UPDATES, EasyActionCategory.DEVELOPER, isToggle = true),
+    EasyActionDefinition(EasyActionKind.TOGGLE_SHOW_VIEW_UPDATES, EasyActionCategory.DEVELOPER, isToggle = true),
+    EasyActionDefinition(EasyActionKind.TOGGLE_GPU_OVERDRAW, EasyActionCategory.DEVELOPER, isToggle = true),
+    EasyActionDefinition(EasyActionKind.TOGGLE_STRICT_MODE, EasyActionCategory.DEVELOPER, isToggle = true),
+    EasyActionDefinition(EasyActionKind.TOGGLE_GPU_PROFILE_BARS, EasyActionCategory.DEVELOPER, isToggle = true),
+    EasyActionDefinition(EasyActionKind.TOGGLE_DONT_KEEP_ACTIVITIES, EasyActionCategory.DEVELOPER, isToggle = true),
+    EasyActionDefinition(EasyActionKind.TOGGLE_SHOW_LAYOUT_BOUNDS, EasyActionCategory.DEVELOPER, isToggle = true),
+    EasyActionDefinition(EasyActionKind.INFO_DEVICE_MODEL, EasyActionCategory.DEVICE_HARDWARE),
+    EasyActionDefinition(EasyActionKind.INFO_DEVICE_BRAND, EasyActionCategory.DEVICE_HARDWARE),
+    EasyActionDefinition(EasyActionKind.INFO_DEVICE_MANUFACTURER, EasyActionCategory.DEVICE_HARDWARE),
+    EasyActionDefinition(EasyActionKind.INFO_HARDWARE_PLATFORM, EasyActionCategory.DEVICE_HARDWARE),
+    EasyActionDefinition(EasyActionKind.INFO_CPU_ABI, EasyActionCategory.DEVICE_HARDWARE),
+    EasyActionDefinition(EasyActionKind.INFO_SCREEN_SIZE, EasyActionCategory.DEVICE_HARDWARE),
+    EasyActionDefinition(EasyActionKind.INFO_SCREEN_DENSITY, EasyActionCategory.DEVICE_HARDWARE),
+    EasyActionDefinition(EasyActionKind.INFO_BATTERY_LEVEL, EasyActionCategory.DEVICE_HARDWARE),
+    EasyActionDefinition(EasyActionKind.INFO_BATTERY_STATUS, EasyActionCategory.DEVICE_HARDWARE),
+    EasyActionDefinition(EasyActionKind.INFO_ANDROID_VERSION, EasyActionCategory.SYSTEM_SOFTWARE),
+    EasyActionDefinition(EasyActionKind.INFO_SDK_VERSION, EasyActionCategory.SYSTEM_SOFTWARE),
+    EasyActionDefinition(EasyActionKind.INFO_SECURITY_PATCH, EasyActionCategory.SYSTEM_SOFTWARE),
+    EasyActionDefinition(EasyActionKind.INFO_BUILD_ID, EasyActionCategory.SYSTEM_SOFTWARE),
+    EasyActionDefinition(EasyActionKind.INFO_KERNEL_VERSION, EasyActionCategory.SYSTEM_SOFTWARE),
+    EasyActionDefinition(EasyActionKind.INFO_DATA_STORAGE, EasyActionCategory.STORAGE_MEMORY),
+    EasyActionDefinition(EasyActionKind.INFO_TOTAL_MEMORY, EasyActionCategory.STORAGE_MEMORY),
+    EasyActionDefinition(EasyActionKind.INFO_AVAILABLE_MEMORY, EasyActionCategory.STORAGE_MEMORY),
 )
+
+fun EasyActionCategory.defaultExpanded(): Boolean = when (this) {
+    EasyActionCategory.SYSTEM,
+    EasyActionCategory.DISPLAY,
+    EasyActionCategory.APP_CONTROL,
+    -> true
+    EasyActionCategory.DEVELOPER,
+    EasyActionCategory.DEVICE_HARDWARE,
+    EasyActionCategory.SYSTEM_SOFTWARE,
+    EasyActionCategory.STORAGE_MEMORY,
+    -> false
+}

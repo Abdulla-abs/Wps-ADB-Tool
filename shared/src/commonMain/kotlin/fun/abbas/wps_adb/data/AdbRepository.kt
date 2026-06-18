@@ -6,6 +6,7 @@ import `fun`.abbas.wps_adb.model.ApkMetadata
 import `fun`.abbas.wps_adb.model.AppSettings
 import `fun`.abbas.wps_adb.model.BatchActionParams
 import `fun`.abbas.wps_adb.model.Device
+import `fun`.abbas.wps_adb.model.EasyActionKind
 import `fun`.abbas.wps_adb.model.FilterTab
 import `fun`.abbas.wps_adb.model.LogLevel
 import `fun`.abbas.wps_adb.model.QrPairingEvent
@@ -33,6 +34,8 @@ interface AdbRepository {
     suspend fun stopScreenRecord(deviceId: String): String?
     suspend fun forceStopApp(deviceId: String, packageName: String): Boolean
     suspend fun clearAppData(deviceId: String, packageName: String): Boolean
+    suspend fun queryDeveloperOptionStates(deviceId: String): Map<EasyActionKind, Boolean>
+    suspend fun toggleDeveloperOption(deviceId: String, kind: EasyActionKind): Boolean?
     suspend fun disconnectDevice(deviceId: String)
     suspend fun reconnectDevice(deviceId: String)
     suspend fun removeDevice(deviceId: String)

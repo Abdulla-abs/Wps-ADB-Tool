@@ -14,7 +14,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyStaggeredGridState
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.shape.CircleShape
@@ -42,6 +46,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import `fun`.abbas.wps_adb.data.DeviceCustomOrder
 import `fun`.abbas.wps_adb.model.ConnectionType
 import `fun`.abbas.wps_adb.model.Device
 import `fun`.abbas.wps_adb.model.DeviceAction
@@ -72,6 +77,8 @@ fun DeviceWallScreen(
     filterTab: FilterTab,
     searchQuery: String,
     sortParam: SortParam,
+    deviceCustomOrder: List<String>,
+    onReorderDevices: (filteredSerialsInDisplayOrder: List<String>, fromIndex: Int, toIndex: Int) -> Unit,
     onMirror: (Device) -> Unit,
     onTerminal: (Device) -> Unit,
     onAction: (String, DeviceAction) -> Unit,
@@ -110,6 +117,8 @@ fun DeviceWallScreen(
             filterTab = filterTab,
             searchQuery = searchQuery,
             sortParam = sortParam,
+            deviceCustomOrder = deviceCustomOrder,
+            onReorderDevices = onReorderDevices,
             onMirror = onMirror,
             onTerminal = onTerminal,
             onAction = onAction,
@@ -181,6 +190,8 @@ fun DeviceGrid(
     filterTab: FilterTab,
     searchQuery: String,
     sortParam: SortParam,
+    deviceCustomOrder: List<String>,
+    onReorderDevices: (filteredSerialsInDisplayOrder: List<String>, fromIndex: Int, toIndex: Int) -> Unit,
     onMirror: (Device) -> Unit,
     onTerminal: (Device) -> Unit,
     onAction: (String, DeviceAction) -> Unit,
@@ -192,27 +203,12 @@ fun DeviceGrid(
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
 ) {
-    val filtered = devices
-        .filter { device ->
-            when (filterTab) {
-                FilterTab.PHYSICAL -> device.type == DeviceType.PHYSICAL
-                FilterTab.EMULATORS -> device.type == DeviceType.EMULATOR
-                FilterTab.ALL -> true
-            }
-        }
-        .filter { device ->
-            val q = searchQuery.lowercase()
-            device.name.lowercase().contains(q) ||
-                device.serial.lowercase().contains(q) ||
-                device.androidVersion.lowercase().contains(q)
-        }
-        .let { list ->
-            when (sortParam) {
-                SortParam.SERIAL -> list.sortedBy { it.serial }
-                SortParam.BATTERY -> list.sortedByDescending { it.batteryLevel }
-                SortParam.NAME -> list.sortedBy { it.name }
-            }
-        }
+    val filtered = DeviceCustomOrder.sortDevices(
+        DeviceCustomOrder.filterDevices(devices, filterTab, searchQuery),
+        sortParam,
+        deviceCustomOrder,
+    )
+    val filteredSerials = filtered.map { it.serial }
 
     if (filtered.isEmpty()) {
         Box(
@@ -230,25 +226,38 @@ fun DeviceGrid(
             }
         }
     } else {
+        val lazyStaggeredGridState = rememberLazyStaggeredGridState()
+        val reorderableState = rememberReorderableLazyStaggeredGridState(lazyStaggeredGridState) { from, to ->
+            onReorderDevices(filteredSerials, from.index, to.index)
+        }
         LazyVerticalStaggeredGrid(
             columns = StaggeredGridCells.Adaptive(minSize = DeviceCardWidth),
             modifier = modifier.fillMaxSize(),
+            state = lazyStaggeredGridState,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalItemSpacing = 16.dp,
         ) {
             items(filtered, key = { it.id }) { device ->
-                DeviceCard(
-                    device = device,
-                    onMirror = onMirror,
-                    onTerminal = onTerminal,
-                    onAction = onAction,
-                    onApkDrop = onApkDrop,
-                    onReconnect = onReconnect,
-                    onRemove = onRemove,
-                    transitionKind = transitionKind,
-                    sharedTransitionScope = sharedTransitionScope,
-                    animatedVisibilityScope = animatedVisibilityScope,
-                )
+                ReorderableItem(reorderableState, device.id) { isDragging ->
+                    Box(
+                        modifier = Modifier
+                            .graphicsLayer { alpha = if (isDragging) 0.88f else 1f }
+                            .longPressDraggableHandle(),
+                    ) {
+                        DeviceCard(
+                            device = device,
+                            onMirror = onMirror,
+                            onTerminal = onTerminal,
+                            onAction = onAction,
+                            onApkDrop = onApkDrop,
+                            onReconnect = onReconnect,
+                            onRemove = onRemove,
+                            transitionKind = transitionKind,
+                            sharedTransitionScope = sharedTransitionScope,
+                            animatedVisibilityScope = animatedVisibilityScope,
+                        )
+                    }
+                }
             }
         }
     }

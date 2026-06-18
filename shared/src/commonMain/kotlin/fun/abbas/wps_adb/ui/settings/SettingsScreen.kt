@@ -57,7 +57,6 @@ fun SettingsScreen(
     var logRetention by remember(settings) { mutableStateOf(settings.logRetention.toString()) }
     var autoApproveKey by remember(settings) { mutableStateOf(settings.autoApproveKey) }
     var dataCacheDir by remember(settings) { mutableStateOf(settings.dataCacheDir) }
-    var showToast by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     val saveSettings = {
@@ -76,7 +75,6 @@ fun SettingsScreen(
                 dataCacheDir = dataCacheDir.trim(),
             ),
         )
-        showToast = true
     }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -216,10 +214,6 @@ fun SettingsScreen(
             }
             FieldLabel(stringResource(Res.string.settings_log_retention))
             OutlinedTextField(logRetention, { logRetention = it }, Modifier.fillMaxWidth(), singleLine = true, colors = fieldColors())
-        }
-
-        if (showToast) {
-            Text(stringResource(Res.string.settings_save_success), fontSize = 12.sp, color = CarbonColors.Primary, fontWeight = FontWeight.Bold)
         }
         }
 

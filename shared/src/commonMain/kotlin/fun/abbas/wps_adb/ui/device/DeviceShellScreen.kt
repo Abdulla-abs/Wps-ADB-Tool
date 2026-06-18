@@ -55,6 +55,7 @@ fun DeviceShellScreen(
     terminalComponent: Any?,
     terminalSurfaceReady: Boolean,
     isScreenRecording: Boolean,
+    developerOptionStates: Map<EasyActionKind, Boolean> = emptyMap(),
     transitionKind: ShellTransitionKind,
     onBack: () -> Unit,
     onOpenLogcat: () -> Unit,
@@ -117,9 +118,10 @@ fun DeviceShellScreen(
             EasyActionsPanel(
                 actions = DefaultEasyActions,
                 isScreenRecording = isScreenRecording,
+                toggleStates = developerOptionStates,
                 onAction = onEasyAction,
                 modifier = Modifier
-                    .width(240.dp)
+                    .width(300.dp)
                     .fillMaxHeight()
                     .padding(start = 16.dp),
             )

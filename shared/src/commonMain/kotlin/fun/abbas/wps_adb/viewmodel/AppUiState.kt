@@ -1,6 +1,7 @@
 package `fun`.abbas.wps_adb.viewmodel
 
 import `fun`.abbas.wps_adb.model.ApkInstallToast
+import `fun`.abbas.wps_adb.model.ApkReinstallPrompt
 import `fun`.abbas.wps_adb.model.EasyActionToast
 import `fun`.abbas.wps_adb.model.DeviceShellSession
 import `fun`.abbas.wps_adb.model.DeviceWallRoute
@@ -8,6 +9,7 @@ import `fun`.abbas.wps_adb.model.EasyActionKind
 import `fun`.abbas.wps_adb.model.FilterTab
 import `fun`.abbas.wps_adb.model.NavTab
 import `fun`.abbas.wps_adb.model.PairingMethod
+import `fun`.abbas.wps_adb.model.SettingsSaveToast
 import `fun`.abbas.wps_adb.model.ShellTransitionKind
 import `fun`.abbas.wps_adb.model.SidePanelState
 import `fun`.abbas.wps_adb.model.SortParam
@@ -31,6 +33,7 @@ data class AppUiState(
     val filterTab: FilterTab = FilterTab.ALL,
     val searchQuery: String = "",
     val sortParam: SortParam = SortParam.NAME,
+    val deviceCustomOrder: List<String> = emptyList(),
     val isLogTrayOpen: Boolean = false,
     val logTrayHeightDp: Float = LogTrayHeightLimits.DEFAULT,
     val logTrayMode: LogTrayMode = LogTrayMode.EVENTS,
@@ -42,7 +45,9 @@ data class AppUiState(
     val isRestartingAdb: Boolean = false,
     val isScanningDevices: Boolean = false,
     val apkInstallToast: ApkInstallToast? = null,
+    val apkReinstallPrompt: ApkReinstallPrompt? = null,
     val easyActionToast: EasyActionToast? = null,
+    val settingsSaveToast: SettingsSaveToast? = null,
     val deviceWallRoute: DeviceWallRoute = DeviceWallRoute.Grid,
     val shellSession: DeviceShellSession? = null,
     val shellTransitionKind: ShellTransitionKind = ShellTransitionKind.SHARED_ELEMENT,

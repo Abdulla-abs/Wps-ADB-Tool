@@ -4,6 +4,7 @@ import `fun`.abbas.wps_adb.ui.device.CarbonJediTermSettingsProvider
 import com.jediterm.terminal.ui.JediTermWidget
 import com.pty4j.PtyProcess
 import com.pty4j.PtyProcessBuilder
+import java.nio.charset.StandardCharsets
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import javax.swing.SwingUtilities
@@ -99,6 +100,17 @@ class JvmDeviceShellService(
             JediTermSizeSync.syncNow(session.widget)
             session.hostPanel.requestTerminalFocus()
         }
+    }
+
+    override fun writeToShell(sessionId: String, input: String): Boolean {
+        val session = sessions[sessionId] ?: return false
+        if (!session.process.isAlive) return false
+        return runCatching {
+            val payload = if (input.endsWith("\n")) input else "$input\n"
+            session.process.outputStream.write(payload.toByteArray(StandardCharsets.UTF_8))
+            session.process.outputStream.flush()
+            true
+        }.getOrDefault(false)
     }
 
     override fun setExitListener(listener: ((sessionId: String, exitCode: Int) -> Unit)?) {

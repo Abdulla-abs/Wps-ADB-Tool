@@ -58,6 +58,7 @@ kotlin {
             implementation(libs.coil.compose)
             implementation(libs.coil.network.ktor3)
             implementation(libs.qrcode.kotlin)
+            implementation(libs.reorderable)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

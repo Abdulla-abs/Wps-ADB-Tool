@@ -1,6 +1,7 @@
 package `fun`.abbas.wps_adb.data
 
 import java.io.File
+import java.util.concurrent.TimeUnit
 
 data class AdbProcessResult(
     val exitCode: Int,
@@ -276,6 +277,46 @@ class JvmAdbRunner(
                 .start()
             val output = process.inputStream.bufferedReader().readText()
             AdbProcessResult(process.waitFor(), output.trim())
+        } catch (e: Exception) {
+            AdbProcessResult(-1, e.message ?: "Failed to execute adb")
+        }
+    }
+
+    fun runWithTimeout(args: List<String>, serial: String? = null, timeoutMs: Long): AdbProcessResult {
+        val command = buildList {
+            add(resolveAdbPath())
+            if (serial != null) {
+                add("-s")
+                add(serial)
+            }
+            addAll(args)
+        }
+        return try {
+            val process = ProcessBuilder(command)
+                .redirectErrorStream(true)
+                .start()
+            val output = StringBuilder()
+            val readThread = Thread {
+                try {
+                    process.inputStream.bufferedReader().forEachLine { line ->
+                        if (output.isNotEmpty()) output.append('\n')
+                        output.append(line)
+                    }
+                } catch (_: Exception) {
+                }
+            }.apply {
+                isDaemon = true
+                name = "adb-read"
+                start()
+            }
+            val completed = process.waitFor(timeoutMs, TimeUnit.MILLISECONDS)
+            if (!completed) {
+                process.destroyForcibly()
+                readThread.join(500)
+                return AdbProcessResult(-1, "Timed out after ${timeoutMs}ms")
+            }
+            readThread.join(2000)
+            AdbProcessResult(process.exitValue(), output.toString().trim())
         } catch (e: Exception) {
             AdbProcessResult(-1, e.message ?: "Failed to execute adb")
         }

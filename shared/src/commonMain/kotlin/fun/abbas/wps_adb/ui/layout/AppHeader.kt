@@ -133,6 +133,7 @@ private fun SortSelector(sortParam: SortParam, onSortChange: (SortParam) -> Unit
             SortParam.NAME to stringResource(Res.string.sort_name),
             SortParam.SERIAL to stringResource(Res.string.sort_serial),
             SortParam.BATTERY to stringResource(Res.string.sort_battery),
+            SortParam.CUSTOM to stringResource(Res.string.sort_custom),
         ).forEach { (param, label) ->
             val interactionSource = remember { MutableInteractionSource() }
             Text(
