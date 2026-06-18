@@ -1,0 +1,139 @@
+name: Release Desktop
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve app version
+        shell: pwsh
+        run: |
+          $version = $env:GITHUB_REF_NAME -replace '^v', ''
+          "WPS_ADB_TOOL_VERSION=$version" >> $env:GITHUB_ENV
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Build MSI
+        env:
+          JAVA_HOME: ${{ env.JAVA_HOME }}
+          WPS_ADB_TOOL_VERSION: ${{ env.WPS_ADB_TOOL_VERSION }}
+        run: pwsh -File scripts/windows/build-msi.ps1
+
+      - name: Upload MSI
+        uses: actions/upload-artifact@v4
+        with:
+          name: WpsAdbTool-windows-x64
+          path: desktopApp/build/ci-artifacts/WpsAdbTool-*-windows-x64.msi
+          if-no-files-found: error
+
+  build-macos-arm64:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ensure Gradle wrapper is executable
+        run: chmod +x gradlew scripts/macos/*.sh
+
+      - name: Resolve app version
+        run: echo "WPS_ADB_TOOL_VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
+      - name: Set up JDK 21 (arm64)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          architecture: arm64
+
+      - name: Build arm64 DMG
+        env:
+          JAVA_HOME: ${{ env.JAVA_HOME }}
+          WPS_ADB_TOOL_VERSION: ${{ env.WPS_ADB_TOOL_VERSION }}
+          MACOS_SIGN: 'false'
+        run: bash scripts/macos/build-arch-dmg.sh arm64
+
+      - name: Upload arm64 DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: WpsAdbTool-macos-arm64
+          path: desktopApp/build/ci-artifacts/WpsAdbTool-*-macos-arm64.dmg
+          if-no-files-found: error
+
+  build-macos-x64:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ensure Gradle wrapper is executable
+        run: chmod +x gradlew scripts/macos/*.sh
+
+      - name: Resolve app version
+        run: echo "WPS_ADB_TOOL_VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
+      - name: Set up JDK 21 (x64)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          architecture: x64
+
+      - name: Build x64 DMG
+        env:
+          JAVA_HOME: ${{ env.JAVA_HOME }}
+          WPS_ADB_TOOL_VERSION: ${{ env.WPS_ADB_TOOL_VERSION }}
+          MACOS_SIGN: 'false'
+        run: bash scripts/macos/build-arch-dmg.sh x64
+
+      - name: Upload x64 DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: WpsAdbTool-macos-x64
+          path: desktopApp/build/ci-artifacts/WpsAdbTool-*-macos-x64.dmg
+          if-no-files-found: error
+
+  release:
+    needs:
+      - build-windows
+      - build-macos-arm64
+      - build-macos-x64
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: WpsAdbTool ${{ github.ref_name }}
+          generate_release_notes: true
+          body: |
+            ## Downloads
+
+            | Platform | File |
+            |----------|------|
+            | Windows x64 | `WpsAdbTool-*-windows-x64.msi` |
+            | macOS Apple Silicon | `WpsAdbTool-*-macos-arm64.dmg` |
+            | macOS Intel | `WpsAdbTool-*-macos-x64.dmg` |
+
+            ### Notes
+
+            - **Windows**: SmartScreen may warn about an unknown publisher. Click *More info* → *Run anyway* to install.
+            - **macOS**: Builds are unsigned. On first launch, open **System Settings → Privacy & Security** and click *Open Anyway*.
+          files: dist/**/*
+          fail_on_unmatched_files: true

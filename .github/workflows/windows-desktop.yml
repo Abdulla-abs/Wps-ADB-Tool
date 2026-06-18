@@ -7,9 +7,6 @@ on:
         description: App version (e.g. 1.0.0)
         type: string
         default: 1.0.0
-  push:
-    tags:
-      - 'v*'
 
 permissions:
   contents: read
@@ -23,12 +20,7 @@ jobs:
       - name: Resolve app version
         shell: pwsh
         run: |
-          if ($env:GITHUB_EVENT_NAME -eq 'push') {
-            $version = $env:GITHUB_REF_NAME -replace '^v', ''
-          } else {
-            $version = '${{ inputs.version }}'
-          }
-          "WPS_ADB_TOOL_VERSION=$version" >> $env:GITHUB_ENV
+          "WPS_ADB_TOOL_VERSION=${{ inputs.version }}" >> $env:GITHUB_ENV
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
