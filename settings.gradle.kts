@@ -1,9 +1,6 @@
 rootProject.name = "WpsAdbTool"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
-// Aliyun mirror helps local builds in China but is unreliable on GitHub Actions (502).
-private val useAliyunMirror = System.getenv("CI") != "true"
-
 pluginManagement {
     repositories {
         google {
@@ -14,7 +11,8 @@ pluginManagement {
             }
         }
         mavenCentral()
-        if (useAliyunMirror) {
+        // Aliyun mirror helps local builds in China but is unreliable on GitHub Actions (502).
+        if (System.getenv("CI") != "true") {
             maven("https://maven.aliyun.com/repository/public")
         }
         gradlePluginPortal()
@@ -31,7 +29,7 @@ dependencyResolutionManagement {
             }
         }
         mavenCentral()
-        if (useAliyunMirror) {
+        if (System.getenv("CI") != "true") {
             maven("https://maven.aliyun.com/repository/public")
         }
         maven("https://packages.jetbrains.team/maven/p/ij/intellij-dependencies")
