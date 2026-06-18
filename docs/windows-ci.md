@@ -12,7 +12,9 @@
 |------|----------|
 | `WpsAdbTool-*-windows-x64.msi` | Windows 10/11 x64 |
 
-打 `v*` 标签（如 `v1.0.0`）也会自动触发构建，版本号取自标签名（去掉 `v` 前缀）。
+打 `v*` 标签（如 `v1.0.0`）会触发 **Release Desktop** workflow，自动构建 Windows / macOS 安装包并创建 [GitHub Release](https://github.com/Abdulla-abs/Wps-ADB-Tool/releases)。版本号取自标签名（去掉 `v` 前缀）。
+
+仅构建 Windows MSI、不上传 Release 时，可手动运行本 workflow。
 
 ## 签名（可选）
 

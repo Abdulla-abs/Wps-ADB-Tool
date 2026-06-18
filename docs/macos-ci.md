@@ -15,7 +15,9 @@
 | `WpsAdbTool-*-macos-arm64.dmg` | Apple Silicon（M1/M2/M3/M4） |
 | `WpsAdbTool-*-macos-x64.dmg` | Intel Mac |
 
-打 `v*` 标签（如 `v1.0.0`）也会自动触发构建，版本号取自标签名（去掉 `v` 前缀）。标签触发默认产出**未签名** DMG；需要签名与公证时，请在 Actions 中手动触发 workflow 并勾选 **notarize**（需事先配置全部 Secrets）。
+打 `v*` 标签（如 `v1.0.0`）会触发 **Release Desktop** workflow，自动构建 Windows / macOS 安装包并创建 [GitHub Release](https://github.com/Abdulla-abs/Wps-ADB-Tool/releases)。版本号取自标签名（去掉 `v` 前缀）。标签触发默认产出**未签名** DMG。
+
+仅构建 macOS DMG、不上传 Release 时，可手动运行本 workflow 并选择目标架构。需要签名与公证时，手动触发并勾选 **notarize**（需事先配置全部 Secrets）。
 
 ## 签名与公证
 
