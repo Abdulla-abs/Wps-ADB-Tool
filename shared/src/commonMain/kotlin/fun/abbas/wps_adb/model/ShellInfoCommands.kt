@@ -18,12 +18,20 @@ val ShellInfoQueryKinds: Set<EasyActionKind> = setOf(
     EasyActionKind.INFO_DATA_STORAGE,
     EasyActionKind.INFO_TOTAL_MEMORY,
     EasyActionKind.INFO_AVAILABLE_MEMORY,
+    EasyActionKind.INFO_CURRENT_FOCUS,
+    EasyActionKind.INFO_ACTIVITY_TOP,
+    EasyActionKind.INFO_RESUMED_ACTIVITY,
+    EasyActionKind.INFO_RESUMED_ACTIVITY_PACKAGE,
+    EasyActionKind.INFO_MEMINFO_ALL,
+    EasyActionKind.INFO_MEMINFO_PACKAGE,
+    EasyActionKind.INFO_CPUINFO,
+    EasyActionKind.INFO_PROCSTATS,
 )
 
 fun EasyActionKind.isShellInfoQuery(): Boolean = this in ShellInfoQueryKinds
 
 object ShellInfoCommands {
-    fun shellCommand(kind: EasyActionKind): String? = when (kind) {
+    fun shellCommand(kind: EasyActionKind, packageName: String? = null): String? = when (kind) {
         EasyActionKind.INFO_DEVICE_MODEL -> "getprop ro.product.model"
         EasyActionKind.INFO_DEVICE_BRAND -> "getprop ro.product.brand"
         EasyActionKind.INFO_DEVICE_MANUFACTURER -> "getprop ro.product.manufacturer"
@@ -41,11 +49,23 @@ object ShellInfoCommands {
         EasyActionKind.INFO_DATA_STORAGE -> "df -h /data"
         EasyActionKind.INFO_TOTAL_MEMORY -> "free -h 2>/dev/null || head -3 /proc/meminfo"
         EasyActionKind.INFO_AVAILABLE_MEMORY -> "cat /proc/meminfo | grep MemAvailable"
+        EasyActionKind.INFO_CURRENT_FOCUS -> "dumpsys window | grep mCurrentFocus"
+        EasyActionKind.INFO_ACTIVITY_TOP -> "dumpsys activity top | grep ACTIVITY"
+        EasyActionKind.INFO_RESUMED_ACTIVITY -> """dumpsys activity | grep -i "ResumedActivity""""
+        EasyActionKind.INFO_RESUMED_ACTIVITY_PACKAGE ->
+            """dumpsys activity | grep -i ResumedActivity | head -1 | tr ' ' '\n' | grep '/' | head -1 | cut -d'/' -f1"""
+        EasyActionKind.INFO_MEMINFO_ALL -> "dumpsys meminfo"
+        EasyActionKind.INFO_MEMINFO_PACKAGE -> {
+            val pkg = packageName?.trim()?.takeIf { it.isNotBlank() } ?: return null
+            "dumpsys meminfo $pkg"
+        }
+        EasyActionKind.INFO_CPUINFO -> "dumpsys cpuinfo"
+        EasyActionKind.INFO_PROCSTATS -> "dumpsys procstats"
         else -> null
     }
 
-    fun wrappedShellInput(kind: EasyActionKind): String? {
-        val command = shellCommand(kind) ?: return null
+    fun wrappedShellInput(kind: EasyActionKind, packageName: String? = null): String? {
+        val command = shellCommand(kind, packageName) ?: return null
         return "echo \"\" && echo \">> $command\" && $command"
     }
 }

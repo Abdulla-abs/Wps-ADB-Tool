@@ -2,6 +2,7 @@ package `fun`.abbas.wps_adb.data
 
 import java.awt.Toolkit
 import java.awt.datatransfer.DataFlavor
+import java.awt.datatransfer.StringSelection
 import java.awt.datatransfer.Transferable
 import java.awt.datatransfer.UnsupportedFlavorException
 import java.awt.image.BufferedImage
@@ -12,6 +13,13 @@ object JvmSystemClipboard {
     fun copyPngImage(pngBytes: ByteArray): Boolean {
         val image = ImageIO.read(ByteArrayInputStream(pngBytes)) ?: return false
         return copyImage(image)
+    }
+
+    fun copyText(text: String): Boolean = try {
+        Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(text), null)
+        true
+    } catch (_: Exception) {
+        false
     }
 
     private fun copyImage(image: BufferedImage): Boolean = try {

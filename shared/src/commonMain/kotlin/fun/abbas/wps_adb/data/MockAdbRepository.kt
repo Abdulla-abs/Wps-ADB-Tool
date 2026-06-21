@@ -200,6 +200,11 @@ class MockAdbRepository(
         return true
     }
 
+    override suspend fun dumpLayoutToClipboard(deviceId: String): Boolean {
+        addLog(LogLevel.I, "EasyAction", "Layout XML copied to clipboard (mock)", deviceId)
+        return true
+    }
+
     override suspend fun startScreenRecord(deviceId: String): Boolean {
         addLog(LogLevel.I, "EasyAction", "Screen recording started (mock)", deviceId)
         return true

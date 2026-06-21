@@ -62,6 +62,14 @@ class JvmAdbRepository(
     private var qrPairingCollectJob: Job? = null
     private val enrichingSerials = Collections.synchronizedSet(mutableSetOf<String>())
     private val screenRecordSessions = mutableMapOf<String, ScreenRecordSession>()
+    private val layoutDumpMutex = Mutex()
+    private val deviceKitLayoutDump by lazy {
+        JvmDeviceKitLayoutDump(
+            runner = runner,
+            installApk = { deviceId, apkPath -> installApkOnDevice(deviceId, apkPath) },
+            addLog = { level, tag, message, deviceId -> addLog(level, tag, message, deviceId) },
+        )
+    }
     private var deviceScanJob: Job? = null
     private val hardwareSerialByTransport = mutableMapOf<String, String>()
 
@@ -501,6 +509,126 @@ class JvmAdbRepository(
         }
         addLog(level, "EasyAction", message, deviceId)
         copied
+    }
+
+    override suspend fun dumpLayoutToClipboard(deviceId: String): Boolean = withContext(Dispatchers.IO) {
+        layoutDumpMutex.withLock {
+            dumpLayoutToClipboardLocked(deviceId)
+        }
+    }
+
+    private suspend fun dumpLayoutToClipboardLocked(deviceId: String): Boolean {
+        val serial = serialForDevice(deviceId) ?: return false
+        val remotePath = "/data/local/tmp/wps-adb-window_dump.xml"
+        val fallbackPath = "/sdcard/window_dump.xml"
+        dismissSystemUiOverlays(serial)
+
+        var (xml, lastDumpOutput) = runLayoutDumpAttempts(
+            serial = serial,
+            remotePath = remotePath,
+            fallbackPath = fallbackPath,
+            maxAttempts = LAYOUT_DUMP_MAX_ATTEMPTS,
+            compressed = false,
+            phase = "normal",
+        )
+
+        if (xml == null) {
+            xml = deviceKitLayoutDump.dumpLayoutXml(deviceId, serial)
+            if (xml != null) lastDumpOutput = "devicekit instrumentation"
+        }
+
+        runner.run(listOf("shell", "rm", "-f", remotePath, fallbackPath), serial = serial)
+
+        val finalXml = xml ?: run {
+            val hint = if (lastDumpOutput.contains("idle state", ignoreCase = true)) {
+                " (UI not idle — animated apps may need the layout dump helper installed)"
+            } else {
+                ""
+            }
+            addLog(LogLevel.E, "EasyAction", "Layout dump failed for $serial$hint: $lastDumpOutput", deviceId)
+            return false
+        }
+
+        val copied = JvmSystemClipboard.copyText(finalXml)
+        val level = if (copied) LogLevel.I else LogLevel.E
+        val message = if (copied) {
+            "Layout XML copied to clipboard for $serial"
+        } else {
+            "Failed to copy layout XML to clipboard for $serial"
+        }
+        addLog(level, "EasyAction", message, deviceId)
+        return copied
+    }
+
+    private fun dismissSystemUiOverlays(serial: String) {
+        runner.run(listOf("shell", "cmd", "statusbar", "collapse"), serial = serial)
+        runner.run(
+            listOf("shell", "am", "broadcast", "-a", "android.intent.action.CLOSE_SYSTEM_DIALOGS"),
+            serial = serial,
+        )
+    }
+
+    private suspend fun runLayoutDumpAttempts(
+        serial: String,
+        remotePath: String,
+        fallbackPath: String,
+        maxAttempts: Int,
+        compressed: Boolean,
+        phase: String,
+    ): Pair<String?, String> {
+        var lastOutput = ""
+        for (attempt in 1..maxAttempts) {
+            val result = attemptUiautomatorDump(serial, remotePath, fallbackPath, compressed)
+            lastOutput = result.output
+            if (result.xml != null) return result.xml to lastOutput
+            if (attempt < maxAttempts) delay(LAYOUT_DUMP_RETRY_DELAY_MS)
+        }
+        return null to lastOutput
+    }
+
+    private fun attemptUiautomatorDump(
+        serial: String,
+        remotePath: String,
+        fallbackPath: String,
+        compressed: Boolean,
+    ): LayoutDumpAttemptResult {
+        runner.run(listOf("shell", "pkill", "-f", "uiautomator"), serial = serial)
+        runner.run(listOf("shell", "rm", "-f", remotePath, fallbackPath), serial = serial)
+        val args = buildList {
+            add("shell")
+            add("uiautomator")
+            add("dump")
+            if (compressed) add("--compressed")
+            add(remotePath)
+        }
+        val dump = runner.run(args, serial = serial)
+        val hasError = dump.output.contains("ERROR:", ignoreCase = true)
+        val xml = if (dump.success && !hasError) {
+            readLayoutXmlFromDump(serial, dump.output, remotePath, fallbackPath)
+        } else {
+            null
+        }
+        return LayoutDumpAttemptResult(xml, dump.output, dump.exitCode, dump.success)
+    }
+
+    private fun readLayoutXmlFromDump(
+        serial: String,
+        dumpOutput: String,
+        primaryPath: String,
+        fallbackPath: String,
+    ): String? {
+        readLayoutXmlAt(serial, primaryPath)?.let { return it }
+        LAYOUT_DUMPED_PATH_REGEX.find(dumpOutput)?.groupValues?.getOrNull(1)
+            ?.takeIf { it != primaryPath }
+            ?.let { readLayoutXmlAt(serial, it) }
+            ?.let { return it }
+        return readLayoutXmlAt(serial, fallbackPath)
+    }
+
+    private fun readLayoutXmlAt(serial: String, path: String): String? {
+        val read = runner.run(listOf("exec-out", "cat", path), serial = serial)
+        val content = read.output.trim()
+        return if (read.success && content.startsWith("<?xml")) content else null
     }
 
     override suspend fun startScreenRecord(deviceId: String): Boolean = withContext(Dispatchers.IO) {
@@ -1190,3 +1318,14 @@ private data class ScreenRecordSession(
     val remotePath: String,
     val process: Process,
 )
+
+private data class LayoutDumpAttemptResult(
+    val xml: String?,
+    val output: String,
+    val exitCode: Int,
+    val success: Boolean,
+)
+
+private val LAYOUT_DUMPED_PATH_REGEX = Regex("""dumped to:\s*(\S+)""", RegexOption.IGNORE_CASE)
+private const val LAYOUT_DUMP_MAX_ATTEMPTS = 3
+private const val LAYOUT_DUMP_RETRY_DELAY_MS = 800L

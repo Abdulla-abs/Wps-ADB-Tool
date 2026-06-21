@@ -281,6 +281,8 @@
     <string name="easy_action_category_device_hardware">设备与硬件</string>
     <string name="easy_action_category_system_software">系统版本</string>
     <string name="easy_action_category_storage_memory">存储与内存</string>
+    <string name="easy_action_category_activity_window">Activity 与窗口</string>
+    <string name="easy_action_category_performance">性能诊断</string>
     <string name="easy_action_reboot">重启设备</string>
     <string name="easy_action_recovery">Recovery 模式</string>
     <string name="easy_action_clear_cache">清除缓存</string>
@@ -325,6 +327,15 @@
     <string name="easy_action_info_data_storage">/data 存储空间</string>
     <string name="easy_action_info_total_memory">总内存 (RAM)</string>
     <string name="easy_action_info_available_memory">可用内存</string>
+    <string name="easy_action_info_current_focus">当前焦点窗口</string>
+    <string name="easy_action_info_activity_top">正在运行的 Activity</string>
+    <string name="easy_action_info_resumed_activity">Resume 状态的 Activity</string>
+    <string name="easy_action_info_resumed_activity_package">Resume Activity 包名</string>
+    <string name="easy_action_dump_layout_clipboard">屏幕布局 XML 到剪贴板</string>
+    <string name="easy_action_info_meminfo_all">全部进程内存 (PSS)</string>
+    <string name="easy_action_info_meminfo_package">应用内存使用</string>
+    <string name="easy_action_info_cpuinfo">CPU 使用情况</string>
+    <string name="easy_action_info_procstats">运行进程概览</string>
     <string name="shell_package_dialog_title">包名</string>
     <string name="shell_package_dialog_hint">com.example.app</string>
     <string name="shell_package_dialog_confirm">执行</string>
@@ -342,6 +353,8 @@
     <string name="easy_action_toast_screenshot_failure">%1$s 截图失败</string>
     <string name="easy_action_toast_screenshot_clipboard_success">%1$s 截图已复制到电脑剪贴板</string>
     <string name="easy_action_toast_screenshot_clipboard_failure">%1$s 截图复制到剪贴板失败</string>
+    <string name="easy_action_toast_layout_clipboard_success">%1$s 屏幕布局 XML 已复制到电脑剪贴板</string>
+    <string name="easy_action_toast_layout_clipboard_failure">%1$s 屏幕布局 XML 复制到剪贴板失败</string>
 
     <!-- Decompile Studio -->
     <string name="decompile_empty_title">反编译 - 等待导入 APK</string>

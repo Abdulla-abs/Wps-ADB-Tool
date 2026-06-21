@@ -281,6 +281,8 @@
     <string name="easy_action_category_device_hardware">DEVICE &amp; HARDWARE</string>
     <string name="easy_action_category_system_software">SYSTEM VERSION</string>
     <string name="easy_action_category_storage_memory">STORAGE &amp; MEMORY</string>
+    <string name="easy_action_category_activity_window">ACTIVITY &amp; WINDOW</string>
+    <string name="easy_action_category_performance">PERFORMANCE</string>
     <string name="easy_action_reboot">Reboot Device</string>
     <string name="easy_action_recovery">Recovery Mode</string>
     <string name="easy_action_clear_cache">Clear Cache</string>
@@ -325,6 +327,15 @@
     <string name="easy_action_info_data_storage">/data Storage</string>
     <string name="easy_action_info_total_memory">Total RAM</string>
     <string name="easy_action_info_available_memory">Available RAM</string>
+    <string name="easy_action_info_current_focus">Current Focus Window</string>
+    <string name="easy_action_info_activity_top">Running Activity (Top)</string>
+    <string name="easy_action_info_resumed_activity">Resumed Activity</string>
+    <string name="easy_action_info_resumed_activity_package">Resumed Activity Package</string>
+    <string name="easy_action_dump_layout_clipboard">Layout XML to Clipboard</string>
+    <string name="easy_action_info_meminfo_all">All Process Memory (PSS)</string>
+    <string name="easy_action_info_meminfo_package">App Memory Usage</string>
+    <string name="easy_action_info_cpuinfo">CPU Usage</string>
+    <string name="easy_action_info_procstats">Running Processes Overview</string>
     <string name="shell_package_dialog_title">Package name</string>
     <string name="shell_package_dialog_hint">com.example.app</string>
     <string name="shell_package_dialog_confirm">Run</string>
@@ -342,6 +353,8 @@
     <string name="easy_action_toast_screenshot_failure">Screenshot failed for %1$s</string>
     <string name="easy_action_toast_screenshot_clipboard_success">Screenshot copied to clipboard from %1$s</string>
     <string name="easy_action_toast_screenshot_clipboard_failure">Failed to copy screenshot from %1$s</string>
+    <string name="easy_action_toast_layout_clipboard_success">Layout XML copied to clipboard from %1$s</string>
+    <string name="easy_action_toast_layout_clipboard_failure">Failed to copy layout XML from %1$s</string>
 
     <!-- Decompile Studio -->
     <string name="decompile_empty_title">Decompile - Waiting for APK</string>

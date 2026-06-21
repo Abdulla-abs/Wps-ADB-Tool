@@ -23,4 +23,20 @@ class ShellInfoCommandsTest {
         assertTrue(input!!.contains("wm size"))
         assertTrue(input.contains(">> wm size"))
     }
+
+    @Test
+    fun shellCommand_mapsCurrentFocusToDumpsysWindow() {
+        assertEquals(
+            "dumpsys window | grep mCurrentFocus",
+            ShellInfoCommands.shellCommand(EasyActionKind.INFO_CURRENT_FOCUS),
+        )
+    }
+
+    @Test
+    fun shellCommand_meminfoPackage_includesPackageName() {
+        assertEquals(
+            "dumpsys meminfo com.example.app",
+            ShellInfoCommands.shellCommand(EasyActionKind.INFO_MEMINFO_PACKAGE, "com.example.app"),
+        )
+    }
 }

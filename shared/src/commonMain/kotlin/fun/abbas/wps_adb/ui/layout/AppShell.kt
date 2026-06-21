@@ -25,6 +25,8 @@ import `fun`.abbas.wps_adb.model.EasyActionKind
 import `fun`.abbas.wps_adb.model.EasyActionToastKind
 import wpsadbtool.shared.generated.resources.easy_action_toast_screenshot_clipboard_failure
 import wpsadbtool.shared.generated.resources.easy_action_toast_screenshot_clipboard_success
+import wpsadbtool.shared.generated.resources.easy_action_toast_layout_clipboard_failure
+import wpsadbtool.shared.generated.resources.easy_action_toast_layout_clipboard_success
 import wpsadbtool.shared.generated.resources.easy_action_toast_screenshot_failure
 import wpsadbtool.shared.generated.resources.easy_action_toast_screenshot_success
 import wpsadbtool.shared.generated.resources.settings_save_success
@@ -257,6 +259,11 @@ fun AppShell(viewModel: AppViewModel) {
                     stringResource(Res.string.easy_action_toast_screenshot_clipboard_success, toast.deviceName)
                 } else {
                     stringResource(Res.string.easy_action_toast_screenshot_clipboard_failure, toast.deviceName)
+                }
+                EasyActionToastKind.LAYOUT_CLIPBOARD -> if (toast.success) {
+                    stringResource(Res.string.easy_action_toast_layout_clipboard_success, toast.deviceName)
+                } else {
+                    stringResource(Res.string.easy_action_toast_layout_clipboard_failure, toast.deviceName)
                 }
             }
             ToastBanner(

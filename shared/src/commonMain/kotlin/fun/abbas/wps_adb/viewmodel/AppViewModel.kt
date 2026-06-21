@@ -726,6 +726,16 @@ class AppViewModel(
                         ),
                     )
                 }
+                EasyActionKind.DUMP_LAYOUT_TO_CLIPBOARD -> {
+                    val copied = repository.dumpLayoutToClipboard(deviceId)
+                    showEasyActionToast(
+                        EasyActionToast(
+                            kind = EasyActionToastKind.LAYOUT_CLIPBOARD,
+                            deviceName = deviceName,
+                            success = copied,
+                        ),
+                    )
+                }
                 EasyActionKind.SCREEN_RECORD -> {
                     if (session.isScreenRecording) {
                         repository.stopScreenRecord(deviceId)
@@ -743,6 +753,10 @@ class AppViewModel(
                     val pkg = packageName ?: return@launch
                     repository.clearAppData(deviceId, pkg)
                 }
+                EasyActionKind.INFO_MEMINFO_PACKAGE -> {
+                    val pkg = packageName ?: return@launch
+                    executeShellInfoQuery(kind, pkg)
+                }
                 else -> {
                     when {
                         kind.isDeveloperOptionToggle() -> {
@@ -758,9 +772,9 @@ class AppViewModel(
         }
     }
 
-    private fun executeShellInfoQuery(kind: EasyActionKind) {
+    private fun executeShellInfoQuery(kind: EasyActionKind, packageName: String? = null) {
         val session = _localState.value.shellSession ?: return
-        val input = ShellInfoCommands.wrappedShellInput(kind) ?: return
+        val input = ShellInfoCommands.wrappedShellInput(kind, packageName) ?: return
         val sessionId = SidePanelController.shellSessionId(session.deviceId)
         if (!deviceShellService.writeToShell(sessionId, input)) {
             repository.addLog(

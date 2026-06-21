@@ -3,6 +3,7 @@ package `fun`.abbas.wps_adb.model
 enum class EasyActionToastKind {
     SCREENSHOT_SAVED,
     SCREENSHOT_CLIPBOARD,
+    LAYOUT_CLIPBOARD,
 }
 
 data class EasyActionToast(

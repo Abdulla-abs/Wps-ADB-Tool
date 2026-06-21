@@ -8,6 +8,8 @@ enum class EasyActionCategory {
     DEVICE_HARDWARE,
     SYSTEM_SOFTWARE,
     STORAGE_MEMORY,
+    ACTIVITY_WINDOW,
+    PERFORMANCE,
 }
 
 enum class EasyActionKind {
@@ -45,6 +47,15 @@ enum class EasyActionKind {
     INFO_DATA_STORAGE,
     INFO_TOTAL_MEMORY,
     INFO_AVAILABLE_MEMORY,
+    INFO_CURRENT_FOCUS,
+    INFO_ACTIVITY_TOP,
+    INFO_RESUMED_ACTIVITY,
+    INFO_RESUMED_ACTIVITY_PACKAGE,
+    DUMP_LAYOUT_TO_CLIPBOARD,
+    INFO_MEMINFO_ALL,
+    INFO_MEMINFO_PACKAGE,
+    INFO_CPUINFO,
+    INFO_PROCSTATS,
 }
 
 data class EasyActionDefinition(
@@ -90,6 +101,15 @@ val DefaultEasyActions: List<EasyActionDefinition> = listOf(
     EasyActionDefinition(EasyActionKind.INFO_DATA_STORAGE, EasyActionCategory.STORAGE_MEMORY),
     EasyActionDefinition(EasyActionKind.INFO_TOTAL_MEMORY, EasyActionCategory.STORAGE_MEMORY),
     EasyActionDefinition(EasyActionKind.INFO_AVAILABLE_MEMORY, EasyActionCategory.STORAGE_MEMORY),
+    EasyActionDefinition(EasyActionKind.INFO_CURRENT_FOCUS, EasyActionCategory.ACTIVITY_WINDOW),
+    EasyActionDefinition(EasyActionKind.INFO_ACTIVITY_TOP, EasyActionCategory.ACTIVITY_WINDOW),
+    EasyActionDefinition(EasyActionKind.INFO_RESUMED_ACTIVITY, EasyActionCategory.ACTIVITY_WINDOW),
+    EasyActionDefinition(EasyActionKind.INFO_RESUMED_ACTIVITY_PACKAGE, EasyActionCategory.ACTIVITY_WINDOW),
+    EasyActionDefinition(EasyActionKind.DUMP_LAYOUT_TO_CLIPBOARD, EasyActionCategory.ACTIVITY_WINDOW),
+    EasyActionDefinition(EasyActionKind.INFO_MEMINFO_ALL, EasyActionCategory.PERFORMANCE),
+    EasyActionDefinition(EasyActionKind.INFO_MEMINFO_PACKAGE, EasyActionCategory.PERFORMANCE, requiresPackage = true),
+    EasyActionDefinition(EasyActionKind.INFO_CPUINFO, EasyActionCategory.PERFORMANCE),
+    EasyActionDefinition(EasyActionKind.INFO_PROCSTATS, EasyActionCategory.PERFORMANCE),
 )
 
 fun EasyActionCategory.defaultExpanded(): Boolean = when (this) {
@@ -101,5 +121,7 @@ fun EasyActionCategory.defaultExpanded(): Boolean = when (this) {
     EasyActionCategory.DEVICE_HARDWARE,
     EasyActionCategory.SYSTEM_SOFTWARE,
     EasyActionCategory.STORAGE_MEMORY,
+    EasyActionCategory.ACTIVITY_WINDOW,
+    EasyActionCategory.PERFORMANCE,
     -> false
 }

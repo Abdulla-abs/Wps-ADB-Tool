@@ -42,6 +42,7 @@ kotlin {
             implementation(libs.jadx.java.input)
             implementation(libs.rsyntaxtextarea)
             implementation(libs.apksig)
+            implementation("org.json:json:20240303")
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)

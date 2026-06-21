@@ -35,6 +35,8 @@ import wpsadbtool.shared.generated.resources.easy_action_category_display
 import wpsadbtool.shared.generated.resources.easy_action_category_storage_memory
 import wpsadbtool.shared.generated.resources.easy_action_category_system
 import wpsadbtool.shared.generated.resources.easy_action_category_system_software
+import wpsadbtool.shared.generated.resources.easy_action_category_activity_window
+import wpsadbtool.shared.generated.resources.easy_action_category_performance
 import wpsadbtool.shared.generated.resources.easy_action_clear_cache
 import wpsadbtool.shared.generated.resources.easy_action_clear_data
 import wpsadbtool.shared.generated.resources.easy_action_dev_dont_keep_activities_off
@@ -73,6 +75,15 @@ import wpsadbtool.shared.generated.resources.easy_action_info_screen_size
 import wpsadbtool.shared.generated.resources.easy_action_info_sdk_version
 import wpsadbtool.shared.generated.resources.easy_action_info_security_patch
 import wpsadbtool.shared.generated.resources.easy_action_info_total_memory
+import wpsadbtool.shared.generated.resources.easy_action_info_current_focus
+import wpsadbtool.shared.generated.resources.easy_action_info_activity_top
+import wpsadbtool.shared.generated.resources.easy_action_info_resumed_activity
+import wpsadbtool.shared.generated.resources.easy_action_info_resumed_activity_package
+import wpsadbtool.shared.generated.resources.easy_action_dump_layout_clipboard
+import wpsadbtool.shared.generated.resources.easy_action_info_meminfo_all
+import wpsadbtool.shared.generated.resources.easy_action_info_meminfo_package
+import wpsadbtool.shared.generated.resources.easy_action_info_cpuinfo
+import wpsadbtool.shared.generated.resources.easy_action_info_procstats
 import wpsadbtool.shared.generated.resources.easy_action_reboot
 import wpsadbtool.shared.generated.resources.easy_action_recovery
 import wpsadbtool.shared.generated.resources.easy_action_screen_record
@@ -202,6 +213,8 @@ private fun easyActionCategoryLabel(category: EasyActionCategory): String = when
     EasyActionCategory.DEVICE_HARDWARE -> stringResource(Res.string.easy_action_category_device_hardware)
     EasyActionCategory.SYSTEM_SOFTWARE -> stringResource(Res.string.easy_action_category_system_software)
     EasyActionCategory.STORAGE_MEMORY -> stringResource(Res.string.easy_action_category_storage_memory)
+    EasyActionCategory.ACTIVITY_WINDOW -> stringResource(Res.string.easy_action_category_activity_window)
+    EasyActionCategory.PERFORMANCE -> stringResource(Res.string.easy_action_category_performance)
 }
 
 @Composable
@@ -281,6 +294,15 @@ private fun easyActionLabel(kind: EasyActionKind): String = when (kind) {
     EasyActionKind.INFO_DATA_STORAGE -> stringResource(Res.string.easy_action_info_data_storage)
     EasyActionKind.INFO_TOTAL_MEMORY -> stringResource(Res.string.easy_action_info_total_memory)
     EasyActionKind.INFO_AVAILABLE_MEMORY -> stringResource(Res.string.easy_action_info_available_memory)
+    EasyActionKind.INFO_CURRENT_FOCUS -> stringResource(Res.string.easy_action_info_current_focus)
+    EasyActionKind.INFO_ACTIVITY_TOP -> stringResource(Res.string.easy_action_info_activity_top)
+    EasyActionKind.INFO_RESUMED_ACTIVITY -> stringResource(Res.string.easy_action_info_resumed_activity)
+    EasyActionKind.INFO_RESUMED_ACTIVITY_PACKAGE -> stringResource(Res.string.easy_action_info_resumed_activity_package)
+    EasyActionKind.DUMP_LAYOUT_TO_CLIPBOARD -> stringResource(Res.string.easy_action_dump_layout_clipboard)
+    EasyActionKind.INFO_MEMINFO_ALL -> stringResource(Res.string.easy_action_info_meminfo_all)
+    EasyActionKind.INFO_MEMINFO_PACKAGE -> stringResource(Res.string.easy_action_info_meminfo_package)
+    EasyActionKind.INFO_CPUINFO -> stringResource(Res.string.easy_action_info_cpuinfo)
+    EasyActionKind.INFO_PROCSTATS -> stringResource(Res.string.easy_action_info_procstats)
     EasyActionKind.TOGGLE_SHOW_REFRESH_RATE,
     EasyActionKind.TOGGLE_POINTER_LOCATION,
     EasyActionKind.TOGGLE_SHOW_SURFACE_UPDATES,
