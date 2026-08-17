@@ -2,80 +2,43 @@ package `fun`.abbas.wps_adb.ui.decompile
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Logout
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import `fun`.abbas.wps_adb.model.FileNode
 import `fun`.abbas.wps_adb.theme.CarbonColors
-import org.jetbrains.compose.resources.stringResource
-import wpsadbtool.shared.generated.resources.Res
-import wpsadbtool.shared.generated.resources.decompile_exit_project
-import wpsadbtool.shared.generated.resources.decompile_project_explorer
 
 @Composable
 fun ProjectExplorer(
     rootFolder: FileNode.Folder?,
     onFileClick: (FileNode) -> Unit,
-    onExitProject: (() -> Unit)? = null,
     showRootFolder: Boolean = true,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier
             .background(CarbonColors.SurfaceContainerLowest)
             .verticalScroll(rememberScrollState())
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = stringResource(Res.string.decompile_project_explorer).uppercase(),
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                color = CarbonColors.Outline,
-                letterSpacing = 1.sp
-            )
-            if (onExitProject != null) {
-                IconButton(onClick = onExitProject) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.Logout,
-                        contentDescription = stringResource(Res.string.decompile_exit_project),
-                        tint = CarbonColors.Outline,
-                    )
-                }
-            } else {
-                Text(
-                    text = "↕",
-                    fontSize = 14.sp,
-                    color = CarbonColors.Outline,
-                    modifier = Modifier.clickable { /* Expand/collapse all */ }
-                )
-            }
-        }
-
         if (rootFolder != null) {
             if (showRootFolder) {
                 FileNodeItem(
@@ -117,7 +80,7 @@ private fun FileNodeItem(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onNodeClick(node) }
+                        .fileTreeItemClickable { onNodeClick(node) }
                         .padding(start = paddingLeft, top = 6.dp, bottom = 6.dp, end = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -155,7 +118,7 @@ private fun FileNodeItem(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { onNodeClick(node) }
+                    .fileTreeItemClickable { onNodeClick(node) }
                     .padding(start = paddingLeft + 12.dp, top = 4.dp, bottom = 4.dp, end = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -196,4 +159,18 @@ private fun FileNodeItem(
             }
         }
     }
+}
+
+@Composable
+private fun Modifier.fileTreeItemClickable(onClick: () -> Unit): Modifier {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
+    return this
+        .background(if (isHovered) CarbonColors.SurfaceContainerHigh else Color.Transparent)
+        .hoverable(interactionSource = interactionSource)
+        .clickable(
+            interactionSource = interactionSource,
+            indication = null,
+            onClick = onClick,
+        )
 }

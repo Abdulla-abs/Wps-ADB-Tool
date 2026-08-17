@@ -191,13 +191,23 @@ private fun RecentProjectCard(
                 letterSpacing = 0.5.sp,
             )
             Text(
-                text = project.packageName,
+                text = project.displayName(),
                 color = CarbonColors.Primary,
-                fontFamily = FontFamily.Monospace,
                 fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+            if (project.packageName != project.displayName()) {
+                Text(
+                    text = project.packageName,
+                    color = CarbonColors.Outline,
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 10.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
             Text(
                 text = project.apkFileName,
                 color = CarbonColors.Outline,

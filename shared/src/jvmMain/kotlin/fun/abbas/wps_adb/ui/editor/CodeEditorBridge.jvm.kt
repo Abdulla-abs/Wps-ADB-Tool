@@ -12,7 +12,9 @@ import org.fife.ui.rtextarea.RTextScrollPane
 import androidx.compose.ui.graphics.Color as ComposeColor
 import java.awt.BorderLayout
 import java.awt.Color
+import java.awt.Rectangle
 import javax.swing.JPanel
+import javax.swing.SwingUtilities
 import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
 import java.util.concurrent.atomic.AtomicBoolean
@@ -52,7 +54,7 @@ actual fun CodeEditorBridge(
         modifier = modifier,
         factory = {
             val panel = JPanel(BorderLayout())
-            val textArea = RSyntaxTextArea(25, 80).apply {
+            val textArea = RSyntaxTextArea().apply {
                 text = content
                 syntaxEditingStyle = when (syntax.lowercase()) {
                     "xml" -> SyntaxConstants.SYNTAX_STYLE_XML
@@ -98,6 +100,7 @@ actual fun CodeEditorBridge(
                 isIconRowHeaderEnabled = false
             }
             panel.add(scrollPane, BorderLayout.CENTER)
+            scrollEditorToTop(textArea, scrollPane)
             panel
         },
         update = { panel ->
@@ -108,10 +111,22 @@ actual fun CodeEditorBridge(
                 suppressDocumentEvents.set(true)
                 try {
                     textArea.text = content
+                    scrollEditorToTop(textArea, scrollPane)
                 } finally {
                     suppressDocumentEvents.set(false)
                 }
             }
         }
     )
+}
+
+private fun scrollEditorToTop(textArea: RSyntaxTextArea, scrollPane: RTextScrollPane) {
+    SwingUtilities.invokeLater {
+        textArea.caretPosition = 0
+        textArea.select(0, 0)
+        scrollPane.verticalScrollBar.value = 0
+        scrollPane.horizontalScrollBar.value = 0
+        scrollPane.viewport.viewPosition = java.awt.Point(0, 0)
+        scrollPane.viewport.scrollRectToVisible(Rectangle(0, 0, 1, 1))
+    }
 }

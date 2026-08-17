@@ -6,6 +6,7 @@ import `fun`.abbas.wps_adb.data.AdbRepository
 import `fun`.abbas.wps_adb.data.AppLogFilter
 import `fun`.abbas.wps_adb.data.ApkInstallConflictDetector
 import `fun`.abbas.wps_adb.data.ApkMetadataResolver
+import `fun`.abbas.wps_adb.data.ApkPackageNames
 import `fun`.abbas.wps_adb.data.DeviceShellService
 import `fun`.abbas.wps_adb.data.NoOpDeviceShellService
 import `fun`.abbas.wps_adb.data.NoOpScrcpyMirrorService
@@ -17,6 +18,7 @@ import `fun`.abbas.wps_adb.data.createToolInstaller
 import `fun`.abbas.wps_adb.data.defaultToolInstallRootPath
 import `fun`.abbas.wps_adb.model.AdbLog
 import `fun`.abbas.wps_adb.model.ApkInstallResult
+import `fun`.abbas.wps_adb.model.ApkMetadata
 import `fun`.abbas.wps_adb.model.ApkInstallToast
 import `fun`.abbas.wps_adb.model.ApkInstallToastKind
 import `fun`.abbas.wps_adb.model.ApkReinstallPrompt
@@ -55,6 +57,7 @@ import `fun`.abbas.wps_adb.model.ToolInstallPhase
 import `fun`.abbas.wps_adb.model.ToolInstallProgress
 import `fun`.abbas.wps_adb.model.ToolKind
 import `fun`.abbas.wps_adb.model.DecompileWorkspace
+import `fun`.abbas.wps_adb.model.withWorkspaceDisplayName
 import `fun`.abbas.wps_adb.model.FileNode
 import `fun`.abbas.wps_adb.model.EditorTab
 import `fun`.abbas.wps_adb.model.EditorType
@@ -1375,12 +1378,16 @@ class AppViewModel(
                 paths.ensureDirectoriesExist()
                 val workspaceRoot = paths.decompileWorkspacesRoot()
                 
-                val workspace = decompileService.importApk(apkPath, workspaceRoot) { progress, taskName ->
-                    _localState.update { it.copy(decompileProgress = progress, currentTaskName = taskName) }
-                }
+                val metadata = repository.parseApkMetadata(apkPath)
+                val workspace = applyApkMetadata(
+                    decompileService.importApk(apkPath, workspaceRoot) { progress, taskName ->
+                        _localState.update { it.copy(decompileProgress = progress, currentTaskName = taskName) }
+                    },
+                    metadata,
+                )
                 
                 _localState.update { it.copy(currentTaskName = "Scanning files...") }
-                val rootFolder = decompileService.loadFileTree(workspace)
+                val rootFolder = decompileService.loadFileTree(workspace).withWorkspaceDisplayName(workspace)
                 rememberRecentDecompileProject(workspace, apkPath)
                 
                 _localState.update {
@@ -1405,12 +1412,18 @@ class AppViewModel(
                 it.copy(showDecompileProjectManager = false, decompileProgress = 0.1f, currentTaskName = "Loading workspace...")
             }
             try {
+                val metadata = if (project.appLabel.isNullOrBlank()) {
+                    repository.parseApkMetadata(project.apkPath)
+                } else {
+                    null
+                }
                 val workspace = DecompileWorkspace(
                     apkPath = project.apkPath,
                     workspacePath = project.workspacePath,
-                    packageName = project.packageName,
+                    packageName = resolveDecompilePackageName(project.packageName, metadata),
+                    appLabel = project.appLabel ?: metadata?.appLabel,
                 )
-                val rootFolder = decompileService.loadFileTree(workspace)
+                val rootFolder = decompileService.loadFileTree(workspace).withWorkspaceDisplayName(workspace)
                 rememberRecentDecompileProject(workspace, project.apkPath)
 
                 _localState.update {
@@ -1465,7 +1478,7 @@ class AppViewModel(
                     decompileService.closeWorkspace()
                     DecompileWorkspaceStore.deleteProject(dataPaths().recentProjectsFile(), project)
                 }
-                repository.addLog(LogLevel.I, "Decompile", "Deleted project ${project.packageName}", "system")
+                repository.addLog(LogLevel.I, "Decompile", "Deleted project ${project.displayName()}", "system")
             } catch (e: Exception) {
                 _localState.update {
                     it.copy(recentDecompileProjects = DecompileWorkspaceStore.loadRecent(dataPaths().recentProjectsFile()))
@@ -1487,8 +1500,24 @@ class AppViewModel(
                 packageName = workspace.packageName,
                 apkFileName = apkFileName,
                 lastOpenedAtMillis = System.currentTimeMillis(),
+                appLabel = workspace.appLabel,
             ),
         )
+    }
+
+    private fun applyApkMetadata(workspace: DecompileWorkspace, metadata: ApkMetadata?): DecompileWorkspace {
+        if (metadata == null) return workspace
+        return workspace.copy(
+            packageName = resolveDecompilePackageName(workspace.packageName, metadata),
+            appLabel = metadata.appLabel?.takeIf { it.isNotBlank() } ?: workspace.appLabel,
+        )
+    }
+
+    private fun resolveDecompilePackageName(fallback: String, metadata: ApkMetadata?): String {
+        val candidate = metadata?.packageName ?: return fallback
+        if (ApkMetadataResolver.isMockPackage(candidate)) return fallback
+        if (!ApkPackageNames.isLikelyAppPackage(candidate.lowercase())) return fallback
+        return candidate
     }
 
     fun handleFileNodeClick(node: FileNode) {
@@ -1637,7 +1666,7 @@ class AppViewModel(
 
     private suspend fun refreshDecompileFileTree() {
         val workspace = _localState.value.decompileWorkspace ?: return
-        val rootFolder = decompileService.loadFileTree(workspace)
+        val rootFolder = decompileService.loadFileTree(workspace).withWorkspaceDisplayName(workspace)
         _localState.update { it.copy(fileTreeRoot = rootFolder) }
     }
 

@@ -36,8 +36,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.jetbrains.compose.resources.stringResource
+import wpsadbtool.shared.generated.resources.Res
+import wpsadbtool.shared.generated.resources.decompile_back_to_workspace
+import wpsadbtool.shared.generated.resources.decompile_dex_editor_title
 import `fun`.abbas.wps_adb.model.EditorTab
 import `fun`.abbas.wps_adb.model.EditorType
 import `fun`.abbas.wps_adb.model.FileNode
@@ -64,24 +69,26 @@ fun DexEditorPlusScreen(
                 .fillMaxWidth()
                 .height(48.dp)
                 .background(CarbonColors.SurfaceContainerLow)
-                .padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .border(1.dp, CarbonColors.OutlineVariant)
+                .padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(
-                text = "← 返回工作空间",
-                color = CarbonColors.Primary,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier
-                    .clickable(onClick = onBack)
-                    .padding(vertical = 8.dp, horizontal = 4.dp)
+            DecompileBackIconButton(
+                onClick = onBack,
+                contentDescription = stringResource(Res.string.decompile_back_to_workspace),
             )
-            Spacer(modifier = Modifier.width(16.dp))
             Text(
-                text = "DEX 编辑器 Plus | ${uiState.activeDexEditorProject ?: "DEX"}",
+                text = stringResource(
+                    Res.string.decompile_dex_editor_title,
+                    uiState.activeDexEditorProject ?: "DEX",
+                ),
                 color = CarbonColors.OnSurface,
                 fontSize = 14.sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
             )
         }
 

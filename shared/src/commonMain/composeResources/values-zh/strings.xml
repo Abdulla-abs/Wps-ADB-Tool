@@ -407,4 +407,6 @@
     <string name="decompile_project_manager_empty">暂无已保存项目</string>
     <string name="decompile_project_open">打开</string>
     <string name="decompile_project_delete">删除</string>
+    <string name="decompile_back_to_workspace">返回工作空间</string>
+    <string name="decompile_dex_editor_title">DEX 编辑器 Plus · %1$s</string>
 </resources>

@@ -52,15 +52,16 @@ fun DecompileStudioScreen(
         } else {
             Column(modifier = Modifier.fillMaxSize()) {
                 DecompileWorkspaceToolbar(
+                    displayName = uiState.decompileWorkspace!!.displayName(),
                     packageName = uiState.decompileWorkspace!!.packageName,
+                    onBack = { viewModel.clearDecompileWorkspace() },
                     onExportApk = { viewModel.buildAndExportSignedApk() },
                 )
                 Row(modifier = Modifier.weight(1f)) {
                     ProjectExplorer(
                         rootFolder = uiState.fileTreeRoot,
                         onFileClick = { node -> viewModel.handleFileNodeClick(node) },
-                        onExitProject = { viewModel.clearDecompileWorkspace() },
-                        modifier = Modifier.width(300.dp).fillMaxHeight()
+                        modifier = Modifier.width(300.dp).fillMaxHeight(),
                     )
                     CodeWorkspace(
                         tabs = uiState.openTabs,

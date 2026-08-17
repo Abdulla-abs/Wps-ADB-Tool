@@ -66,6 +66,9 @@ actual object DecompileWorkspaceStore {
             append(",\"workspacePath\":\"").append(escapeJson(entry.workspacePath)).append('"')
             append(",\"packageName\":\"").append(escapeJson(entry.packageName)).append('"')
             append(",\"apkFileName\":\"").append(escapeJson(entry.apkFileName)).append('"')
+            entry.appLabel?.let { label ->
+                append(",\"appLabel\":\"").append(escapeJson(label)).append('"')
+            }
             append(",\"lastOpenedAtMillis\":").append(entry.lastOpenedAtMillis)
             append('}')
         }
@@ -119,6 +122,7 @@ actual object DecompileWorkspaceStore {
             packageName = packageName,
             apkFileName = apkFileName,
             lastOpenedAtMillis = lastOpened,
+            appLabel = field("appLabel"),
         )
     }
 

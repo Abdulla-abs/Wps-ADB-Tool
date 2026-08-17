@@ -407,4 +407,6 @@
     <string name="decompile_project_manager_empty">No saved projects</string>
     <string name="decompile_project_open">Open</string>
     <string name="decompile_project_delete">Delete</string>
+    <string name="decompile_back_to_workspace">Back to workspace</string>
+    <string name="decompile_dex_editor_title">DEX Editor Plus · %1$s</string>
 </resources>

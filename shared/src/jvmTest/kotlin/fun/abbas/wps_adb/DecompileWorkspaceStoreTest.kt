@@ -8,6 +8,24 @@ import kotlin.test.assertEquals
 
 class DecompileWorkspaceStoreTest {
     @Test
+    fun saveRecent_persistsAppLabel() {
+        val tempDir = tempDir("ws-store-label")
+        val recentFile = File(tempDir, "decompile/recent.json").absolutePath
+        val project = RecentDecompileProject(
+            apkPath = "C:/test/app.apk",
+            workspacePath = tempDir.absolutePath + "/workspace",
+            packageName = "com.test.app",
+            apkFileName = "app.apk",
+            lastOpenedAtMillis = 1234567890L,
+            appLabel = "Test App",
+        )
+        DecompileWorkspaceStore.saveRecent(recentFile, project)
+        val loaded = DecompileWorkspaceStore.loadRecent(recentFile).first()
+        assertEquals("Test App", loaded.appLabel)
+        assertEquals("Test App", loaded.displayName())
+    }
+
+    @Test
     fun saveRecent_writesToCustomRecentFile() {
         val tempDir = tempDir("ws-store")
         val recentFile = File(tempDir, "decompile/recent.json").absolutePath

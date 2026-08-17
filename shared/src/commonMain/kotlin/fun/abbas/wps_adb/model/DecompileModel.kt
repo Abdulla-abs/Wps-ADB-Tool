@@ -1,5 +1,6 @@
 package `fun`.abbas.wps_adb.model
 
+import `fun`.abbas.wps_adb.data.DecompileProjectNames
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -7,8 +8,18 @@ data class DecompileWorkspace(
     val apkPath: String,
     val workspacePath: String,
     val packageName: String,
-    val decompileResources: Boolean = false
-)
+    val appLabel: String? = null,
+    val decompileResources: Boolean = false,
+) {
+    fun displayName(): String = DecompileProjectNames.displayName(
+        appLabel = appLabel,
+        packageName = packageName,
+        apkFileName = apkPath.substringAfterLast('/').substringAfterLast('\\'),
+    )
+}
+
+fun FileNode.Folder.withWorkspaceDisplayName(workspace: DecompileWorkspace): FileNode.Folder =
+    copy(name = workspace.displayName())
 
 sealed interface FileNode {
     val name: String

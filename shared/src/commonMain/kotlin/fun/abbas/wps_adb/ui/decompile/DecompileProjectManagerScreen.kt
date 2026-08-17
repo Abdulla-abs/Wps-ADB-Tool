@@ -120,19 +120,28 @@ private fun DecompileProjectManagerCard(
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
-                text = project.packageName,
+                text = project.displayName(),
                 color = CarbonColors.Primary,
-                fontFamily = FontFamily.Monospace,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+            if (project.packageName != project.displayName()) {
+                Text(
+                    text = project.packageName,
+                    color = CarbonColors.OnSurfaceVariant,
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 11.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
             Text(
                 text = project.apkFileName,
-                color = CarbonColors.OnSurfaceVariant,
+                color = CarbonColors.Outline,
                 fontFamily = FontFamily.Monospace,
-                fontSize = 12.sp,
+                fontSize = 11.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

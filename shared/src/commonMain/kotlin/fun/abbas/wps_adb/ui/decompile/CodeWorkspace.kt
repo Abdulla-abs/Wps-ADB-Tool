@@ -45,6 +45,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 
 import androidx.compose.ui.Alignment
 
@@ -125,7 +126,7 @@ fun CodeWorkspace(
     Column(
 
         modifier = modifier
-
+            .fillMaxSize()
             .background(CarbonColors.Background)
 
             .onPreviewKeyEvent { event ->
@@ -436,21 +437,16 @@ fun CodeWorkspace(
 
                 } else {
 
-                    CodeEditorBridge(
-
-                        content = activeTab.currentContent,
-
-                        onContentChange = { newContent -> onContentChange(activeTab.id, newContent) },
-
-                        syntax = DecompileOpenableFileTypes.syntaxForType(activeTab.type),
-
-                        modifier = Modifier
-
-                            .fillMaxWidth()
-
-                            .weight(1f)
-
-                    )
+                    key(activeTab.id) {
+                        CodeEditorBridge(
+                            content = activeTab.currentContent,
+                            onContentChange = { newContent -> onContentChange(activeTab.id, newContent) },
+                            syntax = DecompileOpenableFileTypes.syntaxForType(activeTab.type),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                        )
+                    }
 
                 }
 
