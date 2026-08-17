@@ -4,6 +4,7 @@ import `fun`.abbas.wps_adb.data.ExecutableLocator
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class ExecutableLocatorTest {
@@ -15,22 +16,23 @@ class ExecutableLocatorTest {
     }
 
     @Test
-    fun resolveAdbPath_fallsBackToDiscoverOrDefaultWhenExplicitPathMissing() {
-        val configured = "C:\\missing\\adb.exe"
-        val resolved = ExecutableLocator.resolveAdbPath(configured)
-        assertEquals(ExecutableLocator.discoverAdbPath() ?: "adb", resolved)
+    fun resolveAdbPath_returnsEmptyWhenUnconfigured() {
+        assertEquals("", ExecutableLocator.resolveAdbPath(""))
+        assertEquals("", ExecutableLocator.resolveAdbPath("adb"))
+        assertEquals("", ExecutableLocator.resolveAdbPath("  "))
     }
 
     @Test
-    fun resolveAdbPath_discoversFromDefaultPlaceholder() {
-        val discovered = ExecutableLocator.discoverAdbPath()
-        val resolved = ExecutableLocator.resolveAdbPath("adb")
-        if (discovered != null) {
-            assertEquals(discovered, resolved)
-            assertTrue(File(resolved).isAbsolute)
-        } else {
-            assertEquals("adb", resolved)
-        }
+    fun resolveAdbPath_keepsMissingExplicitPathWithoutDiscovering() {
+        val configured = "C:\\missing\\adb.exe"
+        assertEquals(configured, ExecutableLocator.resolveAdbPath(configured))
+    }
+
+    @Test
+    fun isAdbConfigured_requiresExplicitPath() {
+        assertFalse(ExecutableLocator.isAdbConfigured(""))
+        assertFalse(ExecutableLocator.isAdbConfigured("adb"))
+        assertTrue(ExecutableLocator.isAdbConfigured("C:\\platform-tools\\adb.exe"))
     }
 
     @Test
@@ -41,9 +43,14 @@ class ExecutableLocatorTest {
     }
 
     @Test
-    fun resolveScrcpyPath_fallsBackToDiscoverOrDefaultWhenExplicitPathMissing() {
+    fun resolveScrcpyPath_returnsEmptyWhenUnconfigured() {
+        assertEquals("", ExecutableLocator.resolveScrcpyPath(""))
+        assertEquals("", ExecutableLocator.resolveScrcpyPath("scrcpy"))
+    }
+
+    @Test
+    fun resolveScrcpyPath_keepsMissingExplicitPathWithoutDiscovering() {
         val configured = "C:\\missing\\scrcpy.exe"
-        val resolved = ExecutableLocator.resolveScrcpyPath(configured)
-        assertEquals(ExecutableLocator.discoverScrcpyPath() ?: "scrcpy", resolved)
+        assertEquals(configured, ExecutableLocator.resolveScrcpyPath(configured))
     }
 }

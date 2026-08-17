@@ -12,6 +12,9 @@ import `fun`.abbas.wps_adb.data.NoOpScrcpyMirrorService
 import `fun`.abbas.wps_adb.data.NoOpTabSessionManager
 import `fun`.abbas.wps_adb.data.ScrcpyMirrorService
 import `fun`.abbas.wps_adb.data.TabSessionManager
+import `fun`.abbas.wps_adb.data.ToolInstaller
+import `fun`.abbas.wps_adb.data.createToolInstaller
+import `fun`.abbas.wps_adb.data.defaultToolInstallRootPath
 import `fun`.abbas.wps_adb.model.AdbLog
 import `fun`.abbas.wps_adb.model.ApkInstallResult
 import `fun`.abbas.wps_adb.model.ApkInstallToast
@@ -48,6 +51,9 @@ import `fun`.abbas.wps_adb.model.SidePanelState
 import `fun`.abbas.wps_adb.model.SidePanelTab
 import `fun`.abbas.wps_adb.model.SortParam
 import `fun`.abbas.wps_adb.model.TabListenKind
+import `fun`.abbas.wps_adb.model.ToolInstallPhase
+import `fun`.abbas.wps_adb.model.ToolInstallProgress
+import `fun`.abbas.wps_adb.model.ToolKind
 import `fun`.abbas.wps_adb.model.DecompileWorkspace
 import `fun`.abbas.wps_adb.model.FileNode
 import `fun`.abbas.wps_adb.model.EditorTab
@@ -66,6 +72,7 @@ import `fun`.abbas.wps_adb.platform.pickSaveFile
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -81,6 +88,7 @@ class AppViewModel(
     private val tabSessionManager: TabSessionManager = NoOpTabSessionManager(),
     private val scrcpyMirrorService: ScrcpyMirrorService = NoOpScrcpyMirrorService(),
     private val deviceShellService: DeviceShellService = NoOpDeviceShellService(),
+    private val toolInstaller: ToolInstaller = createToolInstaller(),
 ) : ViewModel() {
     private val _localState = MutableStateFlow(AppUiState())
     private val decompileService = getDecompileService()
@@ -219,7 +227,13 @@ class AppViewModel(
             repository.stopGlobalLogcat()
         }
     }
-    fun openPairingDialog() = _localState.update { it.copy(isPairingDialogOpen = true) }
+    fun openPairingDialog() {
+        if (!repository.isAdbActive.value) {
+            openToolInstallDialog(ToolKind.ADB)
+            return
+        }
+        _localState.update { it.copy(isPairingDialogOpen = true) }
+    }
 
     fun setPairingMethod(method: PairingMethod) = _localState.update { it.copy(pairingMethod = method) }
 
@@ -1045,6 +1059,148 @@ class AppViewModel(
         showSettingsSaveToast()
     }
 
+    fun openToolInstallDialog(kind: ToolKind) {
+        if (_localState.value.toolInstallProgress != null) return
+        _localState.update { it.copy(pendingToolInstallKind = kind) }
+    }
+
+    fun dismissToolInstallDialog() {
+        _localState.update { it.copy(pendingToolInstallKind = null) }
+    }
+
+    fun confirmToolInstall(installDir: String) {
+        val kind = _localState.value.pendingToolInstallKind ?: return
+        val trimmed = installDir.trim()
+        if (trimmed.isEmpty()) return
+        _localState.update { it.copy(pendingToolInstallKind = null) }
+        startToolInstall(kind, trimmed)
+    }
+
+    fun defaultToolInstallDir(): String = defaultToolInstallRootPath()
+
+    private fun startToolInstall(kind: ToolKind, installDir: String) {
+        if (_localState.value.toolInstallProgress != null) return
+        viewModelScope.launch {
+            _localState.update {
+                it.copy(
+                    toolInstallProgress = ToolInstallProgress(
+                        kind = kind,
+                        phase = ToolInstallPhase.DOWNLOADING,
+                        fraction = 0f,
+                        message = "Preparing…",
+                    ),
+                )
+            }
+            val result = toolInstaller.install(kind, installDir) { label, fraction ->
+                val phase = when {
+                    fraction >= 0.9f -> ToolInstallPhase.CONFIGURING
+                    fraction >= 0.75f -> ToolInstallPhase.EXTRACTING
+                    else -> ToolInstallPhase.DOWNLOADING
+                }
+                _localState.update { state ->
+                    state.copy(
+                        toolInstallProgress = ToolInstallProgress(
+                            kind = kind,
+                            phase = phase,
+                            fraction = fraction,
+                            message = label,
+                        ),
+                    )
+                }
+            }
+            result.fold(
+                onSuccess = { installed ->
+                    _localState.update {
+                        it.copy(
+                            toolInstallProgress = ToolInstallProgress(
+                                kind = kind,
+                                phase = ToolInstallPhase.CONFIGURING,
+                                fraction = 0.96f,
+                                message = "Updating settings…",
+                            ),
+                        )
+                    }
+                    when (kind) {
+                        ToolKind.ADB -> {
+                            val next = repository.settings.value.copy(adbPath = installed.executablePath)
+                            repository.saveSettings(next)
+                            repository.addLog(
+                                LogLevel.I,
+                                "ToolInstaller",
+                                "ADB installed and configured: ${installed.executablePath}",
+                                "system",
+                            )
+                        }
+                        ToolKind.SCRCPY -> {
+                            val next = repository.settings.value.copy(scrcpyPath = installed.executablePath)
+                            repository.saveSettings(next)
+                            repository.addLog(
+                                LogLevel.I,
+                                "ToolInstaller",
+                                "scrcpy installed and configured: ${installed.executablePath}",
+                                "system",
+                            )
+                            promoteUnavailableMirrorTabs()
+                        }
+                    }
+                    _localState.update {
+                        it.copy(
+                            toolInstallProgress = ToolInstallProgress(
+                                kind = kind,
+                                phase = ToolInstallPhase.DONE,
+                                fraction = 1f,
+                                message = "Installed",
+                            ),
+                        )
+                    }
+                    kotlinx.coroutines.delay(800)
+                    _localState.update { it.copy(toolInstallProgress = null) }
+                },
+                onFailure = { error ->
+                    val message = error.message ?: "Install failed"
+                    repository.addLog(LogLevel.E, "ToolInstaller", message, "system")
+                    _localState.update {
+                        it.copy(
+                            toolInstallProgress = ToolInstallProgress(
+                                kind = kind,
+                                phase = ToolInstallPhase.FAILED,
+                                fraction = 0f,
+                                message = message,
+                                errorMessage = message,
+                            ),
+                        )
+                    }
+                },
+            )
+        }
+    }
+
+    fun dismissToolInstallFailure() {
+        val progress = _localState.value.toolInstallProgress
+        if (progress?.phase == ToolInstallPhase.FAILED) {
+            _localState.update { it.copy(toolInstallProgress = null) }
+        }
+    }
+
+    private fun promoteUnavailableMirrorTabs() {
+        val sidePanel = _localState.value.sidePanel
+        val updatedTabs = sidePanel.tabs.map { tab ->
+            if (tab is SidePanelTab.Mirror && tab.sessionState == MirrorSessionState.UNAVAILABLE) {
+                tab.copy(sessionState = MirrorSessionState.IDLE, errorMessage = null)
+            } else {
+                tab
+            }
+        }
+        _localState.update { it.copy(sidePanel = sidePanel.copy(tabs = updatedTabs)) }
+        val activeId = sidePanel.activeTabId
+        if (activeId != null && scrcpyMirrorService.isAvailable()) {
+            val active = updatedTabs.find { it.id == activeId } as? SidePanelTab.Mirror
+            if (active != null && active.sessionState == MirrorSessionState.IDLE) {
+                startScrcpyMirror(activeId)
+            }
+        }
+    }
+
     suspend fun runBatchAction(
         group: FilterTab,
         actionKey: String,
@@ -1800,8 +1956,16 @@ class AppViewModel(
                 }
                 repository.addLog(LogLevel.I, "Decompile", "Decompiled ${tab.title} to Java preview", "system")
             } catch (e: Exception) {
+                val message = e.message ?: e::class.simpleName ?: "unknown error"
+                _localState.update {
+                    it.copy(
+                        decompileProgress = 1f,
+                        currentTaskName = "Smali→Java 失败: $message",
+                    )
+                }
+                repository.addLog(LogLevel.E, "Decompile", "Smali to Java failed: $message", "system")
+                delay(2500)
                 _localState.update { it.copy(decompileProgress = null, currentTaskName = "") }
-                repository.addLog(LogLevel.E, "Decompile", "Smali to Java failed: ${e.message}", "system")
             }
         }
     }

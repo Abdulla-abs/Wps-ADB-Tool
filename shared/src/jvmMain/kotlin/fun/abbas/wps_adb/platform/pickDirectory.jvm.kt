@@ -7,10 +7,13 @@ import java.io.File
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileSystemView
 
-actual suspend fun pickDirectory(initialPath: String?): String? = withContext(Dispatchers.Swing) {
+actual suspend fun pickDirectory(
+    initialPath: String?,
+    dialogTitle: String,
+): String? = withContext(Dispatchers.Swing) {
     val chooser = JFileChooser(initialPath ?: FileSystemView.getFileSystemView().homeDirectory.path).apply {
         fileSelectionMode = JFileChooser.DIRECTORIES_ONLY
-        dialogTitle = "Select data cache directory"
+        this.dialogTitle = dialogTitle
     }
     if (chooser.showOpenDialog(null) != JFileChooser.APPROVE_OPTION) return@withContext null
     chooser.selectedFile?.absolutePath

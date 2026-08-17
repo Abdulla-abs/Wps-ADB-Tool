@@ -24,7 +24,8 @@ class JvmDeviceShellService(
     @Volatile
     private var exitListener: ((sessionId: String, exitCode: Int) -> Unit)? = null
 
-    override fun isAvailable(): Boolean = JvmAdbRunner.isAvailable()
+    override fun isAvailable(): Boolean =
+        JvmAdbRunner.isAvailable(ExecutableLocator.resolveAdbPath(adbPathProvider()))
 
     override fun start(sessionId: String, serial: String): DeviceShellStartResult {
         if (isRunning(sessionId)) {

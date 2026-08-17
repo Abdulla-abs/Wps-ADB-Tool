@@ -4,10 +4,22 @@ import java.io.File
 
 object ExecutableLocator {
     fun resolveAdbPath(configured: String): String =
-        resolve(configured, "adb") { discoverAdbPath() }
+        resolveConfiguredExecutable(configured, ADB_DEFAULT_NAME)
 
     fun resolveScrcpyPath(configured: String): String =
-        resolve(configured, "scrcpy") { discoverScrcpyPath() }
+        resolveConfiguredExecutable(configured, SCRCPY_DEFAULT_NAME)
+
+    fun isAdbConfigured(configured: String): Boolean =
+        isExecutableConfigured(configured, ADB_DEFAULT_NAME)
+
+    fun isScrcpyConfigured(configured: String): Boolean =
+        isExecutableConfigured(configured, SCRCPY_DEFAULT_NAME)
+
+    /** Blank or placeholder means "not configured" — do not search PATH/SDK. */
+    fun isExecutableConfigured(configured: String, defaultName: String): Boolean {
+        val trimmed = configured.trim()
+        return trimmed.isNotEmpty() && !trimmed.equals(defaultName, ignoreCase = true)
+    }
 
     fun discoverAdbPath(): String? =
         findOnPath("adb") ?: discoverAdbFromSdk()
@@ -29,16 +41,12 @@ object ExecutableLocator {
             ?.absolutePath
     }
 
-    private fun resolve(configured: String, defaultName: String, discover: () -> String?): String {
+    private fun resolveConfiguredExecutable(configured: String, defaultName: String): String {
         val trimmed = configured.trim()
-        when {
-            trimmed.isEmpty() || trimmed == defaultName -> return discover() ?: defaultName
-            else -> {
-                val file = File(trimmed)
-                if (file.exists()) return file.absolutePath
-                return discover() ?: defaultName
-            }
-        }
+        if (!isExecutableConfigured(trimmed, defaultName)) return ""
+        val file = File(trimmed)
+        if (file.isFile) return file.absolutePath
+        return trimmed
     }
 
     private fun discoverAdbFromSdk(): String? {
@@ -49,4 +57,7 @@ object ExecutableLocator {
 
     private fun executableFileName(name: String): String =
         if (File.separatorChar == '\\') "$name.exe" else name
+
+    const val ADB_DEFAULT_NAME = "adb"
+    const val SCRCPY_DEFAULT_NAME = "scrcpy"
 }

@@ -58,8 +58,12 @@ import `fun`.abbas.wps_adb.model.isLandscapeScreen
 import `fun`.abbas.wps_adb.model.FilterTab
 import `fun`.abbas.wps_adb.model.ShellTransitionKind
 import `fun`.abbas.wps_adb.model.SortParam
+import `fun`.abbas.wps_adb.model.ToolInstallProgress
+import `fun`.abbas.wps_adb.model.ToolKind
 import `fun`.abbas.wps_adb.theme.CarbonColors
 import `fun`.abbas.wps_adb.platform.apkDropTarget
+import `fun`.abbas.wps_adb.ui.tools.AdbMissingHintPanel
+import `fun`.abbas.wps_adb.ui.tools.ToolInstallProgressPanel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import coil3.compose.SubcomposeAsyncImage
@@ -74,6 +78,8 @@ private val DeviceCardWidth = 260.dp
 fun DeviceWallScreen(
     devices: List<Device>,
     isScanningDevices: Boolean,
+    isAdbActive: Boolean,
+    adbInstallProgress: ToolInstallProgress?,
     filterTab: FilterTab,
     searchQuery: String,
     sortParam: SortParam,
@@ -85,6 +91,8 @@ fun DeviceWallScreen(
     onApkDrop: suspend (deviceId: String, apkPath: String) -> Unit,
     onReconnect: (String) -> Unit,
     onRemove: (String) -> Unit,
+    onDownloadAdb: () -> Unit,
+    onDismissAdbInstallFailure: () -> Unit,
     modifier: Modifier = Modifier,
     transitionKind: ShellTransitionKind = ShellTransitionKind.SLIDE,
     sharedTransitionScope: SharedTransitionScope? = null,
@@ -114,6 +122,8 @@ fun DeviceWallScreen(
         DeviceGrid(
             devices = devices,
             isScanningDevices = isScanningDevices,
+            isAdbActive = isAdbActive,
+            adbInstallProgress = adbInstallProgress,
             filterTab = filterTab,
             searchQuery = searchQuery,
             sortParam = sortParam,
@@ -125,6 +135,8 @@ fun DeviceWallScreen(
             onApkDrop = onApkDrop,
             onReconnect = onReconnect,
             onRemove = onRemove,
+            onDownloadAdb = onDownloadAdb,
+            onDismissAdbInstallFailure = onDismissAdbInstallFailure,
             transitionKind = transitionKind,
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = animatedVisibilityScope,
@@ -187,6 +199,8 @@ private fun DeviceScanningPanel(modifier: Modifier = Modifier) {
 fun DeviceGrid(
     devices: List<Device>,
     isScanningDevices: Boolean,
+    isAdbActive: Boolean = true,
+    adbInstallProgress: ToolInstallProgress? = null,
     filterTab: FilterTab,
     searchQuery: String,
     sortParam: SortParam,
@@ -198,11 +212,34 @@ fun DeviceGrid(
     onApkDrop: suspend (deviceId: String, apkPath: String) -> Unit,
     onReconnect: (String) -> Unit,
     onRemove: (String) -> Unit,
+    onDownloadAdb: () -> Unit = {},
+    onDismissAdbInstallFailure: () -> Unit = {},
     modifier: Modifier = Modifier,
     transitionKind: ShellTransitionKind = ShellTransitionKind.SLIDE,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
 ) {
+    val adbProgress = adbInstallProgress?.takeIf { it.kind == ToolKind.ADB }
+    if (adbProgress != null) {
+        ToolInstallProgressPanel(
+            progress = adbProgress,
+            onDismissFailure = onDismissAdbInstallFailure,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 24.dp),
+        )
+        return
+    }
+    if (!isAdbActive) {
+        AdbMissingHintPanel(
+            onDownloadClick = onDownloadAdb,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 24.dp),
+        )
+        return
+    }
+
     val filtered = DeviceCustomOrder.sortDevices(
         DeviceCustomOrder.filterDevices(devices, filterTab, searchQuery),
         sortParam,

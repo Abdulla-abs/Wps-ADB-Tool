@@ -66,18 +66,28 @@ class JvmScrcpyMirrorServiceTest {
     }
 
     @Test
-    fun resolveScrcpyPath_discoversFromPathOrFallsBackToDefaultName() {
-        val expected = ExecutableLocator.discoverScrcpyPath() ?: "scrcpy"
-        assertEquals(expected, JvmScrcpyMirrorService.resolveScrcpyPath(""))
-        assertEquals(expected, JvmScrcpyMirrorService.resolveScrcpyPath("scrcpy"))
-        assertEquals(expected, JvmScrcpyMirrorService.resolveScrcpyPath("C:\\missing\\scrcpy.exe"))
+    fun resolveScrcpyPath_returnsEmptyWhenUnconfigured() {
+        assertEquals("", JvmScrcpyMirrorService.resolveScrcpyPath(""))
+        assertEquals("", JvmScrcpyMirrorService.resolveScrcpyPath("scrcpy"))
+        assertEquals("C:\\missing\\scrcpy.exe", JvmScrcpyMirrorService.resolveScrcpyPath("C:\\missing\\scrcpy.exe"))
+    }
+
+    @Test
+    fun isAvailable_falseWhenScrcpyPathUnconfigured() {
+        val service = JvmScrcpyMirrorService(
+            scrcpyPathProvider = { "" },
+            adbPathProvider = { "" },
+        )
+        assertFalse(service.isAvailable())
     }
 
     @Test
     fun start_isIdempotentWhenAlreadyRunning() {
+        val scrcpy = fakeExecutable()
+        val adb = fakeExecutable()
         val service = JvmScrcpyMirrorService(
-            scrcpyPathProvider = { "scrcpy" },
-            adbPathProvider = { "adb" },
+            scrcpyPathProvider = { scrcpy.absolutePath },
+            adbPathProvider = { adb.absolutePath },
             processStarter = { _, _ -> longRunningProcess() },
         )
         service.setExitListener { _, _, _ -> }
@@ -93,9 +103,11 @@ class JvmScrcpyMirrorServiceTest {
 
     @Test
     fun stop_removesSession() {
+        val scrcpy = fakeExecutable()
+        val adb = fakeExecutable()
         val service = JvmScrcpyMirrorService(
-            scrcpyPathProvider = { "scrcpy" },
-            adbPathProvider = { "adb" },
+            scrcpyPathProvider = { scrcpy.absolutePath },
+            adbPathProvider = { adb.absolutePath },
             processStarter = { _, _ -> longRunningProcess() },
         )
         service.setExitListener { _, _, _ -> }
@@ -108,11 +120,11 @@ class JvmScrcpyMirrorServiceTest {
 
     @Test
     fun start_passesAdbEnvironmentVariable() {
-        val adbFile = File.createTempFile("adb-test", ".exe")
-        adbFile.deleteOnExit()
+        val scrcpy = fakeExecutable()
+        val adbFile = fakeExecutable()
         var capturedEnv: Map<String, String>? = null
         val service = JvmScrcpyMirrorService(
-            scrcpyPathProvider = { "scrcpy" },
+            scrcpyPathProvider = { scrcpy.absolutePath },
             adbPathProvider = { adbFile.absolutePath },
             processStarter = { _, env ->
                 capturedEnv = env
@@ -124,6 +136,22 @@ class JvmScrcpyMirrorServiceTest {
 
         assertEquals(adbFile.absolutePath, capturedEnv?.get("ADB"))
         service.stopAll()
+    }
+
+    private fun fakeExecutable(): File {
+        val windows = System.getProperty("os.name").orEmpty().lowercase().contains("windows")
+        val file = if (windows) {
+            File.createTempFile("fake-exec", ".cmd").also {
+                it.writeText("@echo off\r\nexit /b 0\r\n")
+            }
+        } else {
+            File.createTempFile("fake-exec", ".sh").also {
+                it.writeText("#!/bin/sh\nexit 0\n")
+                it.setExecutable(true)
+            }
+        }
+        file.deleteOnExit()
+        return file
     }
 
     private fun longRunningProcess(): Process {

@@ -23,6 +23,7 @@ import `fun`.abbas.wps_adb.model.EasyActionKind
 import `fun`.abbas.wps_adb.model.FilterTab
 import `fun`.abbas.wps_adb.model.ShellTransitionKind
 import `fun`.abbas.wps_adb.model.SortParam
+import `fun`.abbas.wps_adb.model.ToolInstallProgress
 
 private const val SHELL_TRANSITION_MS = 300
 
@@ -35,6 +36,8 @@ fun DeviceWallHost(
     shellSession: DeviceShellSession?,
     terminalComponent: Any?,
     isScanningDevices: Boolean,
+    isAdbActive: Boolean,
+    adbInstallProgress: ToolInstallProgress?,
     filterTab: FilterTab,
     searchQuery: String,
     sortParam: SortParam,
@@ -46,6 +49,8 @@ fun DeviceWallHost(
     onApkDrop: suspend (deviceId: String, apkPath: String) -> Unit,
     onReconnect: (String) -> Unit,
     onRemove: (String) -> Unit,
+    onDownloadAdb: () -> Unit,
+    onDismissAdbInstallFailure: () -> Unit,
     onShellBack: () -> Unit,
     onOpenShellLogcat: () -> Unit,
     onShellTerminalMounted: () -> Unit,
@@ -78,6 +83,8 @@ fun DeviceWallHost(
                         shellSession = shellSession,
                         terminalComponent = terminalComponent,
                         isScanningDevices = isScanningDevices,
+                        isAdbActive = isAdbActive,
+                        adbInstallProgress = adbInstallProgress,
                         filterTab = filterTab,
                         searchQuery = searchQuery,
                         sortParam = sortParam,
@@ -90,6 +97,8 @@ fun DeviceWallHost(
                         onApkDrop = onApkDrop,
                         onReconnect = onReconnect,
                         onRemove = onRemove,
+                        onDownloadAdb = onDownloadAdb,
+                        onDismissAdbInstallFailure = onDismissAdbInstallFailure,
                         onShellBack = onShellBack,
                         onOpenShellLogcat = onOpenShellLogcat,
                         onShellTerminalMounted = onShellTerminalMounted,
@@ -127,6 +136,8 @@ fun DeviceWallHost(
                     shellSession = shellSession,
                     terminalComponent = terminalComponent,
                     isScanningDevices = isScanningDevices,
+                    isAdbActive = isAdbActive,
+                    adbInstallProgress = adbInstallProgress,
                     filterTab = filterTab,
                     searchQuery = searchQuery,
                     sortParam = sortParam,
@@ -139,6 +150,8 @@ fun DeviceWallHost(
                     onApkDrop = onApkDrop,
                     onReconnect = onReconnect,
                     onRemove = onRemove,
+                    onDownloadAdb = onDownloadAdb,
+                    onDismissAdbInstallFailure = onDismissAdbInstallFailure,
                     onShellBack = onShellBack,
                     onOpenShellLogcat = onOpenShellLogcat,
                     onShellTerminalMounted = onShellTerminalMounted,
@@ -161,6 +174,8 @@ private fun DeviceWallRouteContent(
     shellSession: DeviceShellSession?,
     terminalComponent: Any?,
     isScanningDevices: Boolean,
+    isAdbActive: Boolean,
+    adbInstallProgress: ToolInstallProgress?,
     filterTab: FilterTab,
     searchQuery: String,
     sortParam: SortParam,
@@ -173,6 +188,8 @@ private fun DeviceWallRouteContent(
     onApkDrop: suspend (deviceId: String, apkPath: String) -> Unit,
     onReconnect: (String) -> Unit,
     onRemove: (String) -> Unit,
+    onDownloadAdb: () -> Unit,
+    onDismissAdbInstallFailure: () -> Unit,
     onShellBack: () -> Unit,
     onOpenShellLogcat: () -> Unit,
     onShellTerminalMounted: () -> Unit,
@@ -186,6 +203,8 @@ private fun DeviceWallRouteContent(
         DeviceWallRoute.Grid -> DeviceWallScreen(
             devices = devices,
             isScanningDevices = isScanningDevices,
+            isAdbActive = isAdbActive,
+            adbInstallProgress = adbInstallProgress,
             filterTab = filterTab,
             searchQuery = searchQuery,
             sortParam = sortParam,
@@ -197,6 +216,8 @@ private fun DeviceWallRouteContent(
             onApkDrop = onApkDrop,
             onReconnect = onReconnect,
             onRemove = onRemove,
+            onDownloadAdb = onDownloadAdb,
+            onDismissAdbInstallFailure = onDismissAdbInstallFailure,
             transitionKind = transitionKind,
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = animatedVisibilityScope,

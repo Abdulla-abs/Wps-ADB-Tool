@@ -87,7 +87,7 @@ class JvmAdbRepository(
     private val _logcatLogs = MutableStateFlow<List<AdbLog>>(emptyList())
     override val logcatLogs: StateFlow<List<AdbLog>> = _logcatLogs.asStateFlow()
 
-    private val _isAdbActive = MutableStateFlow(true)
+    private val _isAdbActive = MutableStateFlow(false)
     override val isAdbActive: StateFlow<Boolean> = _isAdbActive.asStateFlow()
 
     private val _isScanningDevices = MutableStateFlow(false)
@@ -96,12 +96,13 @@ class JvmAdbRepository(
     override val settings: StateFlow<AppSettings> = _settings.asStateFlow()
 
     init {
-        if (_settings.value.autoApproveKey) {
+        _isAdbActive.value = runner.isAvailable()
+        if (_settings.value.autoApproveKey && _isAdbActive.value) {
             ensureAdbKeyPair()
         }
         scope.launch {
             if (!runner.isAvailable()) {
-                addLog(LogLevel.W, "AdbDaemon", "ADB binary not found — check Settings > ADB path", "system")
+                addLog(LogLevel.W, "AdbDaemon", "ADB not configured — download or set path in Settings", "system")
                 _isAdbActive.value = false
                 return@launch
             }
@@ -1148,7 +1149,13 @@ class JvmAdbRepository(
         addLog(LogLevel.I, "Settings", "Settings saved (ADB: ${settings.adbPath})", "system")
         if (runner.isAvailable()) {
             _isAdbActive.value = true
+            if (settings.autoApproveKey) {
+                ensureAdbKeyPair()
+            }
             refreshDevices()
+        } else {
+            _isAdbActive.value = false
+            addLog(LogLevel.W, "AdbDaemon", "ADB not configured — download or set path in Settings", "system")
         }
     }
 

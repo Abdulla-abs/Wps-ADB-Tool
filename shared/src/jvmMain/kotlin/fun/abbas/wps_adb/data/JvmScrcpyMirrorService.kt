@@ -122,8 +122,9 @@ class JvmScrcpyMirrorService(
         fun resolveScrcpyPath(configured: String): String =
             ExecutableLocator.resolveScrcpyPath(configured)
 
-        fun checkVersion(scrcpyPath: String): Boolean =
-            try {
+        fun checkVersion(scrcpyPath: String): Boolean {
+            if (scrcpyPath.isBlank()) return false
+            return try {
                 val process = ProcessBuilder(scrcpyPath, "--version")
                     .redirectErrorStream(true)
                     .start()
@@ -131,6 +132,7 @@ class JvmScrcpyMirrorService(
             } catch (_: Exception) {
                 false
             }
+        }
 
         fun defaultProcessStarter(command: List<String>, environment: Map<String, String>): Process =
             ProcessBuilder(command)

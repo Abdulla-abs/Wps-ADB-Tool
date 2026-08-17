@@ -19,8 +19,8 @@ class AppSettingsStore(
                 storeFile.inputStream().buffered().use(::load)
             }
             AppSettings(
-                adbPath = props.getProperty(KEY_ADB_PATH, "adb"),
-                scrcpyPath = props.getProperty(KEY_SCRCPY_PATH, "scrcpy"),
+                adbPath = props.getProperty(KEY_ADB_PATH, ""),
+                scrcpyPath = props.getProperty(KEY_SCRCPY_PATH, ""),
                 scrcpyConnection = ScrcpyConnectionOptions(
                     enableAudio = props.getProperty(KEY_SCRCPY_ENABLE_AUDIO, "false").toBooleanStrictOrNull() ?: false,
                     maxSize = enumOrDefault(props.getProperty(KEY_SCRCPY_MAX_SIZE), ScrcpyMaxSize.ORIGINAL),
@@ -42,25 +42,7 @@ class AppSettingsStore(
                 dataCacheDir = props.getProperty(KEY_DATA_CACHE_DIR, ""),
             )
         }
-        return settings.withResolvedExecutablePaths()
-    }
-
-    private fun AppSettings.withResolvedExecutablePaths(): AppSettings {
-        val resolvedAdb = if (adbPath.isBlank() || adbPath == "adb") {
-            ExecutableLocator.resolveAdbPath(adbPath)
-        } else {
-            adbPath
-        }
-        val resolvedScrcpy = if (scrcpyPath.isBlank() || scrcpyPath == "scrcpy") {
-            ExecutableLocator.resolveScrcpyPath(scrcpyPath)
-        } else {
-            scrcpyPath
-        }
-        val resolved = copy(adbPath = resolvedAdb, scrcpyPath = resolvedScrcpy)
-        if (resolved.adbPath != adbPath || resolved.scrcpyPath != scrcpyPath) {
-            save(resolved)
-        }
-        return resolved
+        return settings
     }
 
     fun save(settings: AppSettings) {

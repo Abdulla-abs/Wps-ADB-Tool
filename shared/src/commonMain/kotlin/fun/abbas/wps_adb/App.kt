@@ -7,12 +7,14 @@ import coil3.compose.setSingletonImageLoaderFactory
 import `fun`.abbas.wps_adb.data.createAdbRepository
 import `fun`.abbas.wps_adb.data.createDeviceShellService
 import `fun`.abbas.wps_adb.data.createScrcpyMirrorService
+import `fun`.abbas.wps_adb.platform.TrackAppWindowFocus
 import `fun`.abbas.wps_adb.theme.CarbonTheme
 import `fun`.abbas.wps_adb.ui.layout.AppShell
 import `fun`.abbas.wps_adb.viewmodel.AppViewModel
 
 @Composable
 fun App() {
+    TrackAppWindowFocus()
     setSingletonImageLoaderFactory { context ->
         ImageLoader.Builder(context).build()
     }

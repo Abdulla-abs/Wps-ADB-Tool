@@ -1,8 +1,8 @@
 package `fun`.abbas.wps_adb.model
 
 data class AppSettings(
-    val adbPath: String = "adb",
-    val scrcpyPath: String = "scrcpy",
+    val adbPath: String = "",
+    val scrcpyPath: String = "",
     val scrcpyConnection: ScrcpyConnectionOptions = ScrcpyConnectionOptions(),
     val minPort: Int = 5555,
     val maxPort: Int = 5585,

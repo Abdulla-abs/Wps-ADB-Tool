@@ -19,7 +19,11 @@ data class LogcatSession(
 class JvmAdbRunner(
     private val adbPathProvider: () -> String = { "adb" },
 ) {
-    fun isAvailable(): Boolean = run(listOf("version")).success
+    fun isAvailable(): Boolean {
+        val path = resolveAdbPath()
+        if (path.isBlank()) return false
+        return isAvailable(path)
+    }
 
     fun captureScreenshot(serial: String, outputFile: File): Boolean {
         val bytes = captureScreenshotBytes(serial) ?: return false

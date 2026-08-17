@@ -1,7 +1,6 @@
 package `fun`.abbas.wps_adb
 
 import `fun`.abbas.wps_adb.data.AppSettingsStore
-import `fun`.abbas.wps_adb.data.ExecutableLocator
 import `fun`.abbas.wps_adb.model.AppSettings
 import `fun`.abbas.wps_adb.model.ScrcpyConnectionOptions
 import `fun`.abbas.wps_adb.model.ScrcpyMaxFps
@@ -19,9 +18,19 @@ class AppSettingsStoreTest {
         file.delete()
 
         val loaded = AppSettingsStore(file).load()
-        assertEquals(ExecutableLocator.resolveAdbPath("adb"), loaded.adbPath)
-        assertEquals(ExecutableLocator.resolveScrcpyPath("scrcpy"), loaded.scrcpyPath)
-        assertEquals(AppSettings().copy(adbPath = loaded.adbPath, scrcpyPath = loaded.scrcpyPath), loaded)
+        assertEquals(AppSettings(), loaded)
+    }
+
+    @Test
+    fun load_keepsBlankExecutablePathsWithoutRediscovering() {
+        val file = File.createTempFile("wps-adb-settings-blank", ".properties")
+        file.deleteOnExit()
+        val store = AppSettingsStore(file)
+        store.save(AppSettings(adbPath = "", scrcpyPath = ""))
+
+        val loaded = AppSettingsStore(file).load()
+        assertEquals("", loaded.adbPath)
+        assertEquals("", loaded.scrcpyPath)
     }
 
     @Test

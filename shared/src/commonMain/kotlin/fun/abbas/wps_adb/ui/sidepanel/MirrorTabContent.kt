@@ -18,12 +18,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -34,16 +32,18 @@ import `fun`.abbas.wps_adb.model.ScrcpyConnectionOptions
 import `fun`.abbas.wps_adb.model.ScrcpyMaxFps
 import `fun`.abbas.wps_adb.model.ScrcpyMaxSize
 import `fun`.abbas.wps_adb.model.ScrcpyVideoBitRate
+import `fun`.abbas.wps_adb.model.ToolInstallProgress
+import `fun`.abbas.wps_adb.model.ToolKind
 import `fun`.abbas.wps_adb.theme.CarbonColors
+import `fun`.abbas.wps_adb.ui.tools.ScrcpyMissingHintPanel
+import `fun`.abbas.wps_adb.ui.tools.ToolInstallProgressPanel
 import org.jetbrains.compose.resources.stringResource
 import wpsadbtool.shared.generated.resources.Res
-import wpsadbtool.shared.generated.resources.mirror_action_download
 import wpsadbtool.shared.generated.resources.mirror_action_start
 import wpsadbtool.shared.generated.resources.mirror_action_stop
 import wpsadbtool.shared.generated.resources.mirror_battery
 import wpsadbtool.shared.generated.resources.mirror_connection_settings
 import wpsadbtool.shared.generated.resources.mirror_device_subtitle
-import wpsadbtool.shared.generated.resources.mirror_download_hint
 import wpsadbtool.shared.generated.resources.mirror_error_prefix
 import wpsadbtool.shared.generated.resources.mirror_fps_15
 import wpsadbtool.shared.generated.resources.mirror_fps_30
@@ -70,14 +70,11 @@ import wpsadbtool.shared.generated.resources.mirror_state_starting
 import wpsadbtool.shared.generated.resources.mirror_state_stopped
 import wpsadbtool.shared.generated.resources.mirror_state_unavailable
 import wpsadbtool.shared.generated.resources.mirror_title
-import wpsadbtool.shared.generated.resources.mirror_unavailable_hint
 import wpsadbtool.shared.generated.resources.mirror_video_bitrate_16m
 import wpsadbtool.shared.generated.resources.mirror_video_bitrate_2m
 import wpsadbtool.shared.generated.resources.mirror_video_bitrate_4m
 import wpsadbtool.shared.generated.resources.mirror_video_bitrate_8m
 import wpsadbtool.shared.generated.resources.mirror_video_bitrate_default
-
-private const val SCRCPY_RELEASES_URL = "https://github.com/Genymobile/scrcpy/releases"
 
 @Composable
 fun MirrorTabContent(
@@ -86,13 +83,14 @@ fun MirrorTabContent(
     errorMessage: String?,
     connectionOptions: ScrcpyConnectionOptions,
     settingsEditable: Boolean,
+    scrcpyInstallProgress: ToolInstallProgress?,
     onStartMirror: () -> Unit,
     onStopMirror: () -> Unit,
     onConnectionOptionsChange: (ScrcpyConnectionOptions) -> Unit,
+    onDownloadScrcpy: () -> Unit,
+    onDismissScrcpyInstallFailure: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val uriHandler = LocalUriHandler.current
-
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -115,76 +113,73 @@ fun MirrorTabContent(
             )
         }
 
-        DeviceInfoCard(device)
-        StatusBadge(sessionState = sessionState)
-
-        ConnectionSettingsCard(
-            options = connectionOptions,
-            enabled = settingsEditable,
-            onOptionsChange = onConnectionOptionsChange,
-        )
-
-        if (!settingsEditable && sessionState != MirrorSessionState.UNAVAILABLE) {
-            Text(
-                stringResource(Res.string.mirror_settings_locked_hint),
-                fontSize = 9.sp,
-                color = CarbonColors.Outline,
-            )
-        }
-
-        when (sessionState) {
-            MirrorSessionState.UNAVAILABLE -> {
-                Text(
-                    stringResource(Res.string.mirror_unavailable_hint),
-                    fontSize = 11.sp,
-                    color = CarbonColors.OnSurfaceVariant,
-                )
-                OutlinedButton(
-                    onClick = { uriHandler.openUri(SCRCPY_RELEASES_URL) },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(stringResource(Res.string.mirror_action_download))
-                }
-                Text(
-                    stringResource(Res.string.mirror_download_hint),
-                    fontSize = 9.sp,
-                    color = CarbonColors.Outline,
+        val scrcpyProgress = scrcpyInstallProgress?.takeIf { it.kind == ToolKind.SCRCPY }
+        when {
+            scrcpyProgress != null -> {
+                ToolInstallProgressPanel(
+                    progress = scrcpyProgress,
+                    onDismissFailure = onDismissScrcpyInstallFailure,
                 )
             }
-            MirrorSessionState.RUNNING -> {
-                Button(
-                    onClick = onStopMirror,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = CarbonColors.Error.copy(alpha = 0.2f),
-                        contentColor = CarbonColors.Error,
-                    ),
-                ) {
-                    Text(stringResource(Res.string.mirror_action_stop), fontWeight = FontWeight.Bold)
-                }
+            sessionState == MirrorSessionState.UNAVAILABLE -> {
+                StatusBadge(sessionState = sessionState)
+                ScrcpyMissingHintPanel(onDownloadClick = onDownloadScrcpy)
             }
-            MirrorSessionState.STARTING -> Unit
             else -> {
-                Button(
-                    onClick = onStartMirror,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = CarbonColors.Primary,
-                        contentColor = CarbonColors.OnPrimary,
-                    ),
-                ) {
-                    Text(stringResource(Res.string.mirror_action_start), fontWeight = FontWeight.Bold)
+                DeviceInfoCard(device)
+                StatusBadge(sessionState = sessionState)
+
+                ConnectionSettingsCard(
+                    options = connectionOptions,
+                    enabled = settingsEditable,
+                    onOptionsChange = onConnectionOptionsChange,
+                )
+
+                if (!settingsEditable) {
+                    Text(
+                        stringResource(Res.string.mirror_settings_locked_hint),
+                        fontSize = 9.sp,
+                        color = CarbonColors.Outline,
+                    )
+                }
+
+                when (sessionState) {
+                    MirrorSessionState.RUNNING -> {
+                        Button(
+                            onClick = onStopMirror,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = CarbonColors.Error.copy(alpha = 0.2f),
+                                contentColor = CarbonColors.Error,
+                            ),
+                        ) {
+                            Text(stringResource(Res.string.mirror_action_stop), fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    MirrorSessionState.STARTING -> Unit
+                    else -> {
+                        Button(
+                            onClick = onStartMirror,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = CarbonColors.Primary,
+                                contentColor = CarbonColors.OnPrimary,
+                            ),
+                        ) {
+                            Text(stringResource(Res.string.mirror_action_start), fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+
+                if (!errorMessage.isNullOrBlank()) {
+                    Text(
+                        stringResource(Res.string.mirror_error_prefix, errorMessage),
+                        fontSize = 10.sp,
+                        color = CarbonColors.Error,
+                        fontFamily = FontFamily.Monospace,
+                    )
                 }
             }
-        }
-
-        if (!errorMessage.isNullOrBlank()) {
-            Text(
-                stringResource(Res.string.mirror_error_prefix, errorMessage),
-                fontSize = 10.sp,
-                color = CarbonColors.Error,
-                fontFamily = FontFamily.Monospace,
-            )
         }
     }
 }

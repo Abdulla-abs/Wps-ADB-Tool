@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import wpsadbtool.shared.generated.resources.Res
+import wpsadbtool.shared.generated.resources.app_name
 import wpsadbtool.shared.generated.resources.apk_debug_skip_install_toast
 import wpsadbtool.shared.generated.resources.apk_install_toast_failure
 import wpsadbtool.shared.generated.resources.apk_install_toast_success
@@ -43,8 +44,10 @@ import wpsadbtool.shared.generated.resources.shell_terminal_hidden_by_dialog
 import wpsadbtool.shared.generated.resources.shell_terminal_hidden_by_sidepanel
 import `fun`.abbas.wps_adb.model.DeviceStatus
 import `fun`.abbas.wps_adb.model.NavTab
+import `fun`.abbas.wps_adb.model.ToolKind
 import `fun`.abbas.wps_adb.theme.CarbonColors
 import `fun`.abbas.wps_adb.ui.device.DeviceWallHost
+import `fun`.abbas.wps_adb.ui.tools.ToolInstallLocationDialog
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -77,6 +80,7 @@ fun AppShell(viewModel: AppViewModel) {
         uiState.sidePanel.isExpanded -> stringResource(Res.string.shell_terminal_hidden_by_sidepanel)
         else -> null
     }
+    val notificationTitle = stringResource(Res.string.app_name)
 
     Box(modifier = Modifier.fillMaxSize().background(CarbonColors.Background)) {
         Row(modifier = Modifier.fillMaxSize()) {
@@ -117,6 +121,8 @@ fun AppShell(viewModel: AppViewModel) {
                                 shellSession = uiState.shellSession,
                                 terminalComponent = viewModel.shellTerminalComponent(),
                                 isScanningDevices = uiState.isScanningDevices,
+                                isAdbActive = uiState.isAdbActive,
+                                adbInstallProgress = uiState.toolInstallProgress,
                                 filterTab = uiState.filterTab,
                                 searchQuery = uiState.searchQuery,
                                 sortParam = uiState.sortParam,
@@ -128,6 +134,8 @@ fun AppShell(viewModel: AppViewModel) {
                                 onApkDrop = viewModel::installApkOnDevice,
                                 onReconnect = viewModel::reconnectDevice,
                                 onRemove = viewModel::removeDevice,
+                                onDownloadAdb = { viewModel.openToolInstallDialog(ToolKind.ADB) },
+                                onDismissAdbInstallFailure = viewModel::dismissToolInstallFailure,
                                 onShellBack = viewModel::closeDeviceShell,
                                 onOpenShellLogcat = viewModel::openShellDeviceLogcat,
                                 onShellTerminalMounted = viewModel::onShellTerminalMounted,
@@ -218,6 +226,9 @@ fun AppShell(viewModel: AppViewModel) {
             onStartMirror = viewModel::startScrcpyMirror,
             onStopMirror = viewModel::stopScrcpyMirror,
             onConnectionOptionsChange = viewModel::updateMirrorConnectionOptions,
+            scrcpyInstallProgress = uiState.toolInstallProgress,
+            onDownloadScrcpy = { viewModel.openToolInstallDialog(ToolKind.SCRCPY) },
+            onDismissScrcpyInstallFailure = viewModel::dismissToolInstallFailure,
             onToggleDrawer = viewModel::toggleSidePanelDrawer,
             modifier = Modifier.align(Alignment.CenterEnd),
         )
@@ -244,6 +255,7 @@ fun AppShell(viewModel: AppViewModel) {
                 isSuccess = toast.success,
                 toastId = toast.id,
                 onDismiss = viewModel::dismissApkInstallToast,
+                notificationTitle = notificationTitle,
                 modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
             )
         }
@@ -271,6 +283,7 @@ fun AppShell(viewModel: AppViewModel) {
                 isSuccess = toast.success,
                 toastId = toast.id,
                 onDismiss = viewModel::dismissEasyActionToast,
+                notificationTitle = notificationTitle,
                 modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
             )
         }
@@ -281,6 +294,7 @@ fun AppShell(viewModel: AppViewModel) {
                 isSuccess = true,
                 toastId = toast.id,
                 onDismiss = viewModel::dismissSettingsSaveToast,
+                notificationTitle = notificationTitle,
                 modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
             )
         }
@@ -367,6 +381,15 @@ fun AppShell(viewModel: AppViewModel) {
                 defaultPort = settings.minPort,
                 minPort = settings.minPort,
                 maxPort = settings.maxPort,
+            )
+        }
+
+        uiState.pendingToolInstallKind?.let { kind ->
+            ToolInstallLocationDialog(
+                kind = kind,
+                initialPath = viewModel.defaultToolInstallDir(),
+                onConfirm = viewModel::confirmToolInstall,
+                onDismiss = viewModel::dismissToolInstallDialog,
             )
         }
     }

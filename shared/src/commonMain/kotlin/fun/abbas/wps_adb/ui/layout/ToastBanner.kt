@@ -10,6 +10,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import `fun`.abbas.wps_adb.platform.AppWindowFocus
+import `fun`.abbas.wps_adb.platform.notifyTaskResultWhenBackground
 import `fun`.abbas.wps_adb.theme.CarbonColors
 import kotlinx.coroutines.delay
 
@@ -22,8 +24,12 @@ fun ToastBanner(
     toastId: Long,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
+    notificationTitle: String? = null,
 ) {
     LaunchedEffect(toastId) {
+        if (notificationTitle != null && !AppWindowFocus.isFocused()) {
+            notifyTaskResultWhenBackground(notificationTitle, message, isSuccess)
+        }
         delay(TOAST_DISMISS_MS)
         onDismiss()
     }

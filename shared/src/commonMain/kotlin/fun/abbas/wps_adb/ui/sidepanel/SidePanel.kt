@@ -37,6 +37,7 @@ import `fun`.abbas.wps_adb.model.MirrorSessionState
 import `fun`.abbas.wps_adb.model.ScrcpyConnectionOptions
 import `fun`.abbas.wps_adb.model.SidePanelState
 import `fun`.abbas.wps_adb.model.SidePanelTab
+import `fun`.abbas.wps_adb.model.ToolInstallProgress
 import `fun`.abbas.wps_adb.theme.CarbonColors
 
 private val SidePanelScrimColor = Color.Black.copy(alpha = 0.45f)
@@ -78,6 +79,9 @@ fun SidePanel(
     onStartMirror: (String) -> Unit,
     onStopMirror: (String) -> Unit,
     onConnectionOptionsChange: (String, ScrcpyConnectionOptions) -> Unit,
+    scrcpyInstallProgress: ToolInstallProgress?,
+    onDownloadScrcpy: () -> Unit,
+    onDismissScrcpyInstallFailure: () -> Unit,
     onToggleDrawer: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -111,6 +115,9 @@ fun SidePanel(
             onStartMirror = onStartMirror,
             onStopMirror = onStopMirror,
             onConnectionOptionsChange = onConnectionOptionsChange,
+            scrcpyInstallProgress = scrcpyInstallProgress,
+            onDownloadScrcpy = onDownloadScrcpy,
+            onDismissScrcpyInstallFailure = onDismissScrcpyInstallFailure,
             onCollapse = onToggleDrawer,
         )
     }
@@ -133,6 +140,9 @@ private fun SidePanelExpandedContent(
     onStartMirror: (String) -> Unit,
     onStopMirror: (String) -> Unit,
     onConnectionOptionsChange: (String, ScrcpyConnectionOptions) -> Unit,
+    scrcpyInstallProgress: ToolInstallProgress?,
+    onDownloadScrcpy: () -> Unit,
+    onDismissScrcpyInstallFailure: () -> Unit,
     onCollapse: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
@@ -183,9 +193,12 @@ private fun SidePanelExpandedContent(
                     connectionOptions = tab.connectionOptions,
                     settingsEditable = tab.sessionState != MirrorSessionState.RUNNING &&
                         tab.sessionState != MirrorSessionState.STARTING,
+                    scrcpyInstallProgress = scrcpyInstallProgress,
                     onStartMirror = { onStartMirror(tab.id) },
                     onStopMirror = { onStopMirror(tab.id) },
                     onConnectionOptionsChange = { options -> onConnectionOptionsChange(tab.id, options) },
+                    onDownloadScrcpy = onDownloadScrcpy,
+                    onDismissScrcpyInstallFailure = onDismissScrcpyInstallFailure,
                     modifier = Modifier.fillMaxSize(),
                 )
                 is SidePanelTab.AppLog -> AppLogTabContent(

@@ -22,6 +22,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,8 +36,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import `fun`.abbas.wps_adb.data.AppDataPaths
+import `fun`.abbas.wps_adb.data.validateAdbExecutablePath
+import `fun`.abbas.wps_adb.data.validateScrcpyExecutablePath
 import `fun`.abbas.wps_adb.model.AppSettings
 import `fun`.abbas.wps_adb.platform.pickDirectory
+import `fun`.abbas.wps_adb.platform.pickExecutableFile
 import `fun`.abbas.wps_adb.theme.CarbonColors
 import org.jetbrains.compose.resources.stringResource
 import wpsadbtool.shared.generated.resources.*
@@ -57,7 +61,17 @@ fun SettingsScreen(
     var logRetention by remember(settings) { mutableStateOf(settings.logRetention.toString()) }
     var autoApproveKey by remember(settings) { mutableStateOf(settings.autoApproveKey) }
     var dataCacheDir by remember(settings) { mutableStateOf(settings.dataCacheDir) }
+    var adbPathInvalid by remember { mutableStateOf(false) }
+    var scrcpyPathInvalid by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val invalidPathMessage = stringResource(Res.string.settings_executable_path_invalid)
+
+    LaunchedEffect(adbPath) {
+        adbPathInvalid = !validateAdbExecutablePath(adbPath)
+    }
+    LaunchedEffect(scrcpyPath) {
+        scrcpyPathInvalid = !validateScrcpyExecutablePath(scrcpyPath)
+    }
 
     val saveSettings = {
         onSave(
@@ -98,20 +112,22 @@ fun SettingsScreen(
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             SettingsCard(stringResource(Res.string.settings_transport_bindings), Modifier.weight(1f)) {
                 FieldLabel(stringResource(Res.string.settings_adb_path))
-                OutlinedTextField(
+                ExecutablePathField(
                     value = adbPath,
                     onValueChange = { adbPath = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    colors = fieldColors(),
+                    browseDialogTitle = stringResource(Res.string.settings_pick_adb_executable),
+                    onBrowse = { adbPath = it },
+                    isError = adbPathInvalid,
+                    errorMessage = invalidPathMessage,
                 )
                 FieldLabel(stringResource(Res.string.settings_scrcpy_path))
-                OutlinedTextField(
+                ExecutablePathField(
                     value = scrcpyPath,
                     onValueChange = { scrcpyPath = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    colors = fieldColors(),
+                    browseDialogTitle = stringResource(Res.string.settings_pick_scrcpy_executable),
+                    onBrowse = { scrcpyPath = it },
+                    isError = scrcpyPathInvalid,
+                    errorMessage = invalidPathMessage,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Column(Modifier.weight(1f)) {
@@ -151,7 +167,10 @@ fun SettingsScreen(
                 OutlinedButton(
                     onClick = {
                         scope.launch {
-                            pickDirectory(dataCacheDir.ifBlank { null })?.let { dataCacheDir = it }
+                            pickDirectory(
+                                initialPath = dataCacheDir.ifBlank { null },
+                                dialogTitle = "Select data cache directory",
+                            )?.let { dataCacheDir = it }
                         }
                     },
                 ) {
@@ -231,6 +250,50 @@ fun SettingsScreen(
 }
 
 @Composable
+private fun ExecutablePathField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    browseDialogTitle: String,
+    onBrowse: (String) -> Unit,
+    isError: Boolean = false,
+    errorMessage: String? = null,
+) {
+    val scope = rememberCoroutineScope()
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.weight(1f),
+            singleLine = true,
+            isError = isError,
+            supportingText = if (isError && !errorMessage.isNullOrBlank()) {
+                { Text(errorMessage, color = CarbonColors.Error, fontSize = 10.sp) }
+            } else {
+                null
+            },
+            colors = fieldColors(isError = isError),
+        )
+        OutlinedButton(
+            onClick = {
+                scope.launch {
+                    pickExecutableFile(
+                        initialPath = value.ifBlank { null },
+                        dialogTitle = browseDialogTitle,
+                    )?.let(onBrowse)
+                }
+            },
+            modifier = Modifier.padding(top = 8.dp),
+        ) {
+            Text(stringResource(Res.string.settings_data_cache_browse))
+        }
+    }
+}
+
+@Composable
 private fun SettingsCard(title: String, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     Column(
         modifier = modifier
@@ -250,13 +313,16 @@ private fun FieldLabel(text: String) {
 }
 
 @Composable
-private fun fieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor = CarbonColors.Primary,
-    unfocusedBorderColor = CarbonColors.OutlineVariant,
+private fun fieldColors(isError: Boolean = false) = OutlinedTextFieldDefaults.colors(
+    focusedBorderColor = if (isError) CarbonColors.Error else CarbonColors.Primary,
+    unfocusedBorderColor = if (isError) CarbonColors.Error else CarbonColors.OutlineVariant,
+    errorBorderColor = CarbonColors.Error,
     focusedTextColor = CarbonColors.OnSurfaceVariant,
     unfocusedTextColor = CarbonColors.OnSurfaceVariant,
+    errorTextColor = CarbonColors.OnSurfaceVariant,
     focusedContainerColor = CarbonColors.SurfaceContainerLowest,
     unfocusedContainerColor = CarbonColors.SurfaceContainerLowest,
+    errorContainerColor = CarbonColors.SurfaceContainerLowest,
 )
 
 @Composable

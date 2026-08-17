@@ -19,6 +19,8 @@ import `fun`.abbas.wps_adb.model.EditorTab
 import `fun`.abbas.wps_adb.model.DexSearchHit
 import `fun`.abbas.wps_adb.model.RecentDecompileProject
 import `fun`.abbas.wps_adb.model.StringConstantItem
+import `fun`.abbas.wps_adb.model.ToolInstallProgress
+import `fun`.abbas.wps_adb.model.ToolKind
 
 enum class LogTrayMode { EVENTS, LOGCAT }
 
@@ -77,4 +79,9 @@ data class AppUiState(
 
     val recentDecompileProjects: List<RecentDecompileProject> = emptyList(),
     val showDecompileProjectManager: Boolean = false,
+
+    /** Pending location picker for in-app ADB / scrcpy install. */
+    val pendingToolInstallKind: ToolKind? = null,
+    /** Active download/extract progress for ADB (device wall) or scrcpy (mirror sidebar). */
+    val toolInstallProgress: ToolInstallProgress? = null,
 )
