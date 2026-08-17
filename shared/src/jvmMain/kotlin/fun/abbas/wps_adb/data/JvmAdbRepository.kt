@@ -945,7 +945,7 @@ class JvmAdbRepository(
                     )
                 }
 
-                logcatSession = try {
+                val session = try {
                     runner.startLogcat(device.serial, pid)
                 } catch (exception: Exception) {
                     trySend(
@@ -961,12 +961,13 @@ class JvmAdbRepository(
                     close()
                     return@launch
                 }
+                logcatSession = session
 
-                logcatSession?.process?.inputStream?.bufferedReader()?.useLines { lines ->
+                session.process.inputStream.bufferedReader().useLines { lines ->
                     lines.forEach { line ->
                         if (!isActive) return@useLines
                         if (
-                            logcatSession?.filterPidClientSide == true &&
+                            session.filterPidClientSide &&
                             !LogcatLineParser.belongsToProcess(line, pid)
                         ) {
                             return@forEach
