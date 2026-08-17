@@ -10,6 +10,8 @@ import `fun`.abbas.wps_adb.platform.ApkMetadataParser
 import `fun`.abbas.wps_adb.model.ConnectionType
 import `fun`.abbas.wps_adb.model.Device
 import `fun`.abbas.wps_adb.model.DeviceScreenMetrics
+import `fun`.abbas.wps_adb.model.DeviceStorageMetrics
+import `fun`.abbas.wps_adb.model.DeviceStorageSnapshot
 import `fun`.abbas.wps_adb.model.DeviceStatus
 import `fun`.abbas.wps_adb.model.DeviceType
 import `fun`.abbas.wps_adb.model.EasyActionKind
@@ -229,6 +231,9 @@ class JvmAdbRepository(
             androidVersion = previous.androidVersion,
             batteryLevel = previous.batteryLevel,
             isCharging = previous.isCharging,
+            storageUsed = previous.storageUsed,
+            storageTotal = previous.storageTotal,
+            storagePercent = previous.storagePercent,
             screenshotUrl = previous.screenshotUrl,
             formFactor = previous.formFactor,
             screenWidthPx = previous.screenWidthPx,
@@ -1261,6 +1266,7 @@ class JvmAdbRepository(
         }
         val batteryResult = runner.run(listOf("shell", "dumpsys", "battery"), serial = parsed.serial)
         val batteryLevel = parseBatteryLevel(batteryResult.output)
+        val storage = readStorageSnapshot(parsed.serial)
         val characteristicsResult = runner.run(listOf("shell", "getprop", "ro.build.characteristics"), serial = parsed.serial)
         val windowSizeResult = runner.run(listOf("shell", "wm", "size"), serial = parsed.serial)
         val screenSize = DeviceScreenMetrics.parseWindowSize(windowSizeResult.output)
@@ -1275,6 +1281,9 @@ class JvmAdbRepository(
             parsed = parsed,
             androidVersion = androidVersion,
             batteryLevel = batteryLevel,
+            storageUsed = storage.used,
+            storageTotal = storage.total,
+            storagePercent = storage.percent,
             screenshotUrl = "",
             formFactor = formFactor,
             screenWidthPx = screenWidthPx,
@@ -1300,6 +1309,14 @@ class JvmAdbRepository(
     private fun parseBatteryLevel(output: String): Int {
         val match = Regex("""level:\s*(\d+)""").find(output)
         return match?.groupValues?.getOrNull(1)?.toIntOrNull() ?: 0
+    }
+
+    private fun readStorageSnapshot(serial: String): DeviceStorageSnapshot {
+        val dfDataResult = runner.run(listOf("shell", "df", "/data"), serial = serial)
+        DeviceStorageMetrics.parseDfOutput(dfDataResult.output)?.let { return it }
+        val dfResult = runner.run(listOf("shell", "df"), serial = serial)
+        return DeviceStorageMetrics.parseDfOutputPreferringDataMount(dfResult.output)
+            ?: DeviceStorageSnapshot("--", "--", 0)
     }
 
     private fun resolveApkFile(fileName: String): File? {
