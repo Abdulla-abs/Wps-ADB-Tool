@@ -34,24 +34,21 @@ val macSignEnabled = providers.environmentVariable("MACOS_SIGN")
     )
 
 tasks.withType<JavaExec>().configureEach {
-    val sharedKotlinClassesDir = layout.projectDirectory.dir("../shared/build/classes/kotlin/jvm/main")
-    val sharedJavaClassesDir = layout.projectDirectory.dir("../shared/build/classes/java/jvmMain")
-    val sharedResourcesDir = layout.projectDirectory.dir("../shared/build/processedResources/jvm/main")
     dependsOn(
         ":shared:jvmMainClasses",
         ":shared:jvmProcessResources",
     )
-    doFirst {
-        val sharedOutputs = listOf(
-            sharedKotlinClassesDir.asFile,
-            sharedJavaClassesDir.asFile,
-            sharedResourcesDir.asFile,
-        ).filter { it.exists() }
-        if (sharedOutputs.isEmpty()) return@doFirst
 
-        classpath = files(sharedOutputs) + classpath.filter { file ->
-            !(file.name.startsWith("shared-jvm") && file.extension.equals("jar", ignoreCase = true))
-        }
+    // Prefer shared module class dirs over shared-jvm.jar so IDE run picks up edits without repackaging.
+    // Must be configured here (not in doFirst) for configuration-cache compatibility.
+    val sharedBuildDir = layout.projectDirectory.dir("../shared/build")
+    val sharedClassDirs = files(
+        sharedBuildDir.dir("classes/kotlin/jvm/main"),
+        sharedBuildDir.dir("classes/java/jvmMain"),
+        sharedBuildDir.dir("processedResources/jvm/main"),
+    )
+    classpath = sharedClassDirs + classpath.filter { file ->
+        !(file.name.startsWith("shared-jvm") && file.extension.equals("jar", ignoreCase = true))
     }
 }
 
