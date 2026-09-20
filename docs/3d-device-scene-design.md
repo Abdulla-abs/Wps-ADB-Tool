@@ -745,25 +745,34 @@ Three.js 不直接调用 ADB。
 
 Device Inspector 使用 Compose Desktop 实现。
 
-目标：
+### 19.1 布局架构约束：Split Layout
+
+鉴于 Desktop 平台（尤其是 Windows）下 JCEF / SwingPanel 采用原生原生表面（HWND / NSView），重量级组件会在窗口层叠时遮挡 Compose 的轻量级浮层（例如 DropdownMenu、浮动 Inspector）。
+
+因此正式 3D 页面第一版主动采用**并列分栏布局（Split Layout）**，彻底避免浮动层遮挡风险：
 
 ```text
-┌─────────────────────────────────────────────┐
-│                 3D Scene                    │
-│                                             │
-│       Phone A              Phone B          │
-│                                             │
-│                    ┌──────────────────────┐ │
-│                    │ Pixel 8              │ │
-│                    │ Android              │ │
-│                    │ USB · Online         │ │
-│                    │ Battery 82%          │ │
-│                    │                      │ │
-│                    │ Mirror   Shell       │ │
-│                    │ Debug    Logcat      │ │
-│                    └──────────────────────┘ │
-└─────────────────────────────────────────────┘
+┌──────────────────────────────┬──────────────┐
+│                              │              │
+│        JCEF / Three.js       │   Compose    │
+│                              │  Inspector   │
+│                              │              │
+│                              │  Actions     │
+│                              │              │
+└──────────────────────────────┴──────────────┘
 ```
+
+而不是：
+
+```text
+Three.js
+   ↑
+Compose floating inspector
+   ↑
+DropdownMenu
+```
+
+Split Layout 是第一版消除 native HWND / Compose overlay 冲突的正式技术策略。
 
 Inspector 是轻量设备入口，而不是另一个业务系统。
 
@@ -1032,12 +1041,12 @@ SceneBinding
 
 现有项目已经存在统一的 `AppDataPaths`。
 
-Scene 数据应扩展这一体系。
+Scene 数据应扩展这一体系。Scene 属于用户持久数据，存放于应用持久根目录（默认 `~/.wps-adb-tool/scenes/`），不跟随 `dataCacheDir`，避免被缓存清理机制清除。
 
 概念目录：
 
 ```text
-WpsAdbTool data root
+WpsAdbTool persistent root (~/.wps-adb-tool/)
 └── scenes/
     ├── <scene-id>/
     │   ├── scene.json
@@ -1176,18 +1185,20 @@ START_LOGCAT
 
 # 32. Renderer Host
 
-当前 Desktop 项目没有现成 Browser Engine。
+经 Phase 0 Spike 验证，技术选型决策如下：
 
-候选方向可能包括：
+* **JavaFX WebView**：已明确排除。其底层 WebKit 引擎未实现 WebGL 支持，调用 `new THREE.WebGLRenderer()` 报错失败。
+* **JCEF (Java Chromium Embedded Framework)**：**选定为第一候选宿主**。已完成 WebGL 2.0、Raycaster 拾取、双向 IPC、尺寸伸缩、重置销毁及发行打包的 100% 验证。
 
-* JCEF / Chromium
-* JavaFX WebView
-* 其他 JVM WebView
-* 如果 WebView 成本过高，再重新评估 JVM 原生 GPU Renderer
+### 32.1 生产版 Renderer 安全与数据边界约束
 
-正式方案暂时不锁死宿主。
+Phase 0 Spike 验证完成后，正式实现不得原样继承实验代码，必须遵守以下架构底线：
 
-必须通过 PoC 后决定。
+1. **禁止宽松安全参数**：正式实现严禁开启 `--disable-web-security` 或 `--ignore-gpu-blocklist`，必须以标准现代 Chromium 安全沙箱与最小权限运行。
+2. **统一数据根目录与生命周期边界**：严禁创建非标准的 `~/.wpsadb`；统一通过项目既有的 `AppDataPaths` 管理：JCEF runtime 缓存属于可清理缓存（`cache/jcef-bundle`，随 `dataCacheDir` / `cacheRoot`），而 3D Scene 持久化数据直接位于应用持久根目录（`~/.wps-adb-tool/scenes/`），不跟随 `dataCacheDir`，避免缓存清理时误删用户场景定义与模型资产。
+3. **精准源资源加载**：本地内嵌服务不得对所有外部开放（禁止通用 `Access-Control-Allow-Origin: *`），只允许绑定到内部环回地址的本应用源访问。
+4. **依赖规范化**：JCEF 及关联依赖统一收拢于项目 Version Catalog（`libs.versions.toml`），不采用临时写死的字符串依赖。
+5. **Split Layout 技术策略**：因重量级原生 HWND/NSView 窗口无法安全被轻量 Compose 浮层（如 DropdownMenu）覆盖，第一版 3D 页面强制采用左右并列分栏布局。
 
 ---
 

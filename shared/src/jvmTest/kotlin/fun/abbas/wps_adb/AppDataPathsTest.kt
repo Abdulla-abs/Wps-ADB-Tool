@@ -16,7 +16,7 @@ class AppDataPathsTest {
     }
 
     @Test
-    fun customCacheRoot_overridesDefault() {
+    fun customCacheRoot_overridesCachePaths_butKeepsScenesUnderAppRoot() {
         val custom = File(System.getProperty("java.io.tmpdir"), "wps-cache-test").absolutePath
         val paths = AppDataPaths.fromSettings(AppSettings(dataCacheDir = custom))
         assertEquals(File(custom).canonicalFile.path, File(paths.cacheRoot()).path)
@@ -24,5 +24,32 @@ class AppDataPathsTest {
             File(custom, "decompile/recent.json").path,
             paths.recentProjectsFile(),
         )
+        assertEquals(
+            File(custom, "jcef-bundle").path,
+            paths.jcefBundleDir().path,
+        )
+        // scenesRoot must remain under persistent app root, not dataCacheDir
+        assertEquals(
+            AppDataPaths.defaultScenesRoot().path,
+            paths.scenesRoot().path,
+        )
+    }
+
+    @Test
+    fun customAppRoot_overridesScenesRoot() {
+        val customApp = File(System.getProperty("java.io.tmpdir"), "wps-app-test")
+        val paths = AppDataPaths.fromSettings(AppSettings(), appRoot = customApp)
+        assertEquals(
+            File(customApp.canonicalFile, "scenes").path,
+            paths.scenesRoot().path,
+        )
+    }
+
+    @Test
+    fun defaultDirectories_pointUnderExpectedRoots() {
+        val bundle = AppDataPaths.defaultJcefBundleDir()
+        val scenes = AppDataPaths.defaultScenesRoot()
+        assertTrue(bundle.path.replace('\\', '/').endsWith(".wps-adb-tool/cache/jcef-bundle"))
+        assertTrue(scenes.path.replace('\\', '/').endsWith(".wps-adb-tool/scenes"))
     }
 }

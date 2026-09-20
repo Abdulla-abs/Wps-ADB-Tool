@@ -23,6 +23,9 @@ dependencies {
     implementation(libs.kotlinx.coroutinesSwing)
 
     implementation(libs.compose.uiToolingPreview)
+    implementation(libs.compose.material3)
+    implementation(libs.json)
+    implementation(libs.jcefmaven)
 }
 
 val macSignEnabled = providers.environmentVariable("MACOS_SIGN")
@@ -52,6 +55,20 @@ tasks.withType<JavaExec>().configureEach {
     }
 }
 
+tasks.register<JavaExec>("runRendererSpike") {
+    group = "compose desktop"
+    description = "Runs the isolated 3D Three.js Renderer Host Spike"
+    mainClass.set("fun.abbas.wps_adb.spike.renderer.RendererSpikeMainKt")
+    classpath = sourceSets["main"].runtimeClasspath
+}
+
+tasks.register<JavaExec>("verifyRendererSpike") {
+    group = "verification"
+    description = "Runs automated verification of the 3D Three.js Renderer Host Spike"
+    mainClass.set("fun.abbas.wps_adb.spike.renderer.RendererSpikeVerifier")
+    classpath = sourceSets["main"].runtimeClasspath
+}
+
 compose.desktop {
     application {
         mainClass = "fun.abbas.wps_adb.MainKt"
@@ -77,6 +94,7 @@ compose.desktop {
                 "java.instrument",
                 "java.sql",
                 "jdk.unsupported",
+                "jdk.httpserver",
             )
             packageName = "WpsAdbTool"
             packageVersion = project.findProperty("wpsAdbTool.version")?.toString() ?: "1.0.0"

@@ -25,6 +25,8 @@ jadx = "1.5.0"
 rsyntaxtextarea = "3.4.0"
 apksig = "8.10.0"
 reorderable = "3.0.0"
+jcefmaven = "146.0.10"
+json = "20240303"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -68,6 +70,8 @@ jadx-java-input = { module = "io.github.skylot:jadx-java-input", version.ref = "
 rsyntaxtextarea = { module = "com.fifesoft:rsyntaxtextarea", version.ref = "rsyntaxtextarea" }
 apksig = { module = "com.android.tools.build:apksig", version.ref = "apksig" }
 reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
+jcefmaven = { module = "me.friwi:jcefmaven", version.ref = "jcefmaven" }
+json = { module = "org.json:json", version.ref = "json" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
