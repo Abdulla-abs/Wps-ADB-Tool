@@ -58,6 +58,10 @@ import `fun`.abbas.wps_adb.model.ToolInstallProgress
 import `fun`.abbas.wps_adb.model.ToolKind
 import `fun`.abbas.wps_adb.model.DecompileWorkspace
 import `fun`.abbas.wps_adb.model.withWorkspaceDisplayName
+import `fun`.abbas.wps_adb.data.scene.runtime.DefaultSceneRuntimeController
+import `fun`.abbas.wps_adb.data.scene.runtime.SceneRuntimeController
+import `fun`.abbas.wps_adb.model.scene.DeviceScene
+import `fun`.abbas.wps_adb.model.scene.ResolvedSceneState
 import `fun`.abbas.wps_adb.model.FileNode
 import `fun`.abbas.wps_adb.model.EditorTab
 import `fun`.abbas.wps_adb.model.EditorType
@@ -92,7 +96,13 @@ class AppViewModel(
     private val scrcpyMirrorService: ScrcpyMirrorService = NoOpScrcpyMirrorService(),
     private val deviceShellService: DeviceShellService = NoOpDeviceShellService(),
     private val toolInstaller: ToolInstaller = createToolInstaller(),
+    customSceneRuntimeController: SceneRuntimeController? = null,
 ) : ViewModel() {
+    private val sceneRuntimeController: SceneRuntimeController =
+        customSceneRuntimeController ?: DefaultSceneRuntimeController(
+            devicesFlow = repository.devices,
+            scope = viewModelScope,
+        )
     private val _localState = MutableStateFlow(AppUiState())
     private val decompileService = getDecompileService()
 
@@ -148,6 +158,11 @@ class AppViewModel(
     val logs = repository.logs
     val logcatLogs = repository.logcatLogs
     val settings = repository.settings
+
+    val activeScene: StateFlow<DeviceScene?> = sceneRuntimeController.activeScene
+    val resolvedSceneState: StateFlow<ResolvedSceneState?> = sceneRuntimeController.resolvedState
+
+    fun setScene(scene: DeviceScene?) = sceneRuntimeController.setScene(scene)
 
     fun setActiveTab(tab: NavTab) {
         if (tab != NavTab.WALL && _localState.value.deviceWallRoute is DeviceWallRoute.Shell) {
