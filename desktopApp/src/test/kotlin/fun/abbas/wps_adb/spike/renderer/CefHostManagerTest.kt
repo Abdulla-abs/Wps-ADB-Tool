@@ -50,17 +50,39 @@ class CefHostManagerTest {
     fun test_pathTraversalAttempt_isBlockedWith403Forbidden() {
         val manager = CefHostManager(resourceRoot = "scene-runtime") { }
         try {
-            val traversalUri = URI.create("http://127.0.0.1:${URI.create(manager.serverUrl).port}/../spike-renderer/index.html")
-            val request = HttpRequest.newBuilder()
-                .uri(traversalUri)
-                .GET()
-                .build()
+            val port = URI.create(manager.serverUrl).port
+            // Send a raw request-target so intermediaries cannot normalize away ".." before the handler sees it.
+            val statusAndBody = sendRawHttpGet(port, "/../spike-renderer/index.html")
+            assertEquals(403, statusAndBody.first)
+            assertTrue(statusAndBody.second.contains("403 Forbidden"), "Path traversal must return 403 Forbidden")
 
-            val response = httpClient.send(request, HttpResponse.BodyHandlers.ofString())
-            assertEquals(403, response.statusCode())
-            assertTrue(response.body().contains("403 Forbidden"), "Path traversal must return 403 Forbidden")
+            val nested = sendRawHttpGet(port, "/assets/../../secret.txt")
+            assertEquals(403, nested.first)
+            assertTrue(nested.second.contains("403 Forbidden"), "Nested path traversal must return 403 Forbidden")
         } finally {
             manager.dispose()
+        }
+    }
+
+    /**
+     * Issues a minimal HTTP/1.1 GET with an unnormalized request-target.
+     * java.net.http.HttpClient may resolve ".." in the URI before the bytes hit the wire.
+     */
+    private fun sendRawHttpGet(port: Int, requestTarget: String): Pair<Int, String> {
+        java.net.Socket("127.0.0.1", port).use { socket ->
+            val writer = socket.getOutputStream().bufferedWriter(Charsets.US_ASCII)
+            writer.write("GET $requestTarget HTTP/1.1\r\n")
+            writer.write("Host: 127.0.0.1:$port\r\n")
+            writer.write("Connection: close\r\n")
+            writer.write("\r\n")
+            writer.flush()
+
+            val text = socket.getInputStream().bufferedReader(Charsets.UTF_8).readText()
+            val statusLine = text.lineSequence().firstOrNull().orEmpty()
+            val status = Regex("""HTTP/\d\.\d\s+(\d+)""").find(statusLine)?.groupValues?.get(1)?.toIntOrNull()
+                ?: error("Missing status line in response:\n$text")
+            val body = text.substringAfter("\r\n\r\n", missingDelimiterValue = text.substringAfter("\n\n"))
+            return status to body
         }
     }
 

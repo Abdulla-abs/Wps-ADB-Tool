@@ -61,28 +61,31 @@ class CefHostManager(
         override fun handle(exchange: HttpExchange) {
             try {
                 val rawPath = exchange.requestURI.path.orEmpty()
-                val normalized = java.net.URI(rawPath).normalize().path.trimStart('/')
 
-                // Security check: Block path traversal
-                if (normalized.contains("..") || normalized.startsWith("/") || normalized.contains("\\")) {
-                    val forbidden = "403 Forbidden: Invalid resource path".toByteArray(Charsets.UTF_8)
-                    exchange.responseHeaders.set("Content-Type", "text/plain; charset=utf-8")
-                    exchange.responseHeaders.set("Access-Control-Allow-Origin", allowedOrigin)
-                    exchange.sendResponseHeaders(403, forbidden.size.toLong())
-                    exchange.responseBody.use { it.write(forbidden) }
+                // 1) Reject traversal markers on the raw path before normalize can erase them
+                //    (e.g. "/../secret" → normalize → "/secret" would otherwise bypass a post-normalize ".." check).
+                if (isUnsafeRawPath(rawPath)) {
+                    sendForbidden(exchange, "403 Forbidden: Invalid resource path")
+                    return
+                }
+
+                // 2) Normalize only after raw-path checks pass
+                val normalized = java.net.URI(null, null, rawPath, null).normalize().path
+                    ?.trimStart('/')
+                    .orEmpty()
+
+                // 3) Post-normalize hardening
+                if (normalized.contains("..") || normalized.contains('\\') || normalized.startsWith("/")) {
+                    sendForbidden(exchange, "403 Forbidden: Invalid resource path")
                     return
                 }
 
                 val subPath = if (normalized.isEmpty()) "index.html" else normalized
                 val resourcePath = "$resourceRoot/$subPath"
 
-                // Extra safety: ensure the resolved resourcePath still starts with resourceRoot/
-                if (!resourcePath.startsWith("$resourceRoot/")) {
-                    val forbidden = "403 Forbidden: Path traversal detected".toByteArray(Charsets.UTF_8)
-                    exchange.responseHeaders.set("Content-Type", "text/plain; charset=utf-8")
-                    exchange.responseHeaders.set("Access-Control-Allow-Origin", allowedOrigin)
-                    exchange.sendResponseHeaders(403, forbidden.size.toLong())
-                    exchange.responseBody.use { it.write(forbidden) }
+                // 4) Ensure the resolved classpath resource stays under resourceRoot/
+                if (!resourcePath.startsWith("$resourceRoot/") || resourcePath.contains("..")) {
+                    sendForbidden(exchange, "403 Forbidden: Path traversal detected")
                     return
                 }
 
@@ -118,6 +121,25 @@ class CefHostManager(
             } finally {
                 exchange.close()
             }
+        }
+
+        private fun isUnsafeRawPath(rawPath: String): Boolean {
+            if (rawPath.contains('\\')) return true
+            for (segment in rawPath.split('/')) {
+                if (segment == "..") return true
+                if (segment.contains('\\')) return true
+                // Absolute / drive-letter style segments (e.g. "C:")
+                if (segment.length >= 2 && segment[1] == ':') return true
+            }
+            return false
+        }
+
+        private fun sendForbidden(exchange: HttpExchange, message: String) {
+            val forbidden = message.toByteArray(Charsets.UTF_8)
+            exchange.responseHeaders.set("Content-Type", "text/plain; charset=utf-8")
+            exchange.responseHeaders.set("Access-Control-Allow-Origin", allowedOrigin)
+            exchange.sendResponseHeaders(403, forbidden.size.toLong())
+            exchange.responseBody.use { it.write(forbidden) }
         }
     }
 
