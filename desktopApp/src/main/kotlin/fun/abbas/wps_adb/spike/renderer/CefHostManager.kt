@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * Manages the embedded local resource server and the JCEF Chromium browser lifecycle.
  */
 class CefHostManager(
+    val resourceRoot: String = "spike-renderer",
     private val onJsMessage: (String) -> Unit
 ) {
     private var httpServer: HttpServer? = null
@@ -44,23 +45,45 @@ class CefHostManager(
     private fun startLocalServer() {
         val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
         serverPort = server.address.port
-        server.createContext("/", ResourceHttpHandler("http://127.0.0.1:$serverPort"))
+        server.createContext("/", ResourceHttpHandler(resourceRoot, "http://127.0.0.1:$serverPort"))
         server.executor = Executors.newCachedThreadPool { runnable ->
             Thread(runnable, "Spike-HttpServer").apply { isDaemon = true }
         }
         server.start()
         httpServer = server
-        println("[CefHostManager] Embedded HTTP resource server started on port $serverPort")
+        println("[CefHostManager] Embedded HTTP resource server started on port $serverPort (serving: $resourceRoot)")
     }
 
-    private class ResourceHttpHandler(private val allowedOrigin: String) : HttpHandler {
+    private class ResourceHttpHandler(
+        private val resourceRoot: String,
+        private val allowedOrigin: String
+    ) : HttpHandler {
         override fun handle(exchange: HttpExchange) {
             try {
-                val path = exchange.requestURI.path.trimStart('/')
-                val resourcePath = if (path.isEmpty() || path == "/") {
-                    "spike-renderer/index.html"
-                } else {
-                    "spike-renderer/$path"
+                val rawPath = exchange.requestURI.path.orEmpty()
+                val normalized = java.net.URI(rawPath).normalize().path.trimStart('/')
+
+                // Security check: Block path traversal
+                if (normalized.contains("..") || normalized.startsWith("/") || normalized.contains("\\")) {
+                    val forbidden = "403 Forbidden: Invalid resource path".toByteArray(Charsets.UTF_8)
+                    exchange.responseHeaders.set("Content-Type", "text/plain; charset=utf-8")
+                    exchange.responseHeaders.set("Access-Control-Allow-Origin", allowedOrigin)
+                    exchange.sendResponseHeaders(403, forbidden.size.toLong())
+                    exchange.responseBody.use { it.write(forbidden) }
+                    return
+                }
+
+                val subPath = if (normalized.isEmpty()) "index.html" else normalized
+                val resourcePath = "$resourceRoot/$subPath"
+
+                // Extra safety: ensure the resolved resourcePath still starts with resourceRoot/
+                if (!resourcePath.startsWith("$resourceRoot/")) {
+                    val forbidden = "403 Forbidden: Path traversal detected".toByteArray(Charsets.UTF_8)
+                    exchange.responseHeaders.set("Content-Type", "text/plain; charset=utf-8")
+                    exchange.responseHeaders.set("Access-Control-Allow-Origin", allowedOrigin)
+                    exchange.sendResponseHeaders(403, forbidden.size.toLong())
+                    exchange.responseBody.use { it.write(forbidden) }
+                    return
                 }
 
                 val inputStream = Thread.currentThread().contextClassLoader.getResourceAsStream(resourcePath)
@@ -68,8 +91,8 @@ class CefHostManager(
                     ?: ResourceHttpHandler::class.java.getResourceAsStream("/$resourcePath")
 
                 if (inputStream == null) {
-                    val notFound = "404 Not Found: $resourcePath".toByteArray()
-                    exchange.responseHeaders.set("Content-Type", "text/plain")
+                    val notFound = "404 Not Found: Resource '$subPath' not found in '$resourceRoot'".toByteArray(Charsets.UTF_8)
+                    exchange.responseHeaders.set("Content-Type", "text/plain; charset=utf-8")
                     exchange.responseHeaders.set("Access-Control-Allow-Origin", allowedOrigin)
                     exchange.sendResponseHeaders(404, notFound.size.toLong())
                     exchange.responseBody.use { it.write(notFound) }

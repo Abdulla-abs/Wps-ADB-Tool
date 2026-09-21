@@ -47,6 +47,7 @@ class SceneRuntimeHost(
     parentScope: CoroutineScope,
     private val customTransport: BridgeTransport? = null,
     private val cefHostManagerProvider: (() -> CefHostManager)? = null,
+    val resourceRoot: String = "scene-runtime",
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main,
 ) {
@@ -119,7 +120,7 @@ class SceneRuntimeHost(
     private fun initializeJcefBrowser() {
         hostScope.launch(ioDispatcher) {
             try {
-                val mgr = cefHostManagerProvider?.invoke() ?: CefHostManager { rawMessage ->
+                val mgr = cefHostManagerProvider?.invoke() ?: CefHostManager(resourceRoot = resourceRoot) { rawMessage ->
                     bridgeAdapter?.handleIncomingJsMessage(rawMessage)
                 }
                 cefHostManager = mgr

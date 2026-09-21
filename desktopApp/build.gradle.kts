@@ -39,6 +39,41 @@ val macSignEnabled = providers.environmentVariable("MACOS_SIGN")
             .orElse(false),
     )
 
+val bundleRendererRuntime = tasks.register("bundleRendererRuntime") {
+    group = "build"
+    description = "Compiles renderer-runtime and outputs to build/generated/resources/scene-runtime"
+
+    val runtimeDir = rootProject.file("renderer-runtime")
+    val outputDir = layout.buildDirectory.dir("generated/resources/scene-runtime")
+
+    inputs.dir(runtimeDir.resolve("src"))
+    inputs.file(runtimeDir.resolve("index.html"))
+    inputs.file(runtimeDir.resolve("package.json"))
+    inputs.file(runtimeDir.resolve("vite.config.ts"))
+    outputs.dir(outputDir)
+
+    doLast {
+        val distDir = runtimeDir.resolve("dist")
+        if (!distDir.exists() || !distDir.resolve("index.html").exists()) {
+            val isWindows = System.getProperty("os.name").lowercase().contains("windows")
+            val npmCmd = if (isWindows) "npm.cmd" else "npm"
+            project.exec {
+                workingDir = runtimeDir
+                commandLine(npmCmd, "run", "build")
+            }
+        }
+        val target = outputDir.get().asFile
+        target.mkdirs()
+        distDir.copyRecursively(target, overwrite = true)
+    }
+}
+
+sourceSets["main"].resources.srcDir(layout.buildDirectory.dir("generated/resources"))
+
+tasks.named("processResources") {
+    dependsOn(bundleRendererRuntime)
+}
+
 tasks.withType<JavaExec>().configureEach {
     dependsOn(
         ":shared:jvmMainClasses",
