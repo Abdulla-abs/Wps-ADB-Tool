@@ -1,0 +1,10 @@
+;!@Install@!UTF-8!
+Title="WpsAdbTool"
+BeginPrompt="是否将 WpsAdbTool 解压到当前目录？"
+ExtractPathText="解压到:"
+ExtractTitle="WpsAdbTool"
+GUIMode="1"
+GUIFlags="8+32+64+256+4096"
+OverwriteMode="2"
+RunProgram="WpsAdbTool\WpsAdbTool.exe"
+;!@InstallEnd@!

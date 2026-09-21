@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Include xmlns="http://schemas.microsoft.com/wix/2006/wi">
+    <!--
+      Without Secure="yes", Windows Installer ignores INSTALLDIR changes from the UI
+      and always installs to the default path under Program Files.
+    -->
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLDIR" />
+    <Property Id="INSTALLDIR" Secure="yes" />
+</Include>

@@ -45,6 +45,7 @@ import java.io.File
 import java.util.Collections
 
 private const val WIRELESS_CONNECT_TIMEOUT_MS = 4_000L
+private const val WIRELESS_REACHABILITY_TIMEOUT_MS = 2_000L
 
 class JvmAdbRepository(
     private val wirelessStore: WirelessDeviceStore = WirelessDeviceStore(),
@@ -111,14 +112,11 @@ class JvmAdbRepository(
             _isScanningDevices.value = true
             try {
                 addLog(LogLevel.I, "AdbDaemon", "ADB server connected (desktop real mode)", "system")
-                refreshDevicesInternal()
-            } finally {
-                _isScanningDevices.value = false
-            }
-            try {
                 reconnectSavedWirelessDevices()
                 refreshDevicesInternal()
             } catch (_: Exception) {
+            } finally {
+                _isScanningDevices.value = false
             }
         }
         restartDeviceScanJob()
@@ -161,13 +159,25 @@ class JvmAdbRepository(
         coroutineScope {
             targets.map { device ->
                 async {
-                    val result = runner.runWithTimeout(
-                        args = listOf("connect", device.endpoint),
+                    val endpoint = device.endpoint
+                    var result = runner.runWithTimeout(
+                        args = listOf("connect", endpoint),
                         timeoutMs = WIRELESS_CONNECT_TIMEOUT_MS,
                     )
-                    val output = result.output.ifBlank { "No output" }
-                    val level = if (result.success || "connected" in output.lowercase()) LogLevel.I else LogLevel.W
-                    addLog(level, "AdbDaemon", "${device.endpoint}: $output", "system")
+                    var output = result.output.ifBlank { "No output" }
+                    var connected = result.success || "connected" in output.lowercase()
+                    if (connected && !isWirelessEndpointReachable(endpoint)) {
+                        runner.run(listOf("disconnect", endpoint))
+                        delay(300)
+                        result = runner.runWithTimeout(
+                            args = listOf("connect", endpoint),
+                            timeoutMs = WIRELESS_CONNECT_TIMEOUT_MS,
+                        )
+                        output = result.output.ifBlank { "No output" }
+                        connected = result.success || "connected" in output.lowercase()
+                    }
+                    val level = if (connected) LogLevel.I else LogLevel.W
+                    addLog(level, "AdbDaemon", "$endpoint: $output", "system")
                 }
             }.awaitAll()
         }
@@ -199,7 +209,19 @@ class JvmAdbRepository(
                 clearRemovalMark(parsed.serial)
             }
         }
-        val adjustedParsed = rawParsed.map { parsed ->
+        val reachabilityProbed = rawParsed.map { parsed ->
+            WirelessDeviceStatusReconciler.reconcileParsedStatus(
+                parsed = parsed,
+                isUserDisconnected = isUserDisconnected(parsed.serial),
+                isReachable = ::isWirelessEndpointReachable,
+            )
+        }
+        reachabilityProbed.forEach { parsed ->
+            if (parsed.status == DeviceStatus.ONLINE) {
+                clearUserDisconnectMark(parsed.serial)
+            }
+        }
+        val adjustedParsed = reachabilityProbed.map { parsed ->
             if (isUserDisconnected(parsed.serial) && parsed.status == DeviceStatus.ONLINE) {
                 parsed.copy(status = DeviceStatus.OFFLINE)
             } else {
@@ -221,7 +243,7 @@ class JvmAdbRepository(
         val merged = connectedMerged + retainedDisconnected.filterNot { it.serial in connectedSerials }
         _devices.value = enforceUserDisconnectedStatus(merged)
         addLog(LogLevel.I, "DeviceTracker", "Discovered ${_devices.value.size} device(s)", "system")
-        scheduleDeviceEnrichment(parsed)
+        scheduleDeviceEnrichment(buildEnrichmentTargets(parsed, merged))
     }
 
     private fun buildBasicDevice(parsed: ParsedAdbDevice, previous: Device?): Device {
@@ -331,7 +353,7 @@ class JvmAdbRepository(
         val connectedHardware = connected.mapNotNull { device ->
             hardwareSerialByTransport[device.serial]?.takeIf { it.isNotBlank() }
         }.toSet()
-        val offlineSaved = wirelessStore.load()
+        val savedPlaceholders = wirelessStore.load()
             .filter { savedDevice ->
                 if (savedDevice.endpoint in connectedSerials) return@filter false
                 if (removedDeviceStore.contains(savedDevice.endpoint)) return@filter false
@@ -339,8 +361,54 @@ class JvmAdbRepository(
                 val savedHardware = hardwareSerialByTransport[savedDevice.endpoint]
                 savedHardware == null || savedHardware !in connectedHardware
             }
-            .map { it.toOfflineDevice() }
-        return connected + offlineSaved
+            .map { saved ->
+                val status = WirelessDeviceStatusReconciler.resolveSavedPlaceholderStatus(
+                    endpoint = saved.endpoint,
+                    isUserDisconnected = isUserDisconnected(saved.endpoint),
+                    isReachable = ::isWirelessEndpointReachable,
+                )
+                saved.toOfflineDevice().copy(
+                    status = status,
+                    screenDescription = if (status == DeviceStatus.ONLINE) {
+                        "Connected device"
+                    } else {
+                        "Saved wireless device"
+                    },
+                )
+            }
+        return connected + savedPlaceholders
+    }
+
+    private fun buildEnrichmentTargets(
+        parsed: List<ParsedAdbDevice>,
+        mergedDevices: List<Device>,
+    ): List<ParsedAdbDevice> {
+        val parsedSerials = parsed.map { it.serial }.toSet()
+        val promotedSaved = mergedDevices
+            .filter { device ->
+                device.status == DeviceStatus.ONLINE &&
+                    device.serial !in parsedSerials &&
+                    !isUserDisconnected(device.serial)
+            }
+            .map { device ->
+                ParsedAdbDevice(
+                    serial = device.serial,
+                    status = DeviceStatus.ONLINE,
+                    product = null,
+                    model = device.name.takeIf { it.isNotBlank() && it != device.serial },
+                )
+            }
+        return parsed + promotedSaved
+    }
+
+    private fun isWirelessEndpointReachable(serial: String): Boolean {
+        if (!WirelessDeviceStatusReconciler.isWirelessTransport(serial)) return false
+        val result = runner.runWithTimeout(
+            args = listOf("shell", "echo", "ok"),
+            serial = serial,
+            timeoutMs = WIRELESS_REACHABILITY_TIMEOUT_MS,
+        )
+        return result.success && "ok" in result.output
     }
 
     private fun filterOfflineDuplicatesByHardware(devices: List<Device>): List<Device> {

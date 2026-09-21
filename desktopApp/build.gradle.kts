@@ -1,7 +1,10 @@
 import org.gradle.api.tasks.JavaExec
+import org.gradle.internal.os.OperatingSystem
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.io.File
 
 plugins {
     alias(libs.plugins.kotlinJvm)
@@ -83,6 +86,11 @@ compose.desktop {
             description = "WPS ADB device management tool"
             copyright = "© Abbas"
 
+            windows {
+                // Allow users to choose a custom install directory in the MSI wizard.
+                dirChooser = true
+            }
+
             macOS {
                 bundleID = "fun.abbas.wpsadb"
                 minimumSystemVersion = "12.0"
@@ -107,6 +115,45 @@ compose.desktop {
                     password.set(providers.environmentVariable("NOTARIZATION_PASSWORD"))
                     teamID.set(providers.environmentVariable("NOTARIZATION_TEAM_ID"))
                 }
+            }
+        }
+    }
+}
+
+// jpackage clears compose/tmp/resources before building MSI, so inject WiX overrides and rebuild once.
+if (OperatingSystem.current().isWindows) {
+    val msiInstallDirOverrides = layout.projectDirectory.file("packaging/windows/overrides.wxi")
+
+    tasks.withType<AbstractJPackageTask>().configureEach {
+        if (targetFormat != TargetFormat.Msi) return@configureEach
+
+        inputs.file(msiInstallDirOverrides)
+
+        doLast {
+            val overrides = msiInstallDirOverrides.asFile
+            if (!overrides.exists()) {
+                logger.warn("MSI install-dir override not found: ${overrides.path}")
+                return@doLast
+            }
+
+            val resourcesDir = layout.buildDirectory.dir("compose/tmp/resources").get().asFile
+            resourcesDir.mkdirs()
+            overrides.copyTo(resourcesDir.resolve("overrides.wxi"), overwrite = true)
+
+            val argsFile = layout.buildDirectory.file("compose/tmp/${name}.args.txt").get().asFile
+            check(argsFile.exists()) { "Missing jpackage args file: ${argsFile.path}" }
+
+            val jpackageExe = File(javaHome.get(), "bin/jpackage.exe")
+            check(jpackageExe.exists()) { "jpackage not found: ${jpackageExe.path}" }
+
+            val args = argsFile.readLines()
+                .map { it.trim().trim('"') }
+                .filter { it.isNotEmpty() }
+
+            logger.lifecycle("Rebuilding MSI with custom install-dir overrides")
+            exec {
+                executable = jpackageExe.absolutePath
+                args(args)
             }
         }
     }

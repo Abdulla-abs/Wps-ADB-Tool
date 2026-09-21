@@ -1,0 +1,1241 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+    <Product Id="{0BA8F501-5DCA-336C-923C-4036AA3903A6}" Codepage="936" Language="1033" Manufacturer="未知" Name="WpsAdbTool" UpgradeCode="{B26E1D83-F8DB-311B-8A3D-A9C7B2AA9C75}" Version="1.0.0">
+        <Package Comments="This installer database contains the logic and data required to install WpsAdbTool." Compressed="yes" Description="WPS ADB device management tool" InstallerVersion="200" Languages="1033" Manufacturer="" Platform="x64" />
+        <Binary Id="JpCaDll" SourceFile="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\Binary\JpCaDll" />
+        <CustomAction Id="JpCheckInstallDir" BinaryKey="JpCaDll" DllEntry="CheckInstallDir" />
+        <CustomAction Id="JpSetARPINSTALLLOCATION" Property="ARPINSTALLLOCATION" Value="[INSTALLDIR]" />
+        <CustomAction Id="JpSetARPCOMMENTS" Property="ARPCOMMENTS" Value="WPS ADB device management tool" />
+        <CustomAction Id="JpSetARPCONTACT" Property="ARPCONTACT" Value="未知" />
+        <CustomAction Id="JpSetARPSIZE" Property="ARPSIZE" Value="121733" />
+        <Directory Id="TARGETDIR" Name="SourceDir">
+            <Directory Id="ProgramFiles64Folder">
+                <Directory Id="INSTALLDIR" Name="WpsAdbTool" ShortName="sha_poc2">
+                    <Component Id="cfile09abbde61e75355c816c909d4cb1b2a1" Guid="{09ABBDE6-1E75-355C-816C-909D4CB1B2A1}" Win64="yes">
+                        <File Id="file09abbde61e75355c816c909d4cb1b2a1" Name="WpsAdbTool.exe" KeyPath="yes" ShortName="hohlm_zc.exe" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file09abbde61e75355c816c909d4cb1b2a1" />
+                    </Component>
+                    <Component Id="crm_rf48431aecbd69377ea800d62616352f20" Guid="{45F6CAE7-A13E-5688-993C-EE590AD86E37}" Win64="yes">
+                        <RegistryValue Id="regE6E833E45630252893EC7C4754CB96C2" Root="HKLM" Key="Software\未知\WpsAdbTool\1.0.0" Name="RM_RF48431AECBD69377EA800D62616352F20" Value="[INSTALLDIR]" Type="string" KeyPath="yes" />
+                        <RemoveFolderEx Id="wrfEC7A67FCEBD9BA70D39E241A1CEC9074" Property="RM_RF48431AECBD69377EA800D62616352F20" On="uninstall" xmlns="http://schemas.microsoft.com/wix/UtilExtension" />
+                    </Component>
+                    <Directory Id="dir40f84b56068d341da01a768174eb5e59" Name="app">
+                        <Component Id="cfilebab09347bfd33b039e363b104dc375cc" Guid="{BAB09347-BFD3-3B03-9E36-3B104DC375CC}" Win64="yes">
+                            <File Id="filebab09347bfd33b039e363b104dc375cc" Name="collection-jvm-1.5.0-4421442c114a4f8c8fe587cf2d668237.jar" KeyPath="yes" ShortName="wa2jpw0t.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filebab09347bfd33b039e363b104dc375cc" />
+                        </Component>
+                        <Component Id="cfile1b9b716ceedd3e4faf10b1af44f820c7" Guid="{1B9B716C-EEDD-3E4F-AF10-B1AF44F820C7}" Win64="yes">
+                            <File Id="file1b9b716ceedd3e4faf10b1af44f820c7" Name="runtime-annotation-jvm-1.11.2-6963b878fcc7f76320564cfd61b7e881.jar" KeyPath="yes" ShortName="cf-0-els.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file1b9b716ceedd3e4faf10b1af44f820c7" />
+                        </Component>
+                        <Component Id="cfile4787c71cfccc3c87809058261ea34f14" Guid="{4787C71C-FCCC-3C87-8090-58261EA34F14}" Win64="yes">
+                            <File Id="file4787c71cfccc3c87809058261ea34f14" Name="skiko-awt-runtime-windows-x64-0.144.6-93ea1a0e81d8839da847ea7b130f3e5.jar" KeyPath="yes" ShortName="avdf58n3.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file4787c71cfccc3c87809058261ea34f14" />
+                        </Component>
+                        <Component Id="cfile35e1856953663ca6ab0ea637456e5cea" Guid="{35E18569-5366-3CA6-AB0E-A637456E5CEA}" Win64="yes">
+                            <File Id="file35e1856953663ca6ab0ea637456e5cea" Name="kotlinx-io-bytestring-jvm-0.6.0-be11c17a3178eb986bac220eed0d720.jar" KeyPath="yes" ShortName="4itoexi2.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file35e1856953663ca6ab0ea637456e5cea" />
+                        </Component>
+                        <Component Id="cfileeacbe4e775a43e9ba819b9055a8d5a33" Guid="{EACBE4E7-75A4-3E9B-A819-B9055A8D5A33}" Win64="yes">
+                            <File Id="fileeacbe4e775a43e9ba819b9055a8d5a33" Name="reorderable-jvm-3.0.0-45801b214362a1b595634fda345f7e.jar" KeyPath="yes" ShortName="qbacdho2.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\fileeacbe4e775a43e9ba819b9055a8d5a33" />
+                        </Component>
+                        <Component Id="cfile16535ce97d36319c8114ba421352add9" Guid="{16535CE9-7D36-319C-8114-BA421352ADD9}" Win64="yes">
+                            <File Id="file16535ce97d36319c8114ba421352add9" Name="smali-2.5.2-b22a9978356bae516d919b5e4fa280dd.jar" KeyPath="yes" ShortName="auvh1o7z.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file16535ce97d36319c8114ba421352add9" />
+                        </Component>
+                        <Component Id="cfile6f94ed8ef6563d2e9ea90f206011835e" Guid="{6F94ED8E-F656-3D2E-9EA9-0F206011835E}" Win64="yes">
+                            <File Id="file6f94ed8ef6563d2e9ea90f206011835e" Name="jadx-dex-input-1.5.0-d07087c92cbe348c418e399a5626fbe.jar" KeyPath="yes" ShortName="jgbkjc68.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file6f94ed8ef6563d2e9ea90f206011835e" />
+                        </Component>
+                        <Component Id="cfile7a1e114fbe8d34d7b31c35d34a451b72" Guid="{7A1E114F-BE8D-34D7-B31C-35D34A451B72}" Win64="yes">
+                            <File Id="file7a1e114fbe8d34d7b31c35d34a451b72" Name="runtime-retain-desktop-1.11.2-1a6731c44f232c5d9e1fb10edac28de.jar" KeyPath="yes" ShortName="4alk654c.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file7a1e114fbe8d34d7b31c35d34a451b72" />
+                        </Component>
+                        <Component Id="cfile8959e84db0d633d4b5bbda8b7141f483" Guid="{8959E84D-B0D6-33D4-B5BB-DA8B7141F483}" Win64="yes">
+                            <File Id="file8959e84db0d633d4b5bbda8b7141f483" Name="annotation-jvm-1.9.1-1d6a04b3b9847638d0529df8ef76a.jar" KeyPath="yes" ShortName="mckzie4-.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file8959e84db0d633d4b5bbda8b7141f483" />
+                        </Component>
+                        <Component Id="cfile36c1b1519bf63264b7eb89d36e0fb70b" Guid="{36C1B151-9BF6-3264-B7EB-89D36E0FB70B}" Win64="yes">
+                            <File Id="file36c1b1519bf63264b7eb89d36e0fb70b" Name="asm-9.6-6f8bccf756f170d4185bb24c8c2d2020.jar" KeyPath="yes" ShortName="likuai61.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file36c1b1519bf63264b7eb89d36e0fb70b" />
+                        </Component>
+                        <Component Id="cfilef521dc9951ef36cd96f25c82dc923f72" Guid="{F521DC99-51EF-36CD-96F2-5C82DC923F72}" Win64="yes">
+                            <File Id="filef521dc9951ef36cd96f25c82dc923f72" Name="core-common-2.2.0-2212d240dfe1e8a7598ee117ccc316d.jar" KeyPath="yes" ShortName="uoplod7h.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filef521dc9951ef36cd96f25c82dc923f72" />
+                        </Component>
+                        <Component Id="cfile44cbf25e0eaa34bb9692baf8a03d5863" Guid="{44CBF25E-0EAA-34BB-9692-BAF8A03D5863}" Win64="yes">
+                            <File Id="file44cbf25e0eaa34bb9692baf8a03d5863" Name="ktor-websocket-serialization-jvm-3.1.0-d43f6f8e3770aa8e50fb8d6264a5e5.jar" KeyPath="yes" ShortName="jufozuem.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file44cbf25e0eaa34bb9692baf8a03d5863" />
+                        </Component>
+                        <Component Id="cfile00af1d7cbe733440864c001613db738f" Guid="{00AF1D7C-BE73-3440-864C-001613DB738F}" Win64="yes">
+                            <File Id="file00af1d7cbe733440864c001613db738f" Name="lifecycle-viewmodel-savedstate-desktop-2.11.0-beta01-e927c27c498a1960d6d61db71a30338.jar" KeyPath="yes" ShortName="1mfx72mw.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file00af1d7cbe733440864c001613db738f" />
+                        </Component>
+                        <Component Id="cfileca106689ac2339959c8dafb68277b12c" Guid="{CA106689-AC23-3995-9C8D-AFB68277B12C}" Win64="yes">
+                            <File Id="fileca106689ac2339959c8dafb68277b12c" Name="animation-desktop-1.11.1-3b1636eba8fac16d053e567d9b91df8.jar" KeyPath="yes" ShortName="wsvv7re_.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\fileca106689ac2339959c8dafb68277b12c" />
+                        </Component>
+                        <Component Id="cfiled2b1938a14b632c6a1035deb5d1bb242" Guid="{D2B1938A-14B6-32C6-A103-5DEB5D1BB242}" Win64="yes">
+                            <File Id="filed2b1938a14b632c6a1035deb5d1bb242" Name="foundation-layout-desktop-1.11.1-283d2ac8235541447bbd8d60ab59521.jar" KeyPath="yes" ShortName="jv49vzht.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filed2b1938a14b632c6a1035deb5d1bb242" />
+                        </Component>
+                        <Component Id="cfile18b461ea11553d80919694aba7ca82b9" Guid="{18B461EA-1155-3D80-9196-94ABA7CA82B9}" Win64="yes">
+                            <File Id="file18b461ea11553d80919694aba7ca82b9" Name="lifecycle-runtime-compose-desktop-2.11.0-beta01-ffb54211a8c3862a8cd05279f4117790.jar" KeyPath="yes" ShortName="p20aku6c.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file18b461ea11553d80919694aba7ca82b9" />
+                        </Component>
+                        <Component Id="cfilef5330816c599336a924320d68f55dc59" Guid="{F5330816-C599-336A-9243-20D68F55DC59}" Win64="yes">
+                            <File Id="filef5330816c599336a924320d68f55dc59" Name="skiko-windows-x64.dll" KeyPath="yes" ShortName="whroqjyg.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filef5330816c599336a924320d68f55dc59" />
+                        </Component>
+                        <Component Id="cfilecdf66c7b939b32b0b6897df82004239e" Guid="{CDF66C7B-939B-32B0-B689-7DF82004239E}" Win64="yes">
+                            <File Id="filecdf66c7b939b32b0b6897df82004239e" Name="savedstate-desktop-1.4.0-e2a50762f9c6de234b04b12926df6b3.jar" KeyPath="yes" ShortName="fwlwhgpg.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filecdf66c7b939b32b0b6897df82004239e" />
+                        </Component>
+                        <Component Id="cfile5a419156a67b3c93838029e8c1734d93" Guid="{5A419156-A67B-3C93-8380-29E8C1734D93}" Win64="yes">
+                            <File Id="file5a419156a67b3c93838029e8c1734d93" Name="ktor-serialization-jvm-3.1.0-2f8b3b212a57a93ea7c65e9cb6293ed2.jar" KeyPath="yes" ShortName="ibmbozno.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file5a419156a67b3c93838029e8c1734d93" />
+                        </Component>
+                        <Component Id="cfile36726c57c3403b4f81c26bff2b6fc5e2" Guid="{36726C57-C340-3B4F-81C2-6BFF2B6FC5E2}" Win64="yes">
+                            <File Id="file36726c57c3403b4f81c26bff2b6fc5e2" Name="dexlib2-2.5.2-4d48139f927c12295613c44dc6e97.jar" KeyPath="yes" ShortName="n6dvjqml.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file36726c57c3403b4f81c26bff2b6fc5e2" />
+                        </Component>
+                        <Component Id="cfilecb53b5153fe1376bb44a357dc6c494ad" Guid="{CB53B515-3FE1-376B-B44A-357DC6C494AD}" Win64="yes">
+                            <File Id="filecb53b5153fe1376bb44a357dc6c494ad" Name="coil-compose-jvm-3.4.0-77eda153948d554a9d14ac7385c62d4.jar" KeyPath="yes" ShortName="p7qdhc9_.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filecb53b5153fe1376bb44a357dc6c494ad" />
+                        </Component>
+                        <Component Id="cfile81baf85f5a233b999b4612a9e97633ee" Guid="{81BAF85F-5A23-3B99-9B46-12A9E97633EE}" Win64="yes">
+                            <File Id="file81baf85f5a233b999b4612a9e97633ee" Name="kotlin-stdlib-2.4.0-c4332c733a8dfa2687d8f119dc43.jar" KeyPath="yes" ShortName="ygp2moqx.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file81baf85f5a233b999b4612a9e97633ee" />
+                        </Component>
+                        <Component Id="cfilee50464d9c84e3384a96be0ab690bf002" Guid="{E50464D9-C84E-3384-A96B-E0AB690BF002}" Win64="yes">
+                            <File Id="filee50464d9c84e3384a96be0ab690bf002" Name="kotlinx-coroutines-core-jvm-1.11.0-41a5e9a2f2c9affb9d9ab254be5a984f.jar" KeyPath="yes" ShortName="45nawflt.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filee50464d9c84e3384a96be0ab690bf002" />
+                        </Component>
+                        <Component Id="cfile077ae5133e1c303b84b71ba22e9a9a44" Guid="{077AE513-3E1C-303B-84B7-1BA22E9A9A44}" Win64="yes">
+                            <File Id="file077ae5133e1c303b84b71ba22e9a9a44" Name="desktop-jvm-1.11.1-853ec1ce1542426c233c62225bcd3895.jar" KeyPath="yes" ShortName="in7eiedp.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file077ae5133e1c303b84b71ba22e9a9a44" />
+                        </Component>
+                        <Component Id="cfilee1baaa94404b39beab648ff7834671c8" Guid="{E1BAAA94-404B-39BE-AB64-8FF7834671C8}" Win64="yes">
+                            <File Id="filee1baaa94404b39beab648ff7834671c8" Name="ui-geometry-desktop-1.11.1-50f2f5ca194395b3639e4e26be66d2ae.jar" KeyPath="yes" ShortName="iyomyo5n.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filee1baaa94404b39beab648ff7834671c8" />
+                        </Component>
+                        <Component Id="cfiledcf63f7509633cc1926f175e156a065d" Guid="{DCF63F75-0963-3CC1-926F-175E156A065D}" Win64="yes">
+                            <File Id="filedcf63f7509633cc1926f175e156a065d" Name="lifecycle-runtime-desktop-2.11.0-beta01-f14af19f336c43981285f2b83ea88f.jar" KeyPath="yes" ShortName="4n0lr94g.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filedcf63f7509633cc1926f175e156a065d" />
+                        </Component>
+                        <Component Id="cfileda17e743c5643abc9b5b1973213cb949" Guid="{DA17E743-C564-3ABC-9B5B-1973213CB949}" Win64="yes">
+                            <File Id="fileda17e743c5643abc9b5b1973213cb949" Name="json-20240303-99aae5de9871d158cdb970f17be4c8da.jar" KeyPath="yes" ShortName="gjrmhppo.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\fileda17e743c5643abc9b5b1973213cb949" />
+                        </Component>
+                        <Component Id="cfile9b9a5e0e0e6131eaa205f3a300857a4f" Guid="{9B9A5E0E-0E61-31EA-A205-F3A300857A4F}" Win64="yes">
+                            <File Id="file9b9a5e0e0e6131eaa205f3a300857a4f" Name="listenablefuture-9999.0-empty-to-avoid-conflict-with-guava-d094c22570d65e132c19cea5d352e381.jar" KeyPath="yes" ShortName="bmqnvqnz.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file9b9a5e0e0e6131eaa205f3a300857a4f" />
+                        </Component>
+                        <Component Id="cfile7c4026c73ffb35e1958acf07b207f378" Guid="{7C4026C7-3FFB-35E1-958A-CF07B207F378}" Win64="yes">
+                            <File Id="file7c4026c73ffb35e1958acf07b207f378" Name="ktor-sse-jvm-3.1.0-805843eaaab35d337b8c6a3188527.jar" KeyPath="yes" ShortName="ky8owra4.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file7c4026c73ffb35e1958acf07b207f378" />
+                        </Component>
+                        <Component Id="cfilebf5ab7f5f7cb35f78ef82faf54c13de9" Guid="{BF5AB7F5-F7CB-35F7-8EF8-2FAF54C13DE9}" Win64="yes">
+                            <File Id="filebf5ab7f5f7cb35f78ef82faf54c13de9" Name="smali-dexlib2-3.0.5-e44f7517b48ce6889ee93f49e8ba515.jar" KeyPath="yes" ShortName="vrv6a-mg.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filebf5ab7f5f7cb35f78ef82faf54c13de9" />
+                        </Component>
+                        <Component Id="cfile8ea8bb22b09432709b8ea8abb7929c26" Guid="{8EA8BB22-B094-3270-9B8E-A8ABB7929C26}" Win64="yes">
+                            <File Id="file8ea8bb22b09432709b8ea8abb7929c26" Name="jcommander-1.64-f45d6fa1223a2a2fb022277fed7b545a.jar" KeyPath="yes" ShortName="0qz1y7kc.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file8ea8bb22b09432709b8ea8abb7929c26" />
+                        </Component>
+                        <Component Id="cfilea4193d60bdcc32fcbd1bbc025be3f8bd" Guid="{A4193D60-BDCC-32FC-BD1B-BC025BE3F8BD}" Win64="yes">
+                            <File Id="filea4193d60bdcc32fcbd1bbc025be3f8bd" Name="okio-jvm-3.16.4-34d866f45bb2a65bf61cde52b72d096.jar" KeyPath="yes" ShortName="c6zkk8bc.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filea4193d60bdcc32fcbd1bbc025be3f8bd" />
+                        </Component>
+                        <Component Id="cfile913be436726935e098652befd63504a7" Guid="{913BE436-7269-35E0-9865-2BEFD63504A7}" Win64="yes">
+                            <File Id="file913be436726935e098652befd63504a7" Name="runtime-desktop-1.11.1-f530f7ee1fb51ca01a95c1bbb0ef3a7d.jar" KeyPath="yes" ShortName="khpqfbel.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file913be436726935e098652befd63504a7" />
+                        </Component>
+                        <Component Id="cfile04d319b713d3326ba6ac869cb847a3fa" Guid="{04D319B7-13D3-326B-A6AC-869CB847A3FA}" Win64="yes">
+                            <File Id="file04d319b713d3326ba6ac869cb847a3fa" Name="ST4-4.0.8-a33afc363c76608dd7f8a723f137dbf1.jar" KeyPath="yes" ShortName="rkzlsha-.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file04d319b713d3326ba6ac869cb847a3fa" />
+                        </Component>
+                        <Component Id="cfile9553cd1c02c137648e873a3a9aae16ff" Guid="{9553CD1C-02C1-3764-8E87-3A3A9AAE16FF}" Win64="yes">
+                            <File Id="file9553cd1c02c137648e873a3a9aae16ff" Name="lifecycle-runtime-compose-desktop-2.11.0-beta01-de578d01d15f2c99ea8bbd993fd5.jar" KeyPath="yes" ShortName="gcxli8to.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file9553cd1c02c137648e873a3a9aae16ff" />
+                        </Component>
+                        <Component Id="cfileae1e3790527f38a9aa50642c96e5ae24" Guid="{AE1E3790-527F-38A9-AA50-642C96E5AE24}" Win64="yes">
+                            <File Id="fileae1e3790527f38a9aa50642c96e5ae24" Name="desktopApp.jar" KeyPath="yes" ShortName="k8keygbx.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\fileae1e3790527f38a9aa50642c96e5ae24" />
+                        </Component>
+                        <Component Id="cfilecd8837a54c2a348a84b1b4e789218f2e" Guid="{CD8837A5-4C2A-348A-84B1-B4E789218F2E}" Win64="yes">
+                            <File Id="filecd8837a54c2a348a84b1b4e789218f2e" Name="jna-5.14.0-8b3cc65292435ad9f801e6d9b2a3497.jar" KeyPath="yes" ShortName="a7xoc75p.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filecd8837a54c2a348a84b1b4e789218f2e" />
+                        </Component>
+                        <Component Id="cfile6b1244e2b5f13a64b5aaff0d0bc35e1d" Guid="{6B1244E2-B5F1-3A64-B5AA-FF0D0BC35E1D}" Win64="yes">
+                            <File Id="file6b1244e2b5f13a64b5aaff0d0bc35e1d" Name="pty4j-0.13.2-8bc0c21237044d8ae4836d293a189a9.jar" KeyPath="yes" ShortName="hkh8ivqd.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file6b1244e2b5f13a64b5aaff0d0bc35e1d" />
+                        </Component>
+                        <Component Id="cfile2871eda80f7a3735afd5c1bf2072ea8b" Guid="{2871EDA8-0F7A-3735-AFD5-C1BF2072EA8B}" Win64="yes">
+                            <File Id="file2871eda80f7a3735afd5c1bf2072ea8b" Name="kotlin-stdlib-jdk7-1.9.0-da269e4d8ff4ad661fef2b48449865c7.jar" KeyPath="yes" ShortName="xwyd89_l.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file2871eda80f7a3735afd5c1bf2072ea8b" />
+                        </Component>
+                        <Component Id="cfile0dfcd0600c35320c80f5f1b3e63e7144" Guid="{0DFCD060-0C35-320C-80F5-F1B3E63E7144}" Win64="yes">
+                            <File Id="file0dfcd0600c35320c80f5f1b3e63e7144" Name="kotlinx-datetime-jvm-0.7.1-70b44e22ebc7eebfa53f7d1941af072.jar" KeyPath="yes" ShortName="-7xyzxol.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file0dfcd0600c35320c80f5f1b3e63e7144" />
+                        </Component>
+                        <Component Id="cfile75ec647e9d5d3674846c09a8284b6244" Guid="{75EC647E-9D5D-3674-846C-09A8284B6244}" Win64="yes">
+                            <File Id="file75ec647e9d5d3674846c09a8284b6244" Name="ktor-http-jvm-3.1.0-8d2b3b2dd8a8ae2cde2093bf11522199.jar" KeyPath="yes" ShortName="hwi1oq9l.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file75ec647e9d5d3674846c09a8284b6244" />
+                        </Component>
+                        <Component Id="cfiledc17e8dd626d39bda95c872991040c26" Guid="{DC17E8DD-626D-39BD-A95C-872991040C26}" Win64="yes">
+                            <File Id="filedc17e8dd626d39bda95c872991040c26" Name="skiko-awt-0.144.6-6b3e9f225137b9011f3a95ca950455.jar" KeyPath="yes" ShortName="jdugye66.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filedc17e8dd626d39bda95c872991040c26" />
+                        </Component>
+                        <Component Id="cfilef183898193be3fea8f8bfe636758076b" Guid="{F1838981-93BE-3FEA-8F8B-FE636758076B}" Win64="yes">
+                            <File Id="filef183898193be3fea8f8bfe636758076b" Name="animation-core-desktop-1.11.1-3ec8687bba1c875f4630e7c99d49defc.jar" KeyPath="yes" ShortName="q_d40pep.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filef183898193be3fea8f8bfe636758076b" />
+                        </Component>
+                        <Component Id="cfile7ffd61b63e1a3c2faa4939e9581cea39" Guid="{7FFD61B6-3E1A-3C2F-AA49-39E9581CEA39}" Win64="yes">
+                            <File Id="file7ffd61b63e1a3c2faa4939e9581cea39" Name="antlr-runtime-3.5.2-1fbbae2cb72530207c20b797bdabd029.jar" KeyPath="yes" ShortName="7_7-dcha.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file7ffd61b63e1a3c2faa4939e9581cea39" />
+                        </Component>
+                        <Component Id="cfile77a65234fc183aebb29afe0f0d625809" Guid="{77A65234-FC18-3AEB-B29A-FE0F0D625809}" Win64="yes">
+                            <File Id="file77a65234fc183aebb29afe0f0d625809" Name="ktor-utils-jvm-3.1.0-a84322ac8cd71fde22c9f92ac35db3.jar" KeyPath="yes" ShortName="jcnqde2i.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file77a65234fc183aebb29afe0f0d625809" />
+                        </Component>
+                        <Component Id="cfilea525bee7afec3fbb8fdca1bb7e656b24" Guid="{A525BEE7-AFEC-3FBB-8FDC-A1BB7E656B24}" Win64="yes">
+                            <File Id="filea525bee7afec3fbb8fdca1bb7e656b24" Name="ui-graphics-desktop-1.11.1-9719c3b28df541492cffa726d5969d.jar" KeyPath="yes" ShortName="du1yw8il.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filea525bee7afec3fbb8fdca1bb7e656b24" />
+                        </Component>
+                        <Component Id="cfile46a19e9c26af38f5bb2bae1f357bf069" Guid="{46A19E9C-26AF-38F5-BB2B-AE1F357BF069}" Win64="yes">
+                            <File Id="file46a19e9c26af38f5bb2bae1f357bf069" Name="coil-jvm-3.4.0-f5f39e2c8016e25cd7eda41c8193c86.jar" KeyPath="yes" ShortName="suptweou.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file46a19e9c26af38f5bb2bae1f357bf069" />
+                        </Component>
+                        <Component Id="cfile169507b4e03a3ad08e42e42d74f9004c" Guid="{169507B4-E03A-3AD0-8E42-E42D74F9004C}" Win64="yes">
+                            <File Id="file169507b4e03a3ad08e42e42d74f9004c" Name="coil-compose-core-jvm-3.4.0-199e6040e8221af5ffbd158866ca281e.jar" KeyPath="yes" ShortName="lspj0j3y.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file169507b4e03a3ad08e42e42d74f9004c" />
+                        </Component>
+                        <Component Id="cfile4ed2fc4fe6e13f77a0ef9f8868f4ae05" Guid="{4ED2FC4F-E6E1-3F77-A0EF-9F8868F4AE05}" Win64="yes">
+                            <File Id="file4ed2fc4fe6e13f77a0ef9f8868f4ae05" Name="jbr-api-1.9.0-4ae6ce27bcafb233efdbf54395d03.jar" KeyPath="yes" ShortName="6bdw9o5h.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file4ed2fc4fe6e13f77a0ef9f8868f4ae05" />
+                        </Component>
+                        <Component Id="cfile998876ea78dd3dc094585e7f80dfb8fe" Guid="{998876EA-78DD-3DC0-9458-5E7F80DFB8FE}" Win64="yes">
+                            <File Id="file998876ea78dd3dc094585e7f80dfb8fe" Name="apksig-8.10.0-6576dc57fcb5777b359b8f928acb04a.jar" KeyPath="yes" ShortName="5m9oyyer.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file998876ea78dd3dc094585e7f80dfb8fe" />
+                        </Component>
+                        <Component Id="cfilefb7404d8daba3758a7e14fe1887a309a" Guid="{FB7404D8-DABA-3758-A7E1-4FE1887A309A}" Win64="yes">
+                            <File Id="filefb7404d8daba3758a7e14fe1887a309a" Name="kotlinx-coroutines-slf4j-1.11.0-aa9f8a4e70944e6a49f380574b7648a.jar" KeyPath="yes" ShortName="pnqj0y4i.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filefb7404d8daba3758a7e14fe1887a309a" />
+                        </Component>
+                        <Component Id="cfileb1348fb403b73112bf021b90aae3a0dc" Guid="{B1348FB4-03B7-3112-BF02-1B90AAE3A0DC}" Win64="yes">
+                            <File Id="fileb1348fb403b73112bf021b90aae3a0dc" Name="ktor-io-jvm-3.1.0-e6e630c8f7cd829355d05d4215a1a6.jar" KeyPath="yes" ShortName="racgjkev.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\fileb1348fb403b73112bf021b90aae3a0dc" />
+                        </Component>
+                        <Component Id="cfilebcfca0ff7beb344ea31806cc5b6488d4" Guid="{BCFCA0FF-7BEB-344E-A318-06CC5B6488D4}" Win64="yes">
+                            <File Id="filebcfca0ff7beb344ea31806cc5b6488d4" Name="lifecycle-viewmodel-compose-desktop-2.11.0-beta01-a2efd9d8a4363bdc03bb7bdb822e3bb.jar" KeyPath="yes" ShortName="xefzv-kc.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filebcfca0ff7beb344ea31806cc5b6488d4" />
+                        </Component>
+                        <Component Id="cfile103f7131882032b7bfa2167bec01a4df" Guid="{103F7131-8820-32B7-BFA2-167BEC01A4DF}" Win64="yes">
+                            <File Id="file103f7131882032b7bfa2167bec01a4df" Name="foundation-desktop-1.11.1-a4787b8ca37ae91eb45fa9a21e1a4ce.jar" KeyPath="yes" ShortName="zgljvejy.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file103f7131882032b7bfa2167bec01a4df" />
+                        </Component>
+                        <Component Id="cfile977cc6e1019936689020ab0fe52fc7a8" Guid="{977CC6E1-0199-3668-9020-AB0FE52FC7A8}" Win64="yes">
+                            <File Id="file977cc6e1019936689020ab0fe52fc7a8" Name="kotlinx-serialization-core-jvm-1.8.0-66d98a2ddbdf228e6e203a3d2f8029b2.jar" KeyPath="yes" ShortName="iiqfhu2u.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file977cc6e1019936689020ab0fe52fc7a8" />
+                        </Component>
+                        <Component Id="cfile224b4266714336d0a5a9377baa61f75e" Guid="{224B4266-7143-36D0-A5A9-377BAA61F75E}" Win64="yes">
+                            <File Id="file224b4266714336d0a5a9377baa61f75e" Name="aapt2-proto-8.3.2-10880808-a97e57fdb2e63b7af2811cf334fb619.jar" KeyPath="yes" ShortName="ip0m_ok4.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file224b4266714336d0a5a9377baa61f75e" />
+                        </Component>
+                        <Component Id="cfilea62c848e259b3686b6deae7d4aba7c67" Guid="{A62C848E-259B-3686-B6DE-AE7D4ABA7C67}" Win64="yes">
+                            <File Id="filea62c848e259b3686b6deae7d4aba7c67" Name="material-desktop-1.11.1-25436e0596588ad39cc6841e571bd6.jar" KeyPath="yes" ShortName="daj5gwlk.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filea62c848e259b3686b6deae7d4aba7c67" />
+                        </Component>
+                        <Component Id="cfile27dac607f8183c8da68e5be8ebf9f304" Guid="{27DAC607-F818-3C8D-A68E-5BE8EBF9F304}" Win64="yes">
+                            <File Id="file27dac607f8183c8da68e5be8ebf9f304" Name="material-icons-extended-desktop-1.7.3-848bc0f13628d5b3accc94dd3afdfa27.jar" KeyPath="yes" ShortName="-nod1dwy.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file27dac607f8183c8da68e5be8ebf9f304" />
+                        </Component>
+                        <Component Id="cfile827498749e493be4a99bcb77d96f20f9" Guid="{82749874-9E49-3BE4-A99B-CB77D96F20F9}" Win64="yes">
+                            <File Id="file827498749e493be4a99bcb77d96f20f9" Name="WpsAdbTool.cfg" KeyPath="yes" ShortName="dszc92lw.cfg" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file827498749e493be4a99bcb77d96f20f9" />
+                        </Component>
+                        <Component Id="cfile16a3ec8c0e273117b53827f7bac68365" Guid="{16A3EC8C-0E27-3117-B538-27F7BAC68365}" Win64="yes">
+                            <File Id="file16a3ec8c0e273117b53827f7bac68365" Name="lifecycle-common-jvm-2.11.0-beta01-a959fe40f2d0f5fec386bea6b823d740.jar" KeyPath="yes" ShortName="y6ryo_fi.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file16a3ec8c0e273117b53827f7bac68365" />
+                        </Component>
+                        <Component Id="cfileb2f15043fd8e37b3b1a20d320a7f46ce" Guid="{B2F15043-FD8E-37B3-B1A2-0D320A7F46CE}" Win64="yes">
+                            <File Id="fileb2f15043fd8e37b3b1a20d320a7f46ce" Name="error_prone_annotations-2.26.1-64c623e55068e3b278e5d91865c56.jar" KeyPath="yes" ShortName="aa5gscnh.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\fileb2f15043fd8e37b3b1a20d320a7f46ce" />
+                        </Component>
+                        <Component Id="cfile126e74e02e763478873618ec372d78c0" Guid="{126E74E0-2E76-3478-8736-18EC372D78C0}" Win64="yes">
+                            <File Id="file126e74e02e763478873618ec372d78c0" Name="jadx-input-api-1.5.0-847ca06845d315f815bf8964c82654.jar" KeyPath="yes" ShortName="tjhdfmts.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file126e74e02e763478873618ec372d78c0" />
+                        </Component>
+                        <Component Id="cfileb9bb62e5f3b43dceb1826504b6191a13" Guid="{B9BB62E5-F3B4-3DCE-B182-6504B6191A13}" Win64="yes">
+                            <File Id="fileb9bb62e5f3b43dceb1826504b6191a13" Name="skiko-windows-x64.dll.sha256" KeyPath="yes" ShortName="iobaclhz.sha" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\fileb9bb62e5f3b43dceb1826504b6191a13" />
+                        </Component>
+                        <Component Id="cfile6c29ea8899cd3674bfa2a80d26eba65f" Guid="{6C29EA88-99CD-3674-BFA2-A80D26EBA65F}" Win64="yes">
+                            <File Id="file6c29ea8899cd3674bfa2a80d26eba65f" Name="antlr-3.5.2-5f106b3785b1e9f566c3faa3496045.jar" KeyPath="yes" ShortName="staqxnij.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file6c29ea8899cd3674bfa2a80d26eba65f" />
+                        </Component>
+                        <Component Id="cfile052d33f06d03335e903715d19d21c328" Guid="{052D33F0-6D03-335E-9037-15D19D21C328}" Win64="yes">
+                            <File Id="file052d33f06d03335e903715d19d21c328" Name="savedstate-compose-desktop-1.3.6-8de11644e97845eaa45d9e74fdec755.jar" KeyPath="yes" ShortName="7l3ow4ql.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file052d33f06d03335e903715d19d21c328" />
+                        </Component>
+                        <Component Id="cfile8bb8acfda03f3ae7b3cf722cd73e7791" Guid="{8BB8ACFD-A03F-3AE7-B3CF-722CD73E7791}" Win64="yes">
+                            <File Id="file8bb8acfda03f3ae7b3cf722cd73e7791" Name="ktor-client-java-jvm-3.1.0-d3159f683fe43e4ad49311226bb17d1.jar" KeyPath="yes" ShortName="vjok0bjq.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file8bb8acfda03f3ae7b3cf722cd73e7791" />
+                        </Component>
+                        <Component Id="cfile37f217c83fcc3dc49a4f90e12cc9c1f1" Guid="{37F217C8-3FCC-3DC4-9A4F-90E12CC9C1F1}" Win64="yes">
+                            <File Id="file37f217c83fcc3dc49a4f90e12cc9c1f1" Name="annotations-24.0.1-63ebd614ac340babaf89a754c359596.jar" KeyPath="yes" ShortName="2fn425ym.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file37f217c83fcc3dc49a4f90e12cc9c1f1" />
+                        </Component>
+                        <Component Id="cfile4f0582a2a94a374295735f1e92deb015" Guid="{4F0582A2-A94A-3742-9573-5F1E92DEB015}" Win64="yes">
+                            <File Id="file4f0582a2a94a374295735f1e92deb015" Name="runtime-desktop-1.11.2-b26a4a152b09eaedc9359b8121752f8.jar" KeyPath="yes" ShortName="mvs2kyur.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file4f0582a2a94a374295735f1e92deb015" />
+                        </Component>
+                        <Component Id="cfile3dcfc32a78833827a0a4446017698ac8" Guid="{3DCFC32A-7883-3827-A0A4-446017698AC8}" Win64="yes">
+                            <File Id="file3dcfc32a78833827a0a4446017698ac8" Name="savedstate-compose-desktop-1.4.0-84ed9710e312be7017fd7498fe747a.jar" KeyPath="yes" ShortName="3dqermp6.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file3dcfc32a78833827a0a4446017698ac8" />
+                        </Component>
+                        <Component Id="cfile14241109a2a73dfb97c0718d31a9745f" Guid="{14241109-A2A7-3DFB-97C0-718D31A9745F}" Win64="yes">
+                            <File Id="file14241109a2a73dfb97c0718d31a9745f" Name="library-desktop-1.11.1-297a54414da4a367efb3223fc064d2bb.jar" KeyPath="yes" ShortName="evm_epdq.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file14241109a2a73dfb97c0718d31a9745f" />
+                        </Component>
+                        <Component Id="cfile52339eb717203efaab6843fc588282fd" Guid="{52339EB7-1720-3EFA-AB68-43FC588282FD}" Win64="yes">
+                            <File Id="file52339eb717203efaab6843fc588282fd" Name="ui-tooling-preview-desktop-1.11.1-b496665b26f319b702eea4c9e514f7d.jar" KeyPath="yes" ShortName="j6_ddds2.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file52339eb717203efaab6843fc588282fd" />
+                        </Component>
+                        <Component Id="cfile1c746e2115c334c7b0e8a3019158dadf" Guid="{1C746E21-15C3-34C7-B0E8-A3019158DADF}" Win64="yes">
+                            <File Id="file1c746e2115c334c7b0e8a3019158dadf" Name="navigationevent-desktop-1.0.1-e0291c4f5d6a6b9038dae1d32950806e.jar" KeyPath="yes" ShortName="l-wkymf6.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file1c746e2115c334c7b0e8a3019158dadf" />
+                        </Component>
+                        <Component Id="cfile7ad32e63d73d321188eb3c311c153c30" Guid="{7AD32E63-D73D-3211-88EB-3C311C153C30}" Win64="yes">
+                            <File Id="file7ad32e63d73d321188eb3c311c153c30" Name="coil-core-jvm-3.4.0-f9c9db60d042f1ecc8178a0f6f31d.jar" KeyPath="yes" ShortName="m2becjya.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file7ad32e63d73d321188eb3c311c153c30" />
+                        </Component>
+                        <Component Id="cfilef3782d3ec8523abaae890a92059bd260" Guid="{F3782D3E-C852-3ABA-AE89-0A92059BD260}" Win64="yes">
+                            <File Id="filef3782d3ec8523abaae890a92059bd260" Name="smali-util-3.0.5-b43635f6f6e94cb22266307bda51f8cc.jar" KeyPath="yes" ShortName="nbafojjp.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filef3782d3ec8523abaae890a92059bd260" />
+                        </Component>
+                        <Component Id="cfile8a7d057fc8413ca8ad0ea1193fb7c870" Guid="{8A7D057F-C841-3CA8-AD0E-A1193FB7C870}" Win64="yes">
+                            <File Id="file8a7d057fc8413ca8ad0ea1193fb7c870" Name="jmdns-3.5.9-662cf9a0dfa577afe5ac75b4e1e26c.jar" KeyPath="yes" ShortName="wq4xdrwp.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file8a7d057fc8413ca8ad0ea1193fb7c870" />
+                        </Component>
+                        <Component Id="cfile5a314b52cb593274812292b991754eea" Guid="{5A314B52-CB59-3274-8122-92B991754EEA}" Win64="yes">
+                            <File Id="file5a314b52cb593274812292b991754eea" Name="ui-util-desktop-1.11.1-4acc4435b9b1c62da975d3cc6425edd.jar" KeyPath="yes" ShortName="2_ot1kgl.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file5a314b52cb593274812292b991754eea" />
+                        </Component>
+                        <Component Id="cfileae5994a19df632569b0867c9c114cbae" Guid="{AE5994A1-9DF6-3256-9B08-67C9C114CBAE}" Win64="yes">
+                            <File Id="fileae5994a19df632569b0867c9c114cbae" Name="jediterm-ui-3.9-74471ddc86616e68b59929fdde57c2.jar" KeyPath="yes" ShortName="7tmazpge.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\fileae5994a19df632569b0867c9c114cbae" />
+                        </Component>
+                        <Component Id="cfile2737a51b86ab30298bfed13030c2adb6" Guid="{2737A51B-86AB-3029-8BFE-D13030C2ADB6}" Win64="yes">
+                            <File Id="file2737a51b86ab30298bfed13030c2adb6" Name="graphics-shapes-desktop-1.1.0-dee1da92dcd95a52b7faca62f4f942.jar" KeyPath="yes" ShortName="3vsk6gjp.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file2737a51b86ab30298bfed13030c2adb6" />
+                        </Component>
+                        <Component Id="cfileec964b7072603f7da442fad66860c69e" Guid="{EC964B70-7260-3F7D-A442-FAD66860C69E}" Win64="yes">
+                            <File Id="fileec964b7072603f7da442fad66860c69e" Name="jspecify-1.0.0-9133aba420d0ca3b01dbb6ae9992cf6.jar" KeyPath="yes" ShortName="hpf8-5jh.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\fileec964b7072603f7da442fad66860c69e" />
+                        </Component>
+                        <Component Id="cfile6266e16b8b1b3d7ba5c5bb011ff5acd7" Guid="{6266E16B-8B1B-3D7B-A5C5-BB011FF5ACD7}" Win64="yes">
+                            <File Id="file6266e16b8b1b3d7ba5c5bb011ff5acd7" Name="guava-33.1.0-jre-4117dd61f73b124fac466ce5c23d590.jar" KeyPath="yes" ShortName="tipjbhth.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file6266e16b8b1b3d7ba5c5bb011ff5acd7" />
+                        </Component>
+                        <Component Id="cfilec9f2ca0cb0073bfbaf5737ec3a8ef602" Guid="{C9F2CA0C-B007-3BFB-AF57-37EC3A8EF602}" Win64="yes">
+                            <File Id="filec9f2ca0cb0073bfbaf5737ec3a8ef602" Name="coil-network-core-jvm-3.4.0-c7788be2dc2b72bbd97432b7a850c07.jar" KeyPath="yes" ShortName="lilgnttk.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filec9f2ca0cb0073bfbaf5737ec3a8ef602" />
+                        </Component>
+                        <Component Id="cfile6876499ba1c431a7abeda885d670f49b" Guid="{6876499B-A1C4-31A7-ABED-A885D670F49B}" Win64="yes">
+                            <File Id="file6876499ba1c431a7abeda885d670f49b" Name="smali-baksmali-3.0.5-768e6e172b28adebfd3aacc2aa968a89.jar" KeyPath="yes" ShortName="dqrh8krh.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file6876499ba1c431a7abeda885d670f49b" />
+                        </Component>
+                        <Component Id="cfile0ea6f9ce4e013aaeab90848d30b3575b" Guid="{0EA6F9CE-4E01-3AAE-AB90-848D30B3575B}" Win64="yes">
+                            <File Id="file0ea6f9ce4e013aaeab90848d30b3575b" Name="checker-qual-3.42.0-4c55448dcbfe9c372f7758fc8fe086.jar" KeyPath="yes" ShortName="jyxqwxh2.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file0ea6f9ce4e013aaeab90848d30b3575b" />
+                        </Component>
+                        <Component Id="cfile41a6007289c5312b8f9572c3b63799d6" Guid="{41A60072-89C5-312B-8F95-72C3B63799D6}" Win64="yes">
+                            <File Id="file41a6007289c5312b8f9572c3b63799d6" Name="ktor-events-jvm-3.1.0-95dad1a33fc58c245046dce89f1ff7.jar" KeyPath="yes" ShortName="49gm4slt.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file41a6007289c5312b8f9572c3b63799d6" />
+                        </Component>
+                        <Component Id="cfile002b481e9e0634599fd279d4d3b38491" Guid="{002B481E-9E06-3459-9FD2-79D4D3B38491}" Win64="yes">
+                            <File Id="file002b481e9e0634599fd279d4d3b38491" Name="qrcode-kotlin-jvm-4.5.0-82b76e5975851e31d90c4225527c51e.jar" KeyPath="yes" ShortName="rle_5vpg.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file002b481e9e0634599fd279d4d3b38491" />
+                        </Component>
+                        <Component Id="cfile4b1e268fb00735358f89123322676cd4" Guid="{4B1E268F-B007-3535-8F89-123322676CD4}" Win64="yes">
+                            <File Id="file4b1e268fb00735358f89123322676cd4" Name="failureaccess-1.0.2-3f75955b49b6758fd6d1e1bd9bf777b3.jar" KeyPath="yes" ShortName="5bw9v7cu.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file4b1e268fb00735358f89123322676cd4" />
+                        </Component>
+                        <Component Id="cfile47567960b6dc3139a128bc400c643530" Guid="{47567960-B6DC-3139-A128-BC400C643530}" Win64="yes">
+                            <File Id="file47567960b6dc3139a128bc400c643530" Name="kotlin-stdlib-jdk8-1.9.0-839527b2163b53e249924f77ad207216.jar" KeyPath="yes" ShortName="dkvv19q0.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file47567960b6dc3139a128bc400c643530" />
+                        </Component>
+                        <Component Id="cfileea8eb6963d1b38d686b9544a3bce9348" Guid="{EA8EB696-3D1B-38D6-86B9-544A3BCE9348}" Win64="yes">
+                            <File Id="fileea8eb6963d1b38d686b9544a3bce9348" Name="jsr305-3.0.2-dd83accb899363c32b7d7a1b2e4ce40.jar" KeyPath="yes" ShortName="coibthk9.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\fileea8eb6963d1b38d686b9544a3bce9348" />
+                        </Component>
+                        <Component Id="cfile75c5284318603151a62b7086f7b80976" Guid="{75C52843-1860-3151-A62B-7086F7B80976}" Win64="yes">
+                            <File Id="file75c5284318603151a62b7086f7b80976" Name="material-ripple-desktop-1.11.1-25262e12df3eab6a74d96e5c5f1e35d4.jar" KeyPath="yes" ShortName="slkurxvc.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file75c5284318603151a62b7086f7b80976" />
+                        </Component>
+                        <Component Id="cfile844319eeaa6e38cc976f2f648a71f5d8" Guid="{844319EE-AA6E-38CC-976F-2F648A71F5D8}" Win64="yes">
+                            <File Id="file844319eeaa6e38cc976f2f648a71f5d8" Name="material3-desktop-1.11.0-alpha07-918c713f9d591a34492212a164f5c190.jar" KeyPath="yes" ShortName="ejgvraqh.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file844319eeaa6e38cc976f2f648a71f5d8" />
+                        </Component>
+                        <Component Id="cfile44d724e1f67e3fdeb7e3e0b4720bed31" Guid="{44D724E1-F67E-3FDE-B7E3-E0B4720BED31}" Win64="yes">
+                            <File Id="file44d724e1f67e3fdeb7e3e0b4720bed31" Name="ui-text-desktop-1.11.1-c237f6ec36592e968436efc2f2ee3e4d.jar" KeyPath="yes" ShortName="xzyvemrk.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file44d724e1f67e3fdeb7e3e0b4720bed31" />
+                        </Component>
+                        <Component Id="cfilecd31f163074a35b4a83ca19408f44e20" Guid="{CD31F163-074A-35B4-A83C-A19408F44E20}" Win64="yes">
+                            <File Id="filecd31f163074a35b4a83ca19408f44e20" Name="shared-jvm-7a3d465e6cdc87b24c4186a328529.jar" KeyPath="yes" ShortName="qeuyg1sb.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filecd31f163074a35b4a83ca19408f44e20" />
+                        </Component>
+                        <Component Id="cfile6318d0d5dbd43ddbb3cd1dd2ad525f09" Guid="{6318D0D5-DBD4-3DDB-B3CD-1DD2AD525F09}" Win64="yes">
+                            <File Id="file6318d0d5dbd43ddbb3cd1dd2ad525f09" Name="rsyntaxtextarea-3.4.0-6de8bed59f7decd0fc674e70de5256b.jar" KeyPath="yes" ShortName="5ovnd8lg.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file6318d0d5dbd43ddbb3cd1dd2ad525f09" />
+                        </Component>
+                        <Component Id="cfile4d75cc4b9aad3cc7853fcd922f5828d1" Guid="{4D75CC4B-9AAD-3CC7-853F-CD922F5828D1}" Win64="yes">
+                            <File Id="file4d75cc4b9aad3cc7853fcd922f5828d1" Name="runtime-saveable-desktop-1.11.2-80f1ec1d671efb9ee47f426501a6620.jar" KeyPath="yes" ShortName="h-ewiquw.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file4d75cc4b9aad3cc7853fcd922f5828d1" />
+                        </Component>
+                        <Component Id="cfile48f69e4578c43b58b6b373e5e24d907d" Guid="{48F69E45-78C4-3B58-B6B3-73E5E24D907D}" Win64="yes">
+                            <File Id="file48f69e4578c43b58b6b373e5e24d907d" Name="kotlinx-coroutines-swing-1.11.0-e2b21cfe6937a29f4b6eb63570c77085.jar" KeyPath="yes" ShortName="p9fjhupl.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file48f69e4578c43b58b6b373e5e24d907d" />
+                        </Component>
+                        <Component Id="cfile64c30881014f3465812b1cb7cf570719" Guid="{64C30881-014F-3465-812B-1CB7CF570719}" Win64="yes">
+                            <File Id="file64c30881014f3465812b1cb7cf570719" Name="slf4j-api-2.0.16-c8de8f5d74584cb24b5652cfba8b3c4.jar" KeyPath="yes" ShortName="z6avz7pw.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file64c30881014f3465812b1cb7cf570719" />
+                        </Component>
+                        <Component Id="cfile3e881be1c3be323384154aa90ae9d0f3" Guid="{3E881BE1-C3BE-3233-8415-4AA90AE9D0F3}" Win64="yes">
+                            <File Id="file3e881be1c3be323384154aa90ae9d0f3" Name="ui-unit-desktop-1.11.1-6974f16892c8d8d3723cb6de69a762de.jar" KeyPath="yes" ShortName="ekwl0blg.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file3e881be1c3be323384154aa90ae9d0f3" />
+                        </Component>
+                        <Component Id="cfilec5ed419ac9eb33308ab3184c08fffc30" Guid="{C5ED419A-C9EB-3330-8AB3-184C08FFFC30}" Win64="yes">
+                            <File Id="filec5ed419ac9eb33308ab3184c08fffc30" Name="ktor-websockets-jvm-3.1.0-77e7403a7fbae79998c4588ca5b77.jar" KeyPath="yes" ShortName="d0ca9ona.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filec5ed419ac9eb33308ab3184c08fffc30" />
+                        </Component>
+                        <Component Id="cfile7399c8b0438b3155a8e422129009e15f" Guid="{7399C8B0-438B-3155-A8E4-22129009E15F}" Win64="yes">
+                            <File Id="file7399c8b0438b3155a8e422129009e15f" Name="ui-backhandler-desktop-1.11.1-628e5847a9bb5f2484c7a1764133b08.jar" KeyPath="yes" ShortName="xbfe81pj.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file7399c8b0438b3155a8e422129009e15f" />
+                        </Component>
+                        <Component Id="cfile77548d21cd5f3c558a4f4f19e08e99d7" Guid="{77548D21-CD5F-3C55-8A4F-4F19E08E99D7}" Win64="yes">
+                            <File Id="file77548d21cd5f3c558a4f4f19e08e99d7" Name="raung-disasm-0.1.1-5e7dd7713def5cfe785f7a1d723d6798.jar" KeyPath="yes" ShortName="rmecinnq.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file77548d21cd5f3c558a4f4f19e08e99d7" />
+                        </Component>
+                        <Component Id="cfile7a41d497ca17320e8588a6aacba92bb9" Guid="{7A41D497-CA17-320E-8588-A6AACBA92BB9}" Win64="yes">
+                            <File Id="file7a41d497ca17320e8588a6aacba92bb9" Name="kotlinx-io-core-jvm-0.6.0-538b972a86f2716c87af2115e43ec8b0.jar" KeyPath="yes" ShortName="pt0fvqin.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file7a41d497ca17320e8588a6aacba92bb9" />
+                        </Component>
+                        <Component Id="cfile031c138cf1f431269b6e0bdd99b00e5c" Guid="{031C138C-F1F4-3126-9B6E-0BDD99B00E5C}" Win64="yes">
+                            <File Id="file031c138cf1f431269b6e0bdd99b00e5c" Name="stringtemplate-3.2.1-b58ca53e518a92a1991eb63b61917582.jar" KeyPath="yes" ShortName="ayht_est.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file031c138cf1f431269b6e0bdd99b00e5c" />
+                        </Component>
+                        <Component Id="cfile499f6cd4dc8f3ac5a3ef897aa5ce7650" Guid="{499F6CD4-DC8F-3AC5-A3EF-897AA5CE7650}" Win64="yes">
+                            <File Id="file499f6cd4dc8f3ac5a3ef897aa5ce7650" Name="jadx-core-1.5.0-fce5519ca8614ec1b961dded63da1f.jar" KeyPath="yes" ShortName="whrohh6b.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file499f6cd4dc8f3ac5a3ef897aa5ce7650" />
+                        </Component>
+                        <Component Id="cfileb1db5d2038cd36baa905e56ff64ed85e" Guid="{B1DB5D20-38CD-36BA-A905-E56FF64ED85E}" Win64="yes">
+                            <File Id="fileb1db5d2038cd36baa905e56ff64ed85e" Name="ktor-client-core-jvm-3.1.0-78a870da71c923a76f3fb237f2f8d1.jar" KeyPath="yes" ShortName="6-fkqhow.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\fileb1db5d2038cd36baa905e56ff64ed85e" />
+                        </Component>
+                        <Component Id="cfile145a2c13949538a19c47c4ec1d962742" Guid="{145A2C13-9495-38A1-9C47-C4EC1D962742}" Win64="yes">
+                            <File Id="file145a2c13949538a19c47c4ec1d962742" Name="ui-desktop-1.11.1-8b94f48ebc49294a7a48a96ddd90dab9.jar" KeyPath="yes" ShortName="jifq-dzh.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file145a2c13949538a19c47c4ec1d962742" />
+                        </Component>
+                        <Component Id="cfilee2df652706073eb9bb47882430e3fac5" Guid="{E2DF6527-0607-3EB9-BB47-882430E3FAC5}" Win64="yes">
+                            <File Id="filee2df652706073eb9bb47882430e3fac5" Name="jna-platform-5.14.0-3bc3f09a698e6ad250dd93f64fbb8a7.jar" KeyPath="yes" ShortName="ib6enkzm.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filee2df652706073eb9bb47882430e3fac5" />
+                        </Component>
+                        <Component Id="cfile0f5b10a730be334f8357ce47ca949388" Guid="{0F5B10A7-30BE-334F-8357-CE47CA949388}" Win64="yes">
+                            <File Id="file0f5b10a730be334f8357ce47ca949388" Name="protobuf-java-3.25.3-8f4aa3786a92e027385438f98423f18.jar" KeyPath="yes" ShortName="9y1zg0ar.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file0f5b10a730be334f8357ce47ca949388" />
+                        </Component>
+                        <Component Id="cfile3ff5f3ce43783ae2b00c4a9e858234cd" Guid="{3FF5F3CE-4378-3AE2-B00C-4A9E858234CD}" Win64="yes">
+                            <File Id="file3ff5f3ce43783ae2b00c4a9e858234cd" Name="atomicfu-jvm-0.28.0-70921245a0aed3c3e3d17c34ca3dbd87.jar" KeyPath="yes" ShortName="z517fpwq.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file3ff5f3ce43783ae2b00c4a9e858234cd" />
+                        </Component>
+                        <Component Id="cfile9b2ff9594a7e3cdaa1b2994a389d49ce" Guid="{9B2FF959-4A7E-3CDA-A1B2-994A389D49CE}" Win64="yes">
+                            <File Id="file9b2ff9594a7e3cdaa1b2994a389d49ce" Name="lifecycle-viewmodel-compose-desktop-2.11.0-beta01-8c8b5c8d71759d5b1f927a06b97a278.jar" KeyPath="yes" ShortName="4nowl5qx.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file9b2ff9594a7e3cdaa1b2994a389d49ce" />
+                        </Component>
+                        <Component Id="cfile4ae8c420a2733caf8f8272e9f8bdf550" Guid="{4AE8C420-A273-3CAF-8F82-72E9F8BDF550}" Win64="yes">
+                            <File Id="file4ae8c420a2733caf8f8272e9f8bdf550" Name="antlr-2.7.7-f8f1352c52a4c6a50b59759651fc64.jar" KeyPath="yes" ShortName="hg3_rcrx.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file4ae8c420a2733caf8f8272e9f8bdf550" />
+                        </Component>
+                        <Component Id="cfileb5a641362e6833a28f8bffdb85a0fbf5" Guid="{B5A64136-2E68-33A2-8F8B-FFDB85A0FBF5}" Win64="yes">
+                            <File Id="fileb5a641362e6833a28f8bffdb85a0fbf5" Name="util-2.5.2-5234a0b0427a1619cacc8c4532ebd09.jar" KeyPath="yes" ShortName="csvg4opb.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\fileb5a641362e6833a28f8bffdb85a0fbf5" />
+                        </Component>
+                        <Component Id="cfile7deb37d0e4ef3dddb6cb971ff0958722" Guid="{7DEB37D0-E4EF-3DDD-B6CB-971FF0958722}" Win64="yes">
+                            <File Id="file7deb37d0e4ef3dddb6cb971ff0958722" Name="gson-2.10.1-df6097815738cb31fc5639155321843.jar" KeyPath="yes" ShortName="xdnydbxy.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file7deb37d0e4ef3dddb6cb971ff0958722" />
+                        </Component>
+                        <Component Id="cfilea993dc90414735a1a3ffafa7845bb702" Guid="{A993DC90-4147-35A1-A3FF-AFA7845BB702}" Win64="yes">
+                            <File Id="filea993dc90414735a1a3ffafa7845bb702" Name="runtime-saveable-desktop-1.11.1-eea89111a01dbed26b76bf2f1fd3.jar" KeyPath="yes" ShortName="cdvxuygu.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filea993dc90414735a1a3ffafa7845bb702" />
+                        </Component>
+                        <Component Id="cfile4ade60e305703f72bb07f4c5796e9bc6" Guid="{4ADE60E3-0570-3F72-BB07-F4C5796E9BC6}" Win64="yes">
+                            <File Id="file4ade60e305703f72bb07f4c5796e9bc6" Name="baksmali-2.5.2-9b9b564dd938e8f48d6a88e65e98cc.jar" KeyPath="yes" ShortName="hqybnnr0.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file4ade60e305703f72bb07f4c5796e9bc6" />
+                        </Component>
+                        <Component Id="cfileb5efe261c4f030c29cd44dd7311ddd0f" Guid="{B5EFE261-C4F0-30C2-9CD4-4DD7311DDD0F}" Win64="yes">
+                            <File Id="fileb5efe261c4f030c29cd44dd7311ddd0f" Name="raung-common-0.1.1-1c174532e303a224acfee2b63f70.jar" KeyPath="yes" ShortName="egrajso1.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\fileb5efe261c4f030c29cd44dd7311ddd0f" />
+                        </Component>
+                        <Component Id="cfilee430dcae70693f3d83975092f9bcfb57" Guid="{E430DCAE-7069-3F3D-8397-5092F9BCFB57}" Win64="yes">
+                            <File Id="filee430dcae70693f3d83975092f9bcfb57" Name="kotlinx-coroutines-jdk8-1.11.0-b3985f53599b5143575fe4718e7687f.jar" KeyPath="yes" ShortName="kl9xo2c_.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filee430dcae70693f3d83975092f9bcfb57" />
+                        </Component>
+                        <Component Id="cfile70f23862e1673142a008d4522b2b89df" Guid="{70F23862-E167-3142-A008-D4522B2B89DF}" Win64="yes">
+                            <File Id="file70f23862e1673142a008d4522b2b89df" Name="lifecycle-viewmodel-desktop-2.11.0-beta01-6765f67c2afce1a337a3726e1d1139bb.jar" KeyPath="yes" ShortName="prvcik08.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file70f23862e1673142a008d4522b2b89df" />
+                        </Component>
+                        <Component Id="cfile68ab70acd58b38c39f9c57c83855d10d" Guid="{68AB70AC-D58B-38C3-9F9C-57C83855D10D}" Win64="yes">
+                            <File Id="file68ab70acd58b38c39f9c57c83855d10d" Name="ktor-http-cio-jvm-3.1.0-d452a2e746982387e1d1d1bd087326c.jar" KeyPath="yes" ShortName="aloupbut.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file68ab70acd58b38c39f9c57c83855d10d" />
+                        </Component>
+                        <Component Id="cfilef13dc0087e5b3a4fabfb3f1d0002b995" Guid="{F13DC008-7E5B-3A4F-ABFB-3F1D0002B995}" Win64="yes">
+                            <File Id="filef13dc0087e5b3a4fabfb3f1d0002b995" Name="jediterm-core-3.9-1edfc7d6a215289150aa35e5d9943c16.jar" KeyPath="yes" ShortName="vbnmhhse.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filef13dc0087e5b3a4fabfb3f1d0002b995" />
+                        </Component>
+                        <Component Id="cfilebbef2391af203711a20599c997c6ebf5" Guid="{BBEF2391-AF20-3711-A205-99C997C6EBF5}" Win64="yes">
+                            <File Id="filebbef2391af203711a20599c997c6ebf5" Name="coil-network-ktor3-jvm-3.4.0-2220d090211a0fadd971535f0f64f18.jar" KeyPath="yes" ShortName="ugr0n3u8.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filebbef2391af203711a20599c997c6ebf5" />
+                        </Component>
+                        <Component Id="cfile48e6d746cf333898883320cace4652ac" Guid="{48E6D746-CF33-3898-8833-20CACE4652AC}" Win64="yes">
+                            <File Id="file48e6d746cf333898883320cace4652ac" Name="icudtl.dat" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file48e6d746cf333898883320cace4652ac" />
+                        </Component>
+                        <Component Id="cfiled93916c7c9853c34a2cd7fe76b157ef6" Guid="{D93916C7-C985-3C34-A2CD-7FE76B157EF6}" Win64="yes">
+                            <File Id="filed93916c7c9853c34a2cd7fe76b157ef6" Name="jadx-java-input-1.5.0-ccf53e2a9d25f6b87d2ddf5c6e5ddd.jar" KeyPath="yes" ShortName="lmwlhlvr.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filed93916c7c9853c34a2cd7fe76b157ef6" />
+                        </Component>
+                        <Component Id="cfile9c7109609fa231e4b8db202b77083e5b" Guid="{9C710960-9FA2-31E4-B8DB-202B77083E5B}" Win64="yes">
+                            <File Id="file9c7109609fa231e4b8db202b77083e5b" Name="ktor-network-jvm-3.1.0-f798a73e3ed60d846ea2e2b3b0fe7f.jar" KeyPath="yes" ShortName="2vg-uvxi.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file9c7109609fa231e4b8db202b77083e5b" />
+                        </Component>
+                        <Component Id="cfilef6b3f1b323033617806a9601e154baa0" Guid="{F6B3F1B3-2303-3617-806A-9601E154BAA0}" Win64="yes">
+                            <File Id="filef6b3f1b323033617806a9601e154baa0" Name="material-icons-core-desktop-1.7.3-23eaca5d2a4caa3e4077a0e9fd549d68.jar" KeyPath="yes" ShortName="quwre6op.jar" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filef6b3f1b323033617806a9601e154baa0" />
+                        </Component>
+                        <Directory Id="dire07ad78c628d3050965dc9cbd1b1f465" Name="resources" ShortName="_yelt3f8">
+                            <Component Id="cmkdir5c97b751f66930aa9f5d3c54eae3bf2d" Guid="{5C97B751-F669-30AA-9F5D-3C54EAE3BF2D}" Win64="yes">
+                                <CreateFolder Directory="dire07ad78c628d3050965dc9cbd1b1f465" />
+                                <RegistryValue Id="reg980E64C56B32FDB9D0EEEA0FD3140715" Root="HKLM" Key="Software\未知\WpsAdbTool\1.0.0" Name="ProductCode" Value="[ProductCode]" Type="string" KeyPath="yes" />
+                            </Component>
+                        </Directory>
+                    </Directory>
+                    <Directory Id="dire87a7d2cab5f35e0bf0a9181e38d0c09" Name="runtime">
+                        <Component Id="cfile0575f23782fc3c8088352bd75869c42c" Guid="{0575F237-82FC-3C80-8835-2BD75869C42C}" Win64="yes">
+                            <File Id="file0575f23782fc3c8088352bd75869c42c" Name="release" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file0575f23782fc3c8088352bd75869c42c" />
+                        </Component>
+                        <Directory Id="dirb314e9c4f1703a21bfb0e30d794de601" Name="bin">
+                            <Component Id="cfile7ee9ad88bf4033658b6cced645142a01" Guid="{7EE9AD88-BF40-3365-8B6C-CED645142A01}" Win64="yes">
+                                <File Id="file7ee9ad88bf4033658b6cced645142a01" Name="api-ms-win-crt-stdio-l1-1-0.dll" KeyPath="yes" ShortName="7uxm94dz.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file7ee9ad88bf4033658b6cced645142a01" />
+                            </Component>
+                            <Component Id="cfilea5c4078e9a943a1bb636e0f699735369" Guid="{A5C4078E-9A94-3A1B-B636-E0F699735369}" Win64="yes">
+                                <File Id="filea5c4078e9a943a1bb636e0f699735369" Name="api-ms-win-core-timezone-l1-1-0.dll" KeyPath="yes" ShortName="x-wefxlx.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filea5c4078e9a943a1bb636e0f699735369" />
+                            </Component>
+                            <Component Id="cfilee7956724e65a3018a487947ff29096d5" Guid="{E7956724-E65A-3018-A487-947FF29096D5}" Win64="yes">
+                                <File Id="filee7956724e65a3018a487947ff29096d5" Name="awt.dll" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filee7956724e65a3018a487947ff29096d5" />
+                            </Component>
+                            <Component Id="cfilea4dfe168ad5239e6965caa1f825a4e1e" Guid="{A4DFE168-AD52-39E6-965C-AA1F825A4E1E}" Win64="yes">
+                                <File Id="filea4dfe168ad5239e6965caa1f825a4e1e" Name="api-ms-win-core-sysinfo-l1-1-0.dll" KeyPath="yes" ShortName="0maghbm9.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filea4dfe168ad5239e6965caa1f825a4e1e" />
+                            </Component>
+                            <Component Id="cfilef4417da55e3633ffbd6c7c2ea7b520f1" Guid="{F4417DA5-5E36-33FF-BD6C-7C2EA7B520F1}" Win64="yes">
+                                <File Id="filef4417da55e3633ffbd6c7c2ea7b520f1" Name="api-ms-win-core-heap-l1-1-0.dll" KeyPath="yes" ShortName="slew62zv.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filef4417da55e3633ffbd6c7c2ea7b520f1" />
+                            </Component>
+                            <Component Id="cfilea465918cf0533db8a4519ac9b7d1c50b" Guid="{A465918C-F053-3DB8-A451-9AC9B7D1C50B}" Win64="yes">
+                                <File Id="filea465918cf0533db8a4519ac9b7d1c50b" Name="api-ms-win-core-libraryloader-l1-1-0.dll" KeyPath="yes" ShortName="yckk7yg6.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filea465918cf0533db8a4519ac9b7d1c50b" />
+                            </Component>
+                            <Component Id="cfile931bce33e20c3d7aba37e4e15d92f99a" Guid="{931BCE33-E20C-3D7A-BA37-E4E15D92F99A}" Win64="yes">
+                                <File Id="file931bce33e20c3d7aba37e4e15d92f99a" Name="api-ms-win-core-synch-l1-1-0.dll" KeyPath="yes" ShortName="l16ef_il.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file931bce33e20c3d7aba37e4e15d92f99a" />
+                            </Component>
+                            <Component Id="cfile6e25e42e145c342c9c2537107d03a10f" Guid="{6E25E42E-145C-342C-9C25-37107D03A10F}" Win64="yes">
+                                <File Id="file6e25e42e145c342c9c2537107d03a10f" Name="java.dll" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file6e25e42e145c342c9c2537107d03a10f" />
+                            </Component>
+                            <Component Id="cfiled78727bf16eb3b60a5337074e6c1866e" Guid="{D78727BF-16EB-3B60-A533-7074E6C1866E}" Win64="yes">
+                                <File Id="filed78727bf16eb3b60a5337074e6c1866e" Name="api-ms-win-crt-process-l1-1-0.dll" KeyPath="yes" ShortName="vwuvhaie.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filed78727bf16eb3b60a5337074e6c1866e" />
+                            </Component>
+                            <Component Id="cfilee9dca98c5bc43b40ab8f1f5d80729dbf" Guid="{E9DCA98C-5BC4-3B40-AB8F-1F5D80729DBF}" Win64="yes">
+                                <File Id="filee9dca98c5bc43b40ab8f1f5d80729dbf" Name="net.dll" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filee9dca98c5bc43b40ab8f1f5d80729dbf" />
+                            </Component>
+                            <Component Id="cfileb7f25dfef9c0389fb25d5bf599deae2a" Guid="{B7F25DFE-F9C0-389F-B25D-5BF599DEAE2A}" Win64="yes">
+                                <File Id="fileb7f25dfef9c0389fb25d5bf599deae2a" Name="jimage.dll" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\fileb7f25dfef9c0389fb25d5bf599deae2a" />
+                            </Component>
+                            <Component Id="cfile6d9ce4cb6bdf3f6f9b24ebfc65bac782" Guid="{6D9CE4CB-6BDF-3F6F-9B24-EBFC65BAC782}" Win64="yes">
+                                <File Id="file6d9ce4cb6bdf3f6f9b24ebfc65bac782" Name="zip.dll" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file6d9ce4cb6bdf3f6f9b24ebfc65bac782" />
+                            </Component>
+                            <Component Id="cfile6813f9ddc50d3d2ab4d55e4fa476e5b6" Guid="{6813F9DD-C50D-3D2A-B4D5-5E4FA476E5B6}" Win64="yes">
+                                <File Id="file6813f9ddc50d3d2ab4d55e4fa476e5b6" Name="api-ms-win-core-string-l1-1-0.dll" KeyPath="yes" ShortName="9zr_kkvb.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file6813f9ddc50d3d2ab4d55e4fa476e5b6" />
+                            </Component>
+                            <Component Id="cfile43b8a7edec3b3abd8b45cba46a6dd8ce" Guid="{43B8A7ED-EC3B-3ABD-8B45-CBA46A6DD8CE}" Win64="yes">
+                                <File Id="file43b8a7edec3b3abd8b45cba46a6dd8ce" Name="api-ms-win-core-memory-l1-1-0.dll" KeyPath="yes" ShortName="1vspeti0.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file43b8a7edec3b3abd8b45cba46a6dd8ce" />
+                            </Component>
+                            <Component Id="cfilea89abedbae77350582cab6b930bcd024" Guid="{A89ABEDB-AE77-3505-82CA-B6B930BCD024}" Win64="yes">
+                                <File Id="filea89abedbae77350582cab6b930bcd024" Name="api-ms-win-core-processthreads-l1-1-1.dll" KeyPath="yes" ShortName="bpbdnozr.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filea89abedbae77350582cab6b930bcd024" />
+                            </Component>
+                            <Component Id="cfile5e1f8c8e9edc3d7c961c1020ee416957" Guid="{5E1F8C8E-9EDC-3D7C-961C-1020EE416957}" Win64="yes">
+                                <File Id="file5e1f8c8e9edc3d7c961c1020ee416957" Name="api-ms-win-crt-utility-l1-1-0.dll" KeyPath="yes" ShortName="wpdaonfu.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file5e1f8c8e9edc3d7c961c1020ee416957" />
+                            </Component>
+                            <Component Id="cfilea3b21980a218327e9f589c5bec86036b" Guid="{A3B21980-A218-327E-9F58-9C5BEC86036B}" Win64="yes">
+                                <File Id="filea3b21980a218327e9f589c5bec86036b" Name="api-ms-win-crt-runtime-l1-1-0.dll" KeyPath="yes" ShortName="ehao3fkx.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filea3b21980a218327e9f589c5bec86036b" />
+                            </Component>
+                            <Component Id="cfile57f1e4a01ad83188ad0c39fda43752ed" Guid="{57F1E4A0-1AD8-3188-AD0C-39FDA43752ED}" Win64="yes">
+                                <File Id="file57f1e4a01ad83188ad0c39fda43752ed" Name="jawt.dll" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file57f1e4a01ad83188ad0c39fda43752ed" />
+                            </Component>
+                            <Component Id="cfile741fe330cc6a3e1fb2e9b69312f577ac" Guid="{741FE330-CC6A-3E1F-B2E9-B69312F577AC}" Win64="yes">
+                                <File Id="file741fe330cc6a3e1fb2e9b69312f577ac" Name="freetype.dll" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file741fe330cc6a3e1fb2e9b69312f577ac" />
+                            </Component>
+                            <Component Id="cfile8e1c572076c23e64babd0c9ef5e69ce8" Guid="{8E1C5720-76C2-3E64-BABD-0C9EF5E69CE8}" Win64="yes">
+                                <File Id="file8e1c572076c23e64babd0c9ef5e69ce8" Name="nio.dll" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file8e1c572076c23e64babd0c9ef5e69ce8" />
+                            </Component>
+                            <Component Id="cfile4b0fb6b4ed89362599d028b2e6110ad7" Guid="{4B0FB6B4-ED89-3625-99D0-28B2E6110AD7}" Win64="yes">
+                                <File Id="file4b0fb6b4ed89362599d028b2e6110ad7" Name="api-ms-win-core-handle-l1-1-0.dll" KeyPath="yes" ShortName="3l88djnr.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file4b0fb6b4ed89362599d028b2e6110ad7" />
+                            </Component>
+                            <Component Id="cfile96ab140b66c237588f0e762bd982bec5" Guid="{96AB140B-66C2-3758-8F0E-762BD982BEC5}" Win64="yes">
+                                <File Id="file96ab140b66c237588f0e762bd982bec5" Name="api-ms-win-core-file-l1-1-0.dll" KeyPath="yes" ShortName="hi_ywbtb.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file96ab140b66c237588f0e762bd982bec5" />
+                            </Component>
+                            <Component Id="cfilefe3b781367673b2f8cc1f3cf95240473" Guid="{FE3B7813-6767-3B2F-8CC1-F3CF95240473}" Win64="yes">
+                                <File Id="filefe3b781367673b2f8cc1f3cf95240473" Name="msvcp140.dll" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filefe3b781367673b2f8cc1f3cf95240473" />
+                            </Component>
+                            <Component Id="cfilebd5077779b6a3ed2aa5ef8b1a859ac9a" Guid="{BD507777-9B6A-3ED2-AA5E-F8B1A859AC9A}" Win64="yes">
+                                <File Id="filebd5077779b6a3ed2aa5ef8b1a859ac9a" Name="javajpeg.dll" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filebd5077779b6a3ed2aa5ef8b1a859ac9a" />
+                            </Component>
+                            <Component Id="cfile92005861b6c63e318442f946199376f9" Guid="{92005861-B6C6-3E31-8442-F946199376F9}" Win64="yes">
+                                <File Id="file92005861b6c63e318442f946199376f9" Name="api-ms-win-core-datetime-l1-1-0.dll" KeyPath="yes" ShortName="l1tiw3co.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file92005861b6c63e318442f946199376f9" />
+                            </Component>
+                            <Component Id="cfilea7dd5107132a300995240f15d5ad8285" Guid="{A7DD5107-132A-3009-9524-0F15D5AD8285}" Win64="yes">
+                                <File Id="filea7dd5107132a300995240f15d5ad8285" Name="prefs.dll" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filea7dd5107132a300995240f15d5ad8285" />
+                            </Component>
+                            <Component Id="cfile6ba894d434c6390bbcea2e4ba94e02ad" Guid="{6BA894D4-34C6-390B-BCEA-2E4BA94E02AD}" Win64="yes">
+                                <File Id="file6ba894d434c6390bbcea2e4ba94e02ad" Name="api-ms-win-core-processthreads-l1-1-0.dll" KeyPath="yes" ShortName="wv4mnin0.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file6ba894d434c6390bbcea2e4ba94e02ad" />
+                            </Component>
+                            <Component Id="cfileeb140c6cc49c30cfb587d0c49e93f655" Guid="{EB140C6C-C49C-30CF-B587-D0C49E93F655}" Win64="yes">
+                                <File Id="fileeb140c6cc49c30cfb587d0c49e93f655" Name="fontmanager.dll" KeyPath="yes" ShortName="srzlm1rh.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\fileeb140c6cc49c30cfb587d0c49e93f655" />
+                            </Component>
+                            <Component Id="cfileb30094b26e503dc997d6b641d7a9f486" Guid="{B30094B2-6E50-3DC9-97D6-B641D7A9F486}" Win64="yes">
+                                <File Id="fileb30094b26e503dc997d6b641d7a9f486" Name="api-ms-win-core-file-l1-2-0.dll" KeyPath="yes" ShortName="fztzifqw.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\fileb30094b26e503dc997d6b641d7a9f486" />
+                            </Component>
+                            <Component Id="cfileea93ac6aa1763cd0847af7fef0d1dceb" Guid="{EA93AC6A-A176-3CD0-847A-F7FEF0D1DCEB}" Win64="yes">
+                                <File Id="fileea93ac6aa1763cd0847af7fef0d1dceb" Name="api-ms-win-core-namedpipe-l1-1-0.dll" KeyPath="yes" ShortName="p0tumpxb.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\fileea93ac6aa1763cd0847af7fef0d1dceb" />
+                            </Component>
+                            <Component Id="cfile2dd6bbb3a639382a8b5c3f218f7da385" Guid="{2DD6BBB3-A639-382A-8B5C-3F218F7DA385}" Win64="yes">
+                                <File Id="file2dd6bbb3a639382a8b5c3f218f7da385" Name="api-ms-win-crt-convert-l1-1-0.dll" KeyPath="yes" ShortName="amfyn4mt.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file2dd6bbb3a639382a8b5c3f218f7da385" />
+                            </Component>
+                            <Component Id="cfile6fc62b25eb333d5486105ebd7f83f10d" Guid="{6FC62B25-EB33-3D54-8610-5EBD7F83F10D}" Win64="yes">
+                                <File Id="file6fc62b25eb333d5486105ebd7f83f10d" Name="api-ms-win-crt-locale-l1-1-0.dll" KeyPath="yes" ShortName="kntzkddr.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file6fc62b25eb333d5486105ebd7f83f10d" />
+                            </Component>
+                            <Component Id="cfile2fdb8d1b765634969f2e5e6c21529452" Guid="{2FDB8D1B-7656-3496-9F2E-5E6C21529452}" Win64="yes">
+                                <File Id="file2fdb8d1b765634969f2e5e6c21529452" Name="api-ms-win-crt-math-l1-1-0.dll" KeyPath="yes" ShortName="khh7_vds.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file2fdb8d1b765634969f2e5e6c21529452" />
+                            </Component>
+                            <Component Id="cfile5ad2c841972a3789a81a830ff17e5967" Guid="{5AD2C841-972A-3789-A81A-830FF17E5967}" Win64="yes">
+                                <File Id="file5ad2c841972a3789a81a830ff17e5967" Name="api-ms-win-crt-filesystem-l1-1-0.dll" KeyPath="yes" ShortName="ivj9a3mv.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file5ad2c841972a3789a81a830ff17e5967" />
+                            </Component>
+                            <Component Id="cfile7a5c125d70d13e0e826fdd99a4d484b2" Guid="{7A5C125D-70D1-3E0E-826F-DD99A4D484B2}" Win64="yes">
+                                <File Id="file7a5c125d70d13e0e826fdd99a4d484b2" Name="api-ms-win-crt-environment-l1-1-0.dll" KeyPath="yes" ShortName="t7w83swt.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file7a5c125d70d13e0e826fdd99a4d484b2" />
+                            </Component>
+                            <Component Id="cfile14e7cf1867b8344f93e8a2a98a764cd7" Guid="{14E7CF18-67B8-344F-93E8-A2A98A764CD7}" Win64="yes">
+                                <File Id="file14e7cf1867b8344f93e8a2a98a764cd7" Name="vcruntime140.dll" KeyPath="yes" ShortName="eqitlgdp.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file14e7cf1867b8344f93e8a2a98a764cd7" />
+                            </Component>
+                            <Component Id="cfile7901f84adcf33cb6b42f68077f876feb" Guid="{7901F84A-DCF3-3CB6-B42F-68077F876FEB}" Win64="yes">
+                                <File Id="file7901f84adcf33cb6b42f68077f876feb" Name="ucrtbase.dll" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file7901f84adcf33cb6b42f68077f876feb" />
+                            </Component>
+                            <Component Id="cfilee7fe97df1fef334caa822bd7732c5812" Guid="{E7FE97DF-1FEF-334C-AA82-2BD7732C5812}" Win64="yes">
+                                <File Id="filee7fe97df1fef334caa822bd7732c5812" Name="splashscreen.dll" KeyPath="yes" ShortName="pmkfvdxw.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filee7fe97df1fef334caa822bd7732c5812" />
+                            </Component>
+                            <Component Id="cfileacb0029ae09b3b3b85018ae2e3cf95d7" Guid="{ACB0029A-E09B-3B3B-8501-8AE2E3CF95D7}" Win64="yes">
+                                <File Id="fileacb0029ae09b3b3b85018ae2e3cf95d7" Name="api-ms-win-crt-string-l1-1-0.dll" KeyPath="yes" ShortName="uxf5dwsm.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\fileacb0029ae09b3b3b85018ae2e3cf95d7" />
+                            </Component>
+                            <Component Id="cfile82207aab4be534b1926be8df36bcbc44" Guid="{82207AAB-4BE5-34B1-926B-E8DF36BCBC44}" Win64="yes">
+                                <File Id="file82207aab4be534b1926be8df36bcbc44" Name="api-ms-win-core-util-l1-1-0.dll" KeyPath="yes" ShortName="7at_cwf9.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file82207aab4be534b1926be8df36bcbc44" />
+                            </Component>
+                            <Component Id="cfilebabbebcd7c993cc999d4231d3bb26e83" Guid="{BABBEBCD-7C99-3CC9-99D4-231D3BB26E83}" Win64="yes">
+                                <File Id="filebabbebcd7c993cc999d4231d3bb26e83" Name="api-ms-win-core-debug-l1-1-0.dll" KeyPath="yes" ShortName="k7gdfkiu.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filebabbebcd7c993cc999d4231d3bb26e83" />
+                            </Component>
+                            <Component Id="cfile36f487fed9dd38c48340ad1d3770000f" Guid="{36F487FE-D9DD-38C4-8340-AD1D3770000F}" Win64="yes">
+                                <File Id="file36f487fed9dd38c48340ad1d3770000f" Name="lcms.dll" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file36f487fed9dd38c48340ad1d3770000f" />
+                            </Component>
+                            <Component Id="cfileb54f801d4ef831aea870dee318d3e651" Guid="{B54F801D-4EF8-31AE-A870-DEE318D3E651}" Win64="yes">
+                                <File Id="fileb54f801d4ef831aea870dee318d3e651" Name="api-ms-win-core-rtlsupport-l1-1-0.dll" KeyPath="yes" ShortName="kppgvjbk.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\fileb54f801d4ef831aea870dee318d3e651" />
+                            </Component>
+                            <Component Id="cfiledb4ea206621e394aac4756e9617ce79d" Guid="{DB4EA206-621E-394A-AC47-56E9617CE79D}" Win64="yes">
+                                <File Id="filedb4ea206621e394aac4756e9617ce79d" Name="api-ms-win-core-errorhandling-l1-1-0.dll" KeyPath="yes" ShortName="xx1gflzt.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filedb4ea206621e394aac4756e9617ce79d" />
+                            </Component>
+                            <Component Id="cfile358f4cfe5b563484aeb28b7aecbd91c6" Guid="{358F4CFE-5B56-3484-AEB2-8B7AECBD91C6}" Win64="yes">
+                                <File Id="file358f4cfe5b563484aeb28b7aecbd91c6" Name="api-ms-win-crt-time-l1-1-0.dll" KeyPath="yes" ShortName="cekjt0t5.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file358f4cfe5b563484aeb28b7aecbd91c6" />
+                            </Component>
+                            <Component Id="cfile1d252731852a3cd79a427c6b087220f2" Guid="{1D252731-852A-3CD7-9A42-7C6B087220F2}" Win64="yes">
+                                <File Id="file1d252731852a3cd79a427c6b087220f2" Name="api-ms-win-crt-private-l1-1-0.dll" KeyPath="yes" ShortName="d1cqk3ig.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file1d252731852a3cd79a427c6b087220f2" />
+                            </Component>
+                            <Component Id="cfilebbef28601bf43a0fab7a0a27252e0a08" Guid="{BBEF2860-1BF4-3A0F-AB7A-0A27252E0A08}" Win64="yes">
+                                <File Id="filebbef28601bf43a0fab7a0a27252e0a08" Name="api-ms-win-core-console-l1-2-0.dll" KeyPath="yes" ShortName="qa-sebti.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filebbef28601bf43a0fab7a0a27252e0a08" />
+                            </Component>
+                            <Component Id="cfilea00d1c8e9cf43226950a03042d6ad409" Guid="{A00D1C8E-9CF4-3226-950A-03042D6AD409}" Win64="yes">
+                                <File Id="filea00d1c8e9cf43226950a03042d6ad409" Name="jsound.dll" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filea00d1c8e9cf43226950a03042d6ad409" />
+                            </Component>
+                            <Component Id="cfile2bee21ad8f5b32c899333416c52a7222" Guid="{2BEE21AD-8F5B-32C8-9933-3416C52A7222}" Win64="yes">
+                                <File Id="file2bee21ad8f5b32c899333416c52a7222" Name="api-ms-win-crt-multibyte-l1-1-0.dll" KeyPath="yes" ShortName="fufka-sy.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file2bee21ad8f5b32c899333416c52a7222" />
+                            </Component>
+                            <Component Id="cfile62d7b0fa975c373aa3fe3d51723d0c98" Guid="{62D7B0FA-975C-373A-A3FE-3D51723D0C98}" Win64="yes">
+                                <File Id="file62d7b0fa975c373aa3fe3d51723d0c98" Name="api-ms-win-core-file-l2-1-0.dll" KeyPath="yes" ShortName="beqewns4.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file62d7b0fa975c373aa3fe3d51723d0c98" />
+                            </Component>
+                            <Component Id="cfileb21761bea3b037d68c135fff4e569440" Guid="{B21761BE-A3B0-37D6-8C13-5FFF4E569440}" Win64="yes">
+                                <File Id="fileb21761bea3b037d68c135fff4e569440" Name="instrument.dll" KeyPath="yes" ShortName="4u7zc155.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\fileb21761bea3b037d68c135fff4e569440" />
+                            </Component>
+                            <Component Id="cfilefd7f5f4086ef35129470b8fe26a820ef" Guid="{FD7F5F40-86EF-3512-9470-B8FE26A820EF}" Win64="yes">
+                                <File Id="filefd7f5f4086ef35129470b8fe26a820ef" Name="api-ms-win-core-processenvironment-l1-1-0.dll" KeyPath="yes" ShortName="uyhdjj7b.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filefd7f5f4086ef35129470b8fe26a820ef" />
+                            </Component>
+                            <Component Id="cfile66d1d259d6b9366087fc5022a6543c88" Guid="{66D1D259-D6B9-3660-87FC-5022A6543C88}" Win64="yes">
+                                <File Id="file66d1d259d6b9366087fc5022a6543c88" Name="api-ms-win-core-localization-l1-2-0.dll" KeyPath="yes" ShortName="t5trifrh.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file66d1d259d6b9366087fc5022a6543c88" />
+                            </Component>
+                            <Component Id="cfile208055db563d3c18b3b09f490b03c0b1" Guid="{208055DB-563D-3C18-B3B0-9F490B03C0B1}" Win64="yes">
+                                <File Id="file208055db563d3c18b3b09f490b03c0b1" Name="vcruntime140_1.dll" KeyPath="yes" ShortName="op0h8fio.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file208055db563d3c18b3b09f490b03c0b1" />
+                            </Component>
+                            <Component Id="cfilec060d506679a3903b1ff75ca06aee1a8" Guid="{C060D506-679A-3903-B1FF-75CA06AEE1A8}" Win64="yes">
+                                <File Id="filec060d506679a3903b1ff75ca06aee1a8" Name="api-ms-win-crt-heap-l1-1-0.dll" KeyPath="yes" ShortName="kg5nhzsv.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filec060d506679a3903b1ff75ca06aee1a8" />
+                            </Component>
+                            <Component Id="cfilefa556ed1f3953f4d96b5186a472f1eda" Guid="{FA556ED1-F395-3F4D-96B5-186A472F1EDA}" Win64="yes">
+                                <File Id="filefa556ed1f3953f4d96b5186a472f1eda" Name="api-ms-win-core-interlocked-l1-1-0.dll" KeyPath="yes" ShortName="nm35dxin.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filefa556ed1f3953f4d96b5186a472f1eda" />
+                            </Component>
+                            <Component Id="cfile589506d5333336218bc4b6b3fc60be76" Guid="{589506D5-3333-3621-8BC4-B6B3FC60BE76}" Win64="yes">
+                                <File Id="file589506d5333336218bc4b6b3fc60be76" Name="jli.dll" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file589506d5333336218bc4b6b3fc60be76" />
+                            </Component>
+                            <Component Id="cfileeb95acfbd3d731b7b31d7042b289b3fe" Guid="{EB95ACFB-D3D7-31B7-B31D-7042B289B3FE}" Win64="yes">
+                                <File Id="fileeb95acfbd3d731b7b31d7042b289b3fe" Name="api-ms-win-crt-conio-l1-1-0.dll" KeyPath="yes" ShortName="y-i_rpiv.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\fileeb95acfbd3d731b7b31d7042b289b3fe" />
+                            </Component>
+                            <Component Id="cfile6f5a7dd50e5736d2b891fc060f72001b" Guid="{6F5A7DD5-0E57-36D2-B891-FC060F72001B}" Win64="yes">
+                                <File Id="file6f5a7dd50e5736d2b891fc060f72001b" Name="api-ms-win-core-fibers-l1-1-0.dll" KeyPath="yes" ShortName="aeiu4wft.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file6f5a7dd50e5736d2b891fc060f72001b" />
+                            </Component>
+                            <Component Id="cfile8c446f9e554b3b54ac0f2dd0599d5c75" Guid="{8C446F9E-554B-3B54-AC0F-2DD0599D5C75}" Win64="yes">
+                                <File Id="file8c446f9e554b3b54ac0f2dd0599d5c75" Name="verify.dll" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file8c446f9e554b3b54ac0f2dd0599d5c75" />
+                            </Component>
+                            <Component Id="cfile6f7c7d5343c83a2ca20a2c7c143169f7" Guid="{6F7C7D53-43C8-3A2C-A20A-2C7C143169F7}" Win64="yes">
+                                <File Id="file6f7c7d5343c83a2ca20a2c7c143169f7" Name="api-ms-win-core-synch-l1-2-0.dll" KeyPath="yes" ShortName="kuu1rmg5.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file6f7c7d5343c83a2ca20a2c7c143169f7" />
+                            </Component>
+                            <Component Id="cfile91d1a6b4c55c3932aed7e85b138ebb91" Guid="{91D1A6B4-C55C-3932-AED7-E85B138EBB91}" Win64="yes">
+                                <File Id="file91d1a6b4c55c3932aed7e85b138ebb91" Name="api-ms-win-core-console-l1-1-0.dll" KeyPath="yes" ShortName="gqpidres.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file91d1a6b4c55c3932aed7e85b138ebb91" />
+                            </Component>
+                            <Component Id="cfile7928fa2d45ce3375bbe9b62e245ff9d7" Guid="{7928FA2D-45CE-3375-BBE9-B62E245FF9D7}" Win64="yes">
+                                <File Id="file7928fa2d45ce3375bbe9b62e245ff9d7" Name="api-ms-win-core-profile-l1-1-0.dll" KeyPath="yes" ShortName="vkotwwmq.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file7928fa2d45ce3375bbe9b62e245ff9d7" />
+                            </Component>
+                            <Component Id="cfile5f8b27e96d1a394a93c12f03080d9d6c" Guid="{5F8B27E9-6D1A-394A-93C1-2F03080D9D6C}" Win64="yes">
+                                <File Id="file5f8b27e96d1a394a93c12f03080d9d6c" Name="mlib_image.dll" KeyPath="yes" ShortName="0wsgeoba.dll" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file5f8b27e96d1a394a93c12f03080d9d6c" />
+                            </Component>
+                            <Directory Id="dirbb362e5246873511867209e9c853d033" Name="server">
+                                <Component Id="cfile0566e653e9ae32ad84481ac3f202a898" Guid="{0566E653-E9AE-32AD-8448-1AC3F202A898}" Win64="yes">
+                                    <File Id="file0566e653e9ae32ad84481ac3f202a898" Name="jvm.dll" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file0566e653e9ae32ad84481ac3f202a898" />
+                                </Component>
+                            </Directory>
+                        </Directory>
+                        <Directory Id="dircf9a22dc840b3cff9bb0e789148cd11f" Name="lib">
+                            <Component Id="cfile04a8f862de0d3915a1afb25a95ff4bb1" Guid="{04A8F862-DE0D-3915-A1AF-B25A95FF4BB1}" Win64="yes">
+                                <File Id="file04a8f862de0d3915a1afb25a95ff4bb1" Name="jvm.lib" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file04a8f862de0d3915a1afb25a95ff4bb1" />
+                            </Component>
+                            <Component Id="cfile968edb2f3e283400922e2a9c7d3860cc" Guid="{968EDB2F-3E28-3400-922E-2A9C7D3860CC}" Win64="yes">
+                                <File Id="file968edb2f3e283400922e2a9c7d3860cc" Name="fontconfig.bfc" KeyPath="yes" ShortName="y6wdrygu.bfc" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file968edb2f3e283400922e2a9c7d3860cc" />
+                            </Component>
+                            <Component Id="cfile5bf74ba060443eadaf88032f03ff5280" Guid="{5BF74BA0-6044-3EAD-AF88-032F03FF5280}" Win64="yes">
+                                <File Id="file5bf74ba060443eadaf88032f03ff5280" Name="tzmappings" KeyPath="yes" ShortName="phjfqm0d" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file5bf74ba060443eadaf88032f03ff5280" />
+                            </Component>
+                            <Component Id="cfile7ba917fefca03dea960aaa56152e406b" Guid="{7BA917FE-FCA0-3DEA-960A-AA56152E406B}" Win64="yes">
+                                <File Id="file7ba917fefca03dea960aaa56152e406b" Name="modules" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file7ba917fefca03dea960aaa56152e406b" />
+                            </Component>
+                            <Component Id="cfile47d57676c1db364788febaaf4ed18569" Guid="{47D57676-C1DB-3647-88FE-BAAF4ED18569}" Win64="yes">
+                                <File Id="file47d57676c1db364788febaaf4ed18569" Name="fontconfig.properties.src" KeyPath="yes" ShortName="temloroe.src" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file47d57676c1db364788febaaf4ed18569" />
+                            </Component>
+                            <Component Id="cfile800505d54d373b9eb717040dad918c54" Guid="{800505D5-4D37-3B9E-B717-040DAD918C54}" Win64="yes">
+                                <File Id="file800505d54d373b9eb717040dad918c54" Name="jrt-fs.jar" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file800505d54d373b9eb717040dad918c54" />
+                            </Component>
+                            <Component Id="cfiledd66bcb1c5723659aa525cf915ab9bb6" Guid="{DD66BCB1-C572-3659-AA52-5CF915AB9BB6}" Win64="yes">
+                                <File Id="filedd66bcb1c5723659aa525cf915ab9bb6" Name="psfont.properties.ja" KeyPath="yes" ShortName="ojjxrfbw.ja" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filedd66bcb1c5723659aa525cf915ab9bb6" />
+                            </Component>
+                            <Component Id="cfileccc5c484362f3fc89af4fe8a46303381" Guid="{CCC5C484-362F-3FC8-9AF4-FE8A46303381}" Win64="yes">
+                                <File Id="fileccc5c484362f3fc89af4fe8a46303381" Name="jawt.lib" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\fileccc5c484362f3fc89af4fe8a46303381" />
+                            </Component>
+                            <Component Id="cfile890ff3bc67c135b39a538483cd362e4a" Guid="{890FF3BC-67C1-35B3-9A53-8483CD362E4A}" Win64="yes">
+                                <File Id="file890ff3bc67c135b39a538483cd362e4a" Name="psfontj2d.properties" KeyPath="yes" ShortName="rlckbqzx.pro" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file890ff3bc67c135b39a538483cd362e4a" />
+                            </Component>
+                            <Component Id="cfile035a07c4d963304887d5d42c099eadd7" Guid="{035A07C4-D963-3048-87D5-D42C099EADD7}" Win64="yes">
+                                <File Id="file035a07c4d963304887d5d42c099eadd7" Name="classlist" KeyPath="yes" ShortName="qcs_omaw" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file035a07c4d963304887d5d42c099eadd7" />
+                            </Component>
+                            <Component Id="cfile86eb86d7fca535e4b5e478d82a5c2c7d" Guid="{86EB86D7-FCA5-35E4-B5E4-78D82A5C2C7D}" Win64="yes">
+                                <File Id="file86eb86d7fca535e4b5e478d82a5c2c7d" Name="jvm.cfg" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file86eb86d7fca535e4b5e478d82a5c2c7d" />
+                            </Component>
+                            <Component Id="cfile4eea489136293baa915c65ad256e04dd" Guid="{4EEA4891-3629-3BAA-915C-65AD256E04DD}" Win64="yes">
+                                <File Id="file4eea489136293baa915c65ad256e04dd" Name="tzdb.dat" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file4eea489136293baa915c65ad256e04dd" />
+                            </Component>
+                            <Directory Id="dir2603662ba796333eb8233539121dfaa7" Name="security">
+                                <Component Id="cfileab799eb7f72c3e8e9e301dfdc98be0c7" Guid="{AB799EB7-F72C-3E8E-9E30-1DFDC98BE0C7}" Win64="yes">
+                                    <File Id="fileab799eb7f72c3e8e9e301dfdc98be0c7" Name="blocked.certs" KeyPath="yes" ShortName="p6jgkkfu.cer" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\fileab799eb7f72c3e8e9e301dfdc98be0c7" />
+                                </Component>
+                                <Component Id="cfilebc935acd2fc338329259312b6e42bca4" Guid="{BC935ACD-2FC3-3832-9259-312B6E42BCA4}" Win64="yes">
+                                    <File Id="filebc935acd2fc338329259312b6e42bca4" Name="default.policy" KeyPath="yes" ShortName="tyknzs_9.pol" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filebc935acd2fc338329259312b6e42bca4" />
+                                </Component>
+                                <Component Id="cfile6cdffda1809c37c084ea8864cfda5ad3" Guid="{6CDFFDA1-809C-37C0-84EA-8864CFDA5AD3}" Win64="yes">
+                                    <File Id="file6cdffda1809c37c084ea8864cfda5ad3" Name="public_suffix_list.dat" KeyPath="yes" ShortName="bwuxbxvo.dat" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file6cdffda1809c37c084ea8864cfda5ad3" />
+                                </Component>
+                                <Component Id="cfile13acf131414a356db4900fd4f431a6f4" Guid="{13ACF131-414A-356D-B490-0FD4F431A6F4}" Win64="yes">
+                                    <File Id="file13acf131414a356db4900fd4f431a6f4" Name="cacerts" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file13acf131414a356db4900fd4f431a6f4" />
+                                </Component>
+                            </Directory>
+                        </Directory>
+                        <Directory Id="dir231e6a506fe7391ea7fa4f2559307f5e" Name="conf">
+                            <Component Id="cfile7927518abdc036ed8538c48f2108947f" Guid="{7927518A-BDC0-36ED-8538-C48F2108947F}" Win64="yes">
+                                <File Id="file7927518abdc036ed8538c48f2108947f" Name="sound.properties" KeyPath="yes" ShortName="i1qehcro.pro" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file7927518abdc036ed8538c48f2108947f" />
+                            </Component>
+                            <Component Id="cfilef590100e993f3f718b326dedf646ce4c" Guid="{F590100E-993F-3F71-8B32-6DEDF646CE4C}" Win64="yes">
+                                <File Id="filef590100e993f3f718b326dedf646ce4c" Name="net.properties" KeyPath="yes" ShortName="hct7kqzc.pro" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filef590100e993f3f718b326dedf646ce4c" />
+                            </Component>
+                            <Component Id="cfile85a4e33d6d573f4f9ec256382ca6df24" Guid="{85A4E33D-6D57-3F4F-9EC2-56382CA6DF24}" Win64="yes">
+                                <File Id="file85a4e33d6d573f4f9ec256382ca6df24" Name="logging.properties" KeyPath="yes" ShortName="_ve4_hh2.pro" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file85a4e33d6d573f4f9ec256382ca6df24" />
+                            </Component>
+                            <Directory Id="dir94085e31dd8f390caf4ea84a1d57e751" Name="security">
+                                <Component Id="cfile49a79519aa333a2fb11ac38aadde51a0" Guid="{49A79519-AA33-3A2F-B11A-C38AADDE51A0}" Win64="yes">
+                                    <File Id="file49a79519aa333a2fb11ac38aadde51a0" Name="java.policy" KeyPath="yes" ShortName="qnjjkhh4.pol" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file49a79519aa333a2fb11ac38aadde51a0" />
+                                </Component>
+                                <Component Id="cfile7d9a506d46373ebc9edb5a25dfcefc33" Guid="{7D9A506D-4637-3EBC-9EDB-5A25DFCEFC33}" Win64="yes">
+                                    <File Id="file7d9a506d46373ebc9edb5a25dfcefc33" Name="java.security" KeyPath="yes" ShortName="lorfw6gb.sec" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file7d9a506d46373ebc9edb5a25dfcefc33" />
+                                </Component>
+                                <Directory Id="dir58ad176b945f3860a8b9d7b1deb963d3" Name="policy">
+                                    <Component Id="cfile920e0f8b040c3cba99b4e05e9c7b3cc0" Guid="{920E0F8B-040C-3CBA-99B4-E05E9C7B3CC0}" Win64="yes">
+                                        <File Id="file920e0f8b040c3cba99b4e05e9c7b3cc0" Name="README.txt" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file920e0f8b040c3cba99b4e05e9c7b3cc0" />
+                                    </Component>
+                                    <Directory Id="dir162e27f67daa35a5967791019ecd6775" Name="limited">
+                                        <Component Id="cfile5414037756733977bf977b917e94b165" Guid="{54140377-5673-3977-BF97-7B917E94B165}" Win64="yes">
+                                            <File Id="file5414037756733977bf977b917e94b165" Name="default_US_export.policy" KeyPath="yes" ShortName="xq5sku1o.pol" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file5414037756733977bf977b917e94b165" />
+                                        </Component>
+                                        <Component Id="cfile4e975aba8f563264877f7aa3ac710384" Guid="{4E975ABA-8F56-3264-877F-7AA3AC710384}" Win64="yes">
+                                            <File Id="file4e975aba8f563264877f7aa3ac710384" Name="default_local.policy" KeyPath="yes" ShortName="iq3xyozi.pol" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file4e975aba8f563264877f7aa3ac710384" />
+                                        </Component>
+                                        <Component Id="cfile6449fbc15eb7360a85b36231790d7742" Guid="{6449FBC1-5EB7-360A-85B3-6231790D7742}" Win64="yes">
+                                            <File Id="file6449fbc15eb7360a85b36231790d7742" Name="exempt_local.policy" KeyPath="yes" ShortName="uquife7c.pol" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file6449fbc15eb7360a85b36231790d7742" />
+                                        </Component>
+                                    </Directory>
+                                    <Directory Id="dir800e59f893cf30bfb9bb9a3f6e92b681" Name="unlimited" ShortName="h__w9ngy">
+                                        <Component Id="cfile9cf282d0fb2e379a9128b3b4c373e428" Guid="{9CF282D0-FB2E-379A-9128-B3B4C373E428}" Win64="yes">
+                                            <File Id="file9cf282d0fb2e379a9128b3b4c373e428" Name="default_local.policy" KeyPath="yes" ShortName="stmo_5km.pol" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file9cf282d0fb2e379a9128b3b4c373e428" />
+                                        </Component>
+                                        <Component Id="cfile987393bfbef13fc8bef210a8c99482b1" Guid="{987393BF-BEF1-3FC8-BEF2-10A8C99482B1}" Win64="yes">
+                                            <File Id="file987393bfbef13fc8bef210a8c99482b1" Name="default_US_export.policy" KeyPath="yes" ShortName="tf3rds7t.pol" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file987393bfbef13fc8bef210a8c99482b1" />
+                                        </Component>
+                                    </Directory>
+                                </Directory>
+                            </Directory>
+                        </Directory>
+                        <Directory Id="dir5391ccbfa2c03538b949e3f55c8f5005" Name="legal">
+                            <Directory Id="dircf640b19630f362c9ff2093915614c74" Name="java.desktop" ShortName="mzehp0sn">
+                                <Component Id="cfilee3e0fa642a7f318db4e675275da8a5c3" Guid="{E3E0FA64-2A7F-318D-B4E6-75275DA8A5C3}" Win64="yes">
+                                    <File Id="filee3e0fa642a7f318db4e675275da8a5c3" Name="freetype.md" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filee3e0fa642a7f318db4e675275da8a5c3" />
+                                </Component>
+                                <Component Id="cfile69b7c6bd78ba366e81adfa136c715587" Guid="{69B7C6BD-78BA-366E-81AD-FA136C715587}" Win64="yes">
+                                    <File Id="file69b7c6bd78ba366e81adfa136c715587" Name="LICENSE" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file69b7c6bd78ba366e81adfa136c715587" />
+                                </Component>
+                                <Component Id="cfile0dbcf5ef797832be87680b581d8e56a2" Guid="{0DBCF5EF-7978-32BE-8768-0B581D8E56A2}" Win64="yes">
+                                    <File Id="file0dbcf5ef797832be87680b581d8e56a2" Name="ASSEMBLY_EXCEPTION" KeyPath="yes" ShortName="_dpkypid" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file0dbcf5ef797832be87680b581d8e56a2" />
+                                </Component>
+                                <Component Id="cfile977a960d186f37a4aa8f9786b457745a" Guid="{977A960D-186F-37A4-AA8F-9786B457745A}" Win64="yes">
+                                    <File Id="file977a960d186f37a4aa8f9786b457745a" Name="harfbuzz.md" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file977a960d186f37a4aa8f9786b457745a" />
+                                </Component>
+                                <Component Id="cfilea43f830c209933f6b04eb3c2284e0eff" Guid="{A43F830C-2099-33F6-B04E-B3C2284E0EFF}" Win64="yes">
+                                    <File Id="filea43f830c209933f6b04eb3c2284e0eff" Name="colorimaging.md" KeyPath="yes" ShortName="w3gnn7os.md" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filea43f830c209933f6b04eb3c2284e0eff" />
+                                </Component>
+                                <Component Id="cfile045d8ee653bb30069cefdf65e63aadfc" Guid="{045D8EE6-53BB-3006-9CEF-DF65E63AADFC}" Win64="yes">
+                                    <File Id="file045d8ee653bb30069cefdf65e63aadfc" Name="mesa3d.md" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file045d8ee653bb30069cefdf65e63aadfc" />
+                                </Component>
+                                <Component Id="cfile14368850e73f3c8fbeb2d132b44a4808" Guid="{14368850-E73F-3C8F-BEB2-D132B44A4808}" Win64="yes">
+                                    <File Id="file14368850e73f3c8fbeb2d132b44a4808" Name="ADDITIONAL_LICENSE_INFO" KeyPath="yes" ShortName="rraw54dn" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file14368850e73f3c8fbeb2d132b44a4808" />
+                                </Component>
+                                <Component Id="cfilede8b32f80a213cdb965ed9e673af7b9e" Guid="{DE8B32F8-0A21-3CDB-965E-D9E673AF7B9E}" Win64="yes">
+                                    <File Id="filede8b32f80a213cdb965ed9e673af7b9e" Name="lcms.md" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filede8b32f80a213cdb965ed9e673af7b9e" />
+                                </Component>
+                                <Component Id="cfileef91bb691dd735ceac2288acae49c363" Guid="{EF91BB69-1DD7-35CE-AC22-88ACAE49C363}" Win64="yes">
+                                    <File Id="fileef91bb691dd735ceac2288acae49c363" Name="libpng.md" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\fileef91bb691dd735ceac2288acae49c363" />
+                                </Component>
+                                <Component Id="cfile544d7b96f30b30c4a775694f7abacc10" Guid="{544D7B96-F30B-30C4-A775-694F7ABACC10}" Win64="yes">
+                                    <File Id="file544d7b96f30b30c4a775694f7abacc10" Name="giflib.md" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file544d7b96f30b30c4a775694f7abacc10" />
+                                </Component>
+                                <Component Id="cfile69721213e9e53d81aa407c9ae4fca894" Guid="{69721213-E9E5-3D81-AA40-7C9AE4FCA894}" Win64="yes">
+                                    <File Id="file69721213e9e53d81aa407c9ae4fca894" Name="jpeg.md" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file69721213e9e53d81aa407c9ae4fca894" />
+                                </Component>
+                            </Directory>
+                            <Directory Id="dir8556c2be4e6631319320ba0f4cb85449" Name="java.logging" ShortName="ue_llt8g">
+                                <Component Id="cfilee59a3803a0dd34b5a320916fef733f8a" Guid="{E59A3803-A0DD-34B5-A320-916FEF733F8A}" Win64="yes">
+                                    <File Id="filee59a3803a0dd34b5a320916fef733f8a" Name="LICENSE" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filee59a3803a0dd34b5a320916fef733f8a" />
+                                </Component>
+                                <Component Id="cfilecd58148ae688371398ed76652841a5a6" Guid="{CD58148A-E688-3713-98ED-76652841A5A6}" Win64="yes">
+                                    <File Id="filecd58148ae688371398ed76652841a5a6" Name="ADDITIONAL_LICENSE_INFO" KeyPath="yes" ShortName="j1s9ktnb" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filecd58148ae688371398ed76652841a5a6" />
+                                </Component>
+                                <Component Id="cfilef04ea9b702033f5584194ff9e867b7ac" Guid="{F04EA9B7-0203-3F55-8419-4FF9E867B7AC}" Win64="yes">
+                                    <File Id="filef04ea9b702033f5584194ff9e867b7ac" Name="ASSEMBLY_EXCEPTION" KeyPath="yes" ShortName="dgyaz4kg" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filef04ea9b702033f5584194ff9e867b7ac" />
+                                </Component>
+                            </Directory>
+                            <Directory Id="dirfc1a861fd4613bd3a497085e33d6cfe4" Name="java.instrument" ShortName="p52oe-8c">
+                                <Component Id="cfile6d48b1213594385382aea17adde5f8d1" Guid="{6D48B121-3594-3853-82AE-A17ADDE5F8D1}" Win64="yes">
+                                    <File Id="file6d48b1213594385382aea17adde5f8d1" Name="ADDITIONAL_LICENSE_INFO" KeyPath="yes" ShortName="dk-ihouf" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file6d48b1213594385382aea17adde5f8d1" />
+                                </Component>
+                                <Component Id="cfileb2df6cb11e0d32f7ae64f997681109d4" Guid="{B2DF6CB1-1E0D-32F7-AE64-F997681109D4}" Win64="yes">
+                                    <File Id="fileb2df6cb11e0d32f7ae64f997681109d4" Name="ASSEMBLY_EXCEPTION" KeyPath="yes" ShortName="cxbhwydh" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\fileb2df6cb11e0d32f7ae64f997681109d4" />
+                                </Component>
+                                <Component Id="cfilef108b6c281263d9296b45f280128def8" Guid="{F108B6C2-8126-3D92-96B4-5F280128DEF8}" Win64="yes">
+                                    <File Id="filef108b6c281263d9296b45f280128def8" Name="LICENSE" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filef108b6c281263d9296b45f280128def8" />
+                                </Component>
+                            </Directory>
+                            <Directory Id="dir50fed7ddbb9d3171bb64b4d58957ad5c" Name="java.base" ShortName="39k8w4y_">
+                                <Component Id="cfile3e9b44e681943344b82b209ee8ad73f7" Guid="{3E9B44E6-8194-3344-B82B-209EE8AD73F7}" Win64="yes">
+                                    <File Id="file3e9b44e681943344b82b209ee8ad73f7" Name="LICENSE" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file3e9b44e681943344b82b209ee8ad73f7" />
+                                </Component>
+                                <Component Id="cfile6beef31dd71d30f0b4fb1c742f738975" Guid="{6BEEF31D-D71D-30F0-B4FB-1C742F738975}" Win64="yes">
+                                    <File Id="file6beef31dd71d30f0b4fb1c742f738975" Name="public_suffix.md" KeyPath="yes" ShortName="eavaviu9.md" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file6beef31dd71d30f0b4fb1c742f738975" />
+                                </Component>
+                                <Component Id="cfile9c961237cb7b31feb185d0a70c7f6e5f" Guid="{9C961237-CB7B-31FE-B185-D0A70C7F6E5F}" Win64="yes">
+                                    <File Id="file9c961237cb7b31feb185d0a70c7f6e5f" Name="c-libutl.md" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file9c961237cb7b31feb185d0a70c7f6e5f" />
+                                </Component>
+                                <Component Id="cfile73732fc1b32e357880239e94b3c7485c" Guid="{73732FC1-B32E-3578-8023-9E94B3C7485C}" Win64="yes">
+                                    <File Id="file73732fc1b32e357880239e94b3c7485c" Name="zlib.md" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file73732fc1b32e357880239e94b3c7485c" />
+                                </Component>
+                                <Component Id="cfileed05cbd2527c3a729c1b31341a46c39b" Guid="{ED05CBD2-527C-3A72-9C1B-31341A46C39B}" Win64="yes">
+                                    <File Id="fileed05cbd2527c3a729c1b31341a46c39b" Name="siphash.md" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\fileed05cbd2527c3a729c1b31341a46c39b" />
+                                </Component>
+                                <Component Id="cfile2ff3e3ebe7d43ca99ae3624aba9bece1" Guid="{2FF3E3EB-E7D4-3CA9-9AE3-624ABA9BECE1}" Win64="yes">
+                                    <File Id="file2ff3e3ebe7d43ca99ae3624aba9bece1" Name="icu.md" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file2ff3e3ebe7d43ca99ae3624aba9bece1" />
+                                </Component>
+                                <Component Id="cfile20610d62842a3983af561cd4ad1966dd" Guid="{20610D62-842A-3983-AF56-1CD4AD1966DD}" Win64="yes">
+                                    <File Id="file20610d62842a3983af561cd4ad1966dd" Name="wepoll.md" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file20610d62842a3983af561cd4ad1966dd" />
+                                </Component>
+                                <Component Id="cfile42cd07cfa71e37f6a58a0794bb262503" Guid="{42CD07CF-A71E-37F6-A58A-0794BB262503}" Win64="yes">
+                                    <File Id="file42cd07cfa71e37f6a58a0794bb262503" Name="unicode.md" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file42cd07cfa71e37f6a58a0794bb262503" />
+                                </Component>
+                                <Component Id="cfilef642e100daf93a71bdbf649246efb735" Guid="{F642E100-DAF9-3A71-BDBF-649246EFB735}" Win64="yes">
+                                    <File Id="filef642e100daf93a71bdbf649246efb735" Name="cldr.md" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filef642e100daf93a71bdbf649246efb735" />
+                                </Component>
+                                <Component Id="cfileb240d0b2ba613621be71ab46beb48628" Guid="{B240D0B2-BA61-3621-BE71-AB46BEB48628}" Win64="yes">
+                                    <File Id="fileb240d0b2ba613621be71ab46beb48628" Name="ASSEMBLY_EXCEPTION" KeyPath="yes" ShortName="h0dglkct" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\fileb240d0b2ba613621be71ab46beb48628" />
+                                </Component>
+                                <Component Id="cfilefceb3845b44c3e8487f4958e83561f80" Guid="{FCEB3845-B44C-3E84-87F4-958E83561F80}" Win64="yes">
+                                    <File Id="filefceb3845b44c3e8487f4958e83561f80" Name="asm.md" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filefceb3845b44c3e8487f4958e83561f80" />
+                                </Component>
+                                <Component Id="cfilea9afc0450c3f3778ad893db2f8ec482f" Guid="{A9AFC045-0C3F-3778-AD89-3DB2F8EC482F}" Win64="yes">
+                                    <File Id="filea9afc0450c3f3778ad893db2f8ec482f" Name="aes.md" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filea9afc0450c3f3778ad893db2f8ec482f" />
+                                </Component>
+                                <Component Id="cfile4e6810dc2d4433ecb44e2e5a2fae04fd" Guid="{4E6810DC-2D44-33EC-B44E-2E5A2FAE04FD}" Win64="yes">
+                                    <File Id="file4e6810dc2d4433ecb44e2e5a2fae04fd" Name="ADDITIONAL_LICENSE_INFO" KeyPath="yes" ShortName="yznfv7fo" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file4e6810dc2d4433ecb44e2e5a2fae04fd" />
+                                </Component>
+                            </Directory>
+                            <Directory Id="dire97c5b787ae13ca1a5f1d02aee383b04" Name="java.xml">
+                                <Component Id="cfile2a6a8a52ed0736d489bfc71b16feb2c3" Guid="{2A6A8A52-ED07-36D4-89BF-C71B16FEB2C3}" Win64="yes">
+                                    <File Id="file2a6a8a52ed0736d489bfc71b16feb2c3" Name="xerces.md" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file2a6a8a52ed0736d489bfc71b16feb2c3" />
+                                </Component>
+                                <Component Id="cfile72c28c1bc90039819fd4dd73ae670aca" Guid="{72C28C1B-C900-3981-9FD4-DD73AE670ACA}" Win64="yes">
+                                    <File Id="file72c28c1bc90039819fd4dd73ae670aca" Name="ADDITIONAL_LICENSE_INFO" KeyPath="yes" ShortName="nbl4rcmt" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file72c28c1bc90039819fd4dd73ae670aca" />
+                                </Component>
+                                <Component Id="cfiledfd5850410b332af90d5a75a418141f8" Guid="{DFD58504-10B3-32AF-90D5-A75A418141F8}" Win64="yes">
+                                    <File Id="filedfd5850410b332af90d5a75a418141f8" Name="LICENSE" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filedfd5850410b332af90d5a75a418141f8" />
+                                </Component>
+                                <Component Id="cfile8613b7b39609354cbbe894624e87210d" Guid="{8613B7B3-9609-354C-BBE8-94624E87210D}" Win64="yes">
+                                    <File Id="file8613b7b39609354cbbe894624e87210d" Name="bcel.md" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file8613b7b39609354cbbe894624e87210d" />
+                                </Component>
+                                <Component Id="cfileef18fbff6c233858beb19712296531e3" Guid="{EF18FBFF-6C23-3858-BEB1-9712296531E3}" Win64="yes">
+                                    <File Id="fileef18fbff6c233858beb19712296531e3" Name="jcup.md" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\fileef18fbff6c233858beb19712296531e3" />
+                                </Component>
+                                <Component Id="cfileb1766a3d11ae3036b055a4a850f5da4d" Guid="{B1766A3D-11AE-3036-B055-A4A850F5DA4D}" Win64="yes">
+                                    <File Id="fileb1766a3d11ae3036b055a4a850f5da4d" Name="ASSEMBLY_EXCEPTION" KeyPath="yes" ShortName="ppuxky0r" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\fileb1766a3d11ae3036b055a4a850f5da4d" />
+                                </Component>
+                                <Component Id="cfile4b4ca80665dc395f9e2218a903abf4d1" Guid="{4B4CA806-65DC-395F-9E22-18A903ABF4D1}" Win64="yes">
+                                    <File Id="file4b4ca80665dc395f9e2218a903abf4d1" Name="xalan.md" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file4b4ca80665dc395f9e2218a903abf4d1" />
+                                </Component>
+                                <Component Id="cfilea209e42791ff3112b7fa706e072314f2" Guid="{A209E427-91FF-3112-B7FA-706E072314F2}" Win64="yes">
+                                    <File Id="filea209e42791ff3112b7fa706e072314f2" Name="dom.md" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filea209e42791ff3112b7fa706e072314f2" />
+                                </Component>
+                            </Directory>
+                            <Directory Id="dir8576eed6bf2c3a37a55feaf7a5e1364d" Name="java.transaction.xa" ShortName="huiwyobk">
+                                <Component Id="cfile27a94715f43a38f0b59792a3c935d6ba" Guid="{27A94715-F43A-38F0-B597-92A3C935D6BA}" Win64="yes">
+                                    <File Id="file27a94715f43a38f0b59792a3c935d6ba" Name="ADDITIONAL_LICENSE_INFO" KeyPath="yes" ShortName="j9nq5lej" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file27a94715f43a38f0b59792a3c935d6ba" />
+                                </Component>
+                                <Component Id="cfile27fdca3ac78b3857b78440fb823583c1" Guid="{27FDCA3A-C78B-3857-B784-40FB823583C1}" Win64="yes">
+                                    <File Id="file27fdca3ac78b3857b78440fb823583c1" Name="ASSEMBLY_EXCEPTION" KeyPath="yes" ShortName="9esisoqx" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file27fdca3ac78b3857b78440fb823583c1" />
+                                </Component>
+                                <Component Id="cfilee0d00eee1390351d96773c0985e20cda" Guid="{E0D00EEE-1390-351D-9677-3C0985E20CDA}" Win64="yes">
+                                    <File Id="filee0d00eee1390351d96773c0985e20cda" Name="LICENSE" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filee0d00eee1390351d96773c0985e20cda" />
+                                </Component>
+                            </Directory>
+                            <Directory Id="dir4bc3ae48657c3f7880ba2fc5b2010f8d" Name="jdk.crypto.ec" ShortName="-hsfkbww">
+                                <Component Id="cfile4a8f0c4145703bfc8b8695b145c28370" Guid="{4A8F0C41-4570-3BFC-8B86-95B145C28370}" Win64="yes">
+                                    <File Id="file4a8f0c4145703bfc8b8695b145c28370" Name="LICENSE" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file4a8f0c4145703bfc8b8695b145c28370" />
+                                </Component>
+                                <Component Id="cfilef64e0b1b267b36379db4b39a66689709" Guid="{F64E0B1B-267B-3637-9DB4-B39A66689709}" Win64="yes">
+                                    <File Id="filef64e0b1b267b36379db4b39a66689709" Name="ADDITIONAL_LICENSE_INFO" KeyPath="yes" ShortName="s190ytw8" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filef64e0b1b267b36379db4b39a66689709" />
+                                </Component>
+                                <Component Id="cfilec6cc04cc8a973247a7b7b2ebdee3fcca" Guid="{C6CC04CC-8A97-3247-A7B7-B2EBDEE3FCCA}" Win64="yes">
+                                    <File Id="filec6cc04cc8a973247a7b7b2ebdee3fcca" Name="ASSEMBLY_EXCEPTION" KeyPath="yes" ShortName="pf7posih" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filec6cc04cc8a973247a7b7b2ebdee3fcca" />
+                                </Component>
+                            </Directory>
+                            <Directory Id="dir83999e0e61183dc4a1a7d6d25c982bc8" Name="java.sql">
+                                <Component Id="cfiledf5ca642dd9a3a0aa3561eba8f8df28f" Guid="{DF5CA642-DD9A-3A0A-A356-1EBA8F8DF28F}" Win64="yes">
+                                    <File Id="filedf5ca642dd9a3a0aa3561eba8f8df28f" Name="ADDITIONAL_LICENSE_INFO" KeyPath="yes" ShortName="bh0p-jjq" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filedf5ca642dd9a3a0aa3561eba8f8df28f" />
+                                </Component>
+                                <Component Id="cfile7320948d67ae31f2b50b68d50db64963" Guid="{7320948D-67AE-31F2-B50B-68D50DB64963}" Win64="yes">
+                                    <File Id="file7320948d67ae31f2b50b68d50db64963" Name="ASSEMBLY_EXCEPTION" KeyPath="yes" ShortName="wxeutwxd" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file7320948d67ae31f2b50b68d50db64963" />
+                                </Component>
+                                <Component Id="cfilee5dbe130c27537c28098d77be7973906" Guid="{E5DBE130-C275-37C2-8098-D77BE7973906}" Win64="yes">
+                                    <File Id="filee5dbe130c27537c28098d77be7973906" Name="LICENSE" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filee5dbe130c27537c28098d77be7973906" />
+                                </Component>
+                            </Directory>
+                            <Directory Id="dir397c92055a9137aeb8b4873a2901dc79" Name="jdk.unsupported" ShortName="f-qdpnno">
+                                <Component Id="cfile10b7566b08743cd396d393b587f71605" Guid="{10B7566B-0874-3CD3-96D3-93B587F71605}" Win64="yes">
+                                    <File Id="file10b7566b08743cd396d393b587f71605" Name="LICENSE" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file10b7566b08743cd396d393b587f71605" />
+                                </Component>
+                                <Component Id="cfile5af03526a0a639e3af85beb12e34d9a9" Guid="{5AF03526-A0A6-39E3-AF85-BEB12E34D9A9}" Win64="yes">
+                                    <File Id="file5af03526a0a639e3af85beb12e34d9a9" Name="ASSEMBLY_EXCEPTION" KeyPath="yes" ShortName="z0t_3pa1" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file5af03526a0a639e3af85beb12e34d9a9" />
+                                </Component>
+                                <Component Id="cfilee45c4147a1313ecd89e3eedb2ea0fd75" Guid="{E45C4147-A131-3ECD-89E3-EEDB2EA0FD75}" Win64="yes">
+                                    <File Id="filee45c4147a1313ecd89e3eedb2ea0fd75" Name="ADDITIONAL_LICENSE_INFO" KeyPath="yes" ShortName="al9vsxqp" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filee45c4147a1313ecd89e3eedb2ea0fd75" />
+                                </Component>
+                            </Directory>
+                            <Directory Id="dir1e08c79b7c55361b81b1a887233c601b" Name="java.datatransfer" ShortName="fucjg1tb">
+                                <Component Id="cfile5e290de5135b3b8499cc829dc8143504" Guid="{5E290DE5-135B-3B84-99CC-829DC8143504}" Win64="yes">
+                                    <File Id="file5e290de5135b3b8499cc829dc8143504" Name="LICENSE" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file5e290de5135b3b8499cc829dc8143504" />
+                                </Component>
+                                <Component Id="cfile1222d9ee96123796b4268002d435135a" Guid="{1222D9EE-9612-3796-B426-8002D435135A}" Win64="yes">
+                                    <File Id="file1222d9ee96123796b4268002d435135a" Name="ASSEMBLY_EXCEPTION" KeyPath="yes" ShortName="xbouxrrq" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file1222d9ee96123796b4268002d435135a" />
+                                </Component>
+                                <Component Id="cfile1fdeac3444953088bb814123683b4e1a" Guid="{1FDEAC34-4495-3088-BB81-4123683B4E1A}" Win64="yes">
+                                    <File Id="file1fdeac3444953088bb814123683b4e1a" Name="ADDITIONAL_LICENSE_INFO" KeyPath="yes" ShortName="f2t_h8sm" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file1fdeac3444953088bb814123683b4e1a" />
+                                </Component>
+                            </Directory>
+                            <Directory Id="dir14bb5ca9ac6734bc84fdd05aa07f3fd4" Name="java.compiler" ShortName="rlg0ja__">
+                                <Component Id="cfilee3f767d53a0d32189cee7f65b8423e1b" Guid="{E3F767D5-3A0D-3218-9CEE-7F65B8423E1B}" Win64="yes">
+                                    <File Id="filee3f767d53a0d32189cee7f65b8423e1b" Name="LICENSE" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\filee3f767d53a0d32189cee7f65b8423e1b" />
+                                </Component>
+                                <Component Id="cfile87f38e9a6f4834399b2fac54c94766ed" Guid="{87F38E9A-6F48-3439-9B2F-AC54C94766ED}" Win64="yes">
+                                    <File Id="file87f38e9a6f4834399b2fac54c94766ed" Name="ADDITIONAL_LICENSE_INFO" KeyPath="yes" ShortName="n7zspjxh" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file87f38e9a6f4834399b2fac54c94766ed" />
+                                </Component>
+                                <Component Id="cfile5ec96651e1d43186954d938b90e4b64e" Guid="{5EC96651-E1D4-3186-954D-938B90E4B64E}" Win64="yes">
+                                    <File Id="file5ec96651e1d43186954d938b90e4b64e" Name="ASSEMBLY_EXCEPTION" KeyPath="yes" ShortName="mlnapedp" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file5ec96651e1d43186954d938b90e4b64e" />
+                                </Component>
+                            </Directory>
+                            <Directory Id="dir1b74edbf234730278bbbbb2f2f883473" Name="java.prefs" ShortName="uacxtuhs">
+                                <Component Id="cfile4903e11c9d803525b88b35ff06f85bc5" Guid="{4903E11C-9D80-3525-B88B-35FF06F85BC5}" Win64="yes">
+                                    <File Id="file4903e11c9d803525b88b35ff06f85bc5" Name="ASSEMBLY_EXCEPTION" KeyPath="yes" ShortName="uz0rb9vo" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file4903e11c9d803525b88b35ff06f85bc5" />
+                                </Component>
+                                <Component Id="cfile2b71777a7ad638a8a4b2976bfb2541d7" Guid="{2B71777A-7AD6-38A8-A4B2-976BFB2541D7}" Win64="yes">
+                                    <File Id="file2b71777a7ad638a8a4b2976bfb2541d7" Name="ADDITIONAL_LICENSE_INFO" KeyPath="yes" ShortName="_eojinft" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file2b71777a7ad638a8a4b2976bfb2541d7" />
+                                </Component>
+                                <Component Id="cfile5f5b6ccfa7a73378967992c108a36cd8" Guid="{5F5B6CCF-A7A7-3378-9679-92C108A36CD8}" Win64="yes">
+                                    <File Id="file5f5b6ccfa7a73378967992c108a36cd8" Name="LICENSE" KeyPath="yes" DiskId="1" Source="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\File\file5f5b6ccfa7a73378967992c108a36cd8" />
+                                </Component>
+                            </Directory>
+                        </Directory>
+                    </Directory>
+                </Directory>
+            </Directory>
+        </Directory>
+        <Feature Id="DefaultFeature" Level="1" Title="主要功能">
+            <ComponentRef Id="cfilee3e0fa642a7f318db4e675275da8a5c3" />
+            <ComponentRef Id="cfilebab09347bfd33b039e363b104dc375cc" />
+            <ComponentRef Id="cfilee59a3803a0dd34b5a320916fef733f8a" />
+            <ComponentRef Id="cfile1b9b716ceedd3e4faf10b1af44f820c7" />
+            <ComponentRef Id="cfile6d48b1213594385382aea17adde5f8d1" />
+            <ComponentRef Id="cfile7ee9ad88bf4033658b6cced645142a01" />
+            <ComponentRef Id="cfile3e9b44e681943344b82b209ee8ad73f7" />
+            <ComponentRef Id="cfilea5c4078e9a943a1bb636e0f699735369" />
+            <ComponentRef Id="cfile4787c71cfccc3c87809058261ea34f14" />
+            <ComponentRef Id="cfilee7956724e65a3018a487947ff29096d5" />
+            <ComponentRef Id="cfilea4dfe168ad5239e6965caa1f825a4e1e" />
+            <ComponentRef Id="cfile5414037756733977bf977b917e94b165" />
+            <ComponentRef Id="cfile2a6a8a52ed0736d489bfc71b16feb2c3" />
+            <ComponentRef Id="cfile35e1856953663ca6ab0ea637456e5cea" />
+            <ComponentRef Id="cfile72c28c1bc90039819fd4dd73ae670aca" />
+            <ComponentRef Id="cfileeacbe4e775a43e9ba819b9055a8d5a33" />
+            <ComponentRef Id="cfilef4417da55e3633ffbd6c7c2ea7b520f1" />
+            <ComponentRef Id="cfile6beef31dd71d30f0b4fb1c742f738975" />
+            <ComponentRef Id="cfile16535ce97d36319c8114ba421352add9" />
+            <ComponentRef Id="cfile6f94ed8ef6563d2e9ea90f206011835e" />
+            <ComponentRef Id="cfile7a1e114fbe8d34d7b31c35d34a451b72" />
+            <ComponentRef Id="cfile8959e84db0d633d4b5bbda8b7141f483" />
+            <ComponentRef Id="cfilea465918cf0533db8a4519ac9b7d1c50b" />
+            <ComponentRef Id="cfile36c1b1519bf63264b7eb89d36e0fb70b" />
+            <ComponentRef Id="cfilef521dc9951ef36cd96f25c82dc923f72" />
+            <ComponentRef Id="cfile44cbf25e0eaa34bb9692baf8a03d5863" />
+            <ComponentRef Id="cfile27a94715f43a38f0b59792a3c935d6ba" />
+            <ComponentRef Id="cfile69b7c6bd78ba366e81adfa136c715587" />
+            <ComponentRef Id="cfile00af1d7cbe733440864c001613db738f" />
+            <ComponentRef Id="cfile931bce33e20c3d7aba37e4e15d92f99a" />
+            <ComponentRef Id="cfileca106689ac2339959c8dafb68277b12c" />
+            <ComponentRef Id="cfiled2b1938a14b632c6a1035deb5d1bb242" />
+            <ComponentRef Id="cfile18b461ea11553d80919694aba7ca82b9" />
+            <ComponentRef Id="cfilef5330816c599336a924320d68f55dc59" />
+            <ComponentRef Id="cfile6e25e42e145c342c9c2537107d03a10f" />
+            <ComponentRef Id="cfilecdf66c7b939b32b0b6897df82004239e" />
+            <ComponentRef Id="cfile5a419156a67b3c93838029e8c1734d93" />
+            <ComponentRef Id="cfile0566e653e9ae32ad84481ac3f202a898" />
+            <ComponentRef Id="cfile36726c57c3403b4f81c26bff2b6fc5e2" />
+            <ComponentRef Id="cfilecb53b5153fe1376bb44a357dc6c494ad" />
+            <ComponentRef Id="cfile81baf85f5a233b999b4612a9e97633ee" />
+            <ComponentRef Id="cfileab799eb7f72c3e8e9e301dfdc98be0c7" />
+            <ComponentRef Id="cfilee50464d9c84e3384a96be0ab690bf002" />
+            <ComponentRef Id="cfile4e975aba8f563264877f7aa3ac710384" />
+            <ComponentRef Id="cfile077ae5133e1c303b84b71ba22e9a9a44" />
+            <ComponentRef Id="cfilee1baaa94404b39beab648ff7834671c8" />
+            <ComponentRef Id="cfile9c961237cb7b31feb185d0a70c7f6e5f" />
+            <ComponentRef Id="cfile0dbcf5ef797832be87680b581d8e56a2" />
+            <ComponentRef Id="cfiled78727bf16eb3b60a5337074e6c1866e" />
+            <ComponentRef Id="cfilee9dca98c5bc43b40ab8f1f5d80729dbf" />
+            <ComponentRef Id="cfiledcf63f7509633cc1926f175e156a065d" />
+            <ComponentRef Id="cfile49a79519aa333a2fb11ac38aadde51a0" />
+            <ComponentRef Id="cfileb2df6cb11e0d32f7ae64f997681109d4" />
+            <ComponentRef Id="cfileb7f25dfef9c0389fb25d5bf599deae2a" />
+            <ComponentRef Id="cfileda17e743c5643abc9b5b1973213cb949" />
+            <ComponentRef Id="cfile9b9a5e0e0e6131eaa205f3a300857a4f" />
+            <ComponentRef Id="cfile4a8f0c4145703bfc8b8695b145c28370" />
+            <ComponentRef Id="cfile7c4026c73ffb35e1958acf07b207f378" />
+            <ComponentRef Id="cfilebf5ab7f5f7cb35f78ef82faf54c13de9" />
+            <ComponentRef Id="cfile6d9ce4cb6bdf3f6f9b24ebfc65bac782" />
+            <ComponentRef Id="cfiledf5ca642dd9a3a0aa3561eba8f8df28f" />
+            <ComponentRef Id="cfile8ea8bb22b09432709b8ea8abb7929c26" />
+            <ComponentRef Id="cfilea4193d60bdcc32fcbd1bbc025be3f8bd" />
+            <ComponentRef Id="cfile6813f9ddc50d3d2ab4d55e4fa476e5b6" />
+            <ComponentRef Id="cfile913be436726935e098652befd63504a7" />
+            <ComponentRef Id="cfile10b7566b08743cd396d393b587f71605" />
+            <ComponentRef Id="cfile04d319b713d3326ba6ac869cb847a3fa" />
+            <ComponentRef Id="cfile73732fc1b32e357880239e94b3c7485c" />
+            <ComponentRef Id="cfile04a8f862de0d3915a1afb25a95ff4bb1" />
+            <ComponentRef Id="cfile9553cd1c02c137648e873a3a9aae16ff" />
+            <ComponentRef Id="cfileae1e3790527f38a9aa50642c96e5ae24" />
+            <ComponentRef Id="cfilecd8837a54c2a348a84b1b4e789218f2e" />
+            <ComponentRef Id="cfile6b1244e2b5f13a64b5aaff0d0bc35e1d" />
+            <ComponentRef Id="cfile5e290de5135b3b8499cc829dc8143504" />
+            <ComponentRef Id="cfile977a960d186f37a4aa8f9786b457745a" />
+            <ComponentRef Id="cfile968edb2f3e283400922e2a9c7d3860cc" />
+            <ComponentRef Id="cfilef64e0b1b267b36379db4b39a66689709" />
+            <ComponentRef Id="cfile2871eda80f7a3735afd5c1bf2072ea8b" />
+            <ComponentRef Id="cfileed05cbd2527c3a729c1b31341a46c39b" />
+            <ComponentRef Id="cfile0dfcd0600c35320c80f5f1b3e63e7144" />
+            <ComponentRef Id="cfile75ec647e9d5d3674846c09a8284b6244" />
+            <ComponentRef Id="cfiledc17e8dd626d39bda95c872991040c26" />
+            <ComponentRef Id="cfile43b8a7edec3b3abd8b45cba46a6dd8ce" />
+            <ComponentRef Id="cfilef183898193be3fea8f8bfe636758076b" />
+            <ComponentRef Id="cfilea89abedbae77350582cab6b930bcd024" />
+            <ComponentRef Id="cfile7ffd61b63e1a3c2faa4939e9581cea39" />
+            <ComponentRef Id="cfile77a65234fc183aebb29afe0f0d625809" />
+            <ComponentRef Id="cfilea525bee7afec3fbb8fdca1bb7e656b24" />
+            <ComponentRef Id="cfile5e1f8c8e9edc3d7c961c1020ee416957" />
+            <ComponentRef Id="cfile46a19e9c26af38f5bb2bae1f357bf069" />
+            <ComponentRef Id="cfiledfd5850410b332af90d5a75a418141f8" />
+            <ComponentRef Id="cfile169507b4e03a3ad08e42e42d74f9004c" />
+            <ComponentRef Id="cfile4ed2fc4fe6e13f77a0ef9f8868f4ae05" />
+            <ComponentRef Id="cfile998876ea78dd3dc094585e7f80dfb8fe" />
+            <ComponentRef Id="cfilefb7404d8daba3758a7e14fe1887a309a" />
+            <ComponentRef Id="cfilea3b21980a218327e9f589c5bec86036b" />
+            <ComponentRef Id="cfileb1348fb403b73112bf021b90aae3a0dc" />
+            <ComponentRef Id="cfile7927518abdc036ed8538c48f2108947f" />
+            <ComponentRef Id="cfile2ff3e3ebe7d43ca99ae3624aba9bece1" />
+            <ComponentRef Id="cfilebcfca0ff7beb344ea31806cc5b6488d4" />
+            <ComponentRef Id="cfilea43f830c209933f6b04eb3c2284e0eff" />
+            <ComponentRef Id="cfile103f7131882032b7bfa2167bec01a4df" />
+            <ComponentRef Id="cfile977cc6e1019936689020ab0fe52fc7a8" />
+            <ComponentRef Id="cfile57f1e4a01ad83188ad0c39fda43752ed" />
+            <ComponentRef Id="cfile741fe330cc6a3e1fb2e9b69312f577ac" />
+            <ComponentRef Id="cfile224b4266714336d0a5a9377baa61f75e" />
+            <ComponentRef Id="cfile7320948d67ae31f2b50b68d50db64963" />
+            <ComponentRef Id="cfile27fdca3ac78b3857b78440fb823583c1" />
+            <ComponentRef Id="cfilea62c848e259b3686b6deae7d4aba7c67" />
+            <ComponentRef Id="cfile8e1c572076c23e64babd0c9ef5e69ce8" />
+            <ComponentRef Id="cfile5bf74ba060443eadaf88032f03ff5280" />
+            <ComponentRef Id="cfile27dac607f8183c8da68e5be8ebf9f304" />
+            <ComponentRef Id="cfile20610d62842a3983af561cd4ad1966dd" />
+            <ComponentRef Id="cfile827498749e493be4a99bcb77d96f20f9" />
+            <ComponentRef Id="cfile16a3ec8c0e273117b53827f7bac68365" />
+            <ComponentRef Id="cfileb2f15043fd8e37b3b1a20d320a7f46ce" />
+            <ComponentRef Id="cfile4b0fb6b4ed89362599d028b2e6110ad7" />
+            <ComponentRef Id="cfile42cd07cfa71e37f6a58a0794bb262503" />
+            <ComponentRef Id="cfile126e74e02e763478873618ec372d78c0" />
+            <ComponentRef Id="cfileb9bb62e5f3b43dceb1826504b6191a13" />
+            <ComponentRef Id="cfile96ab140b66c237588f0e762bd982bec5" />
+            <ComponentRef Id="cfilefe3b781367673b2f8cc1f3cf95240473" />
+            <ComponentRef Id="cfilebd5077779b6a3ed2aa5ef8b1a859ac9a" />
+            <ComponentRef Id="cfile7ba917fefca03dea960aaa56152e406b" />
+            <ComponentRef Id="cfile6c29ea8899cd3674bfa2a80d26eba65f" />
+            <ComponentRef Id="cfile47d57676c1db364788febaaf4ed18569" />
+            <ComponentRef Id="cfile92005861b6c63e318442f946199376f9" />
+            <ComponentRef Id="cfilee3f767d53a0d32189cee7f65b8423e1b" />
+            <ComponentRef Id="cfile800505d54d373b9eb717040dad918c54" />
+            <ComponentRef Id="cfile052d33f06d03335e903715d19d21c328" />
+            <ComponentRef Id="cfile045d8ee653bb30069cefdf65e63aadfc" />
+            <ComponentRef Id="cfile09abbde61e75355c816c909d4cb1b2a1" />
+            <ComponentRef Id="cfilea7dd5107132a300995240f15d5ad8285" />
+            <ComponentRef Id="cfile8bb8acfda03f3ae7b3cf722cd73e7791" />
+            <ComponentRef Id="cfile14368850e73f3c8fbeb2d132b44a4808" />
+            <ComponentRef Id="cfiledd66bcb1c5723659aa525cf915ab9bb6" />
+            <ComponentRef Id="cfilef642e100daf93a71bdbf649246efb735" />
+            <ComponentRef Id="cfile37f217c83fcc3dc49a4f90e12cc9c1f1" />
+            <ComponentRef Id="cfile4f0582a2a94a374295735f1e92deb015" />
+            <ComponentRef Id="cfile6ba894d434c6390bbcea2e4ba94e02ad" />
+            <ComponentRef Id="cfile3dcfc32a78833827a0a4446017698ac8" />
+            <ComponentRef Id="cfile1222d9ee96123796b4268002d435135a" />
+            <ComponentRef Id="cfileeb140c6cc49c30cfb587d0c49e93f655" />
+            <ComponentRef Id="cfile14241109a2a73dfb97c0718d31a9745f" />
+            <ComponentRef Id="cfileb30094b26e503dc997d6b641d7a9f486" />
+            <ComponentRef Id="cfile920e0f8b040c3cba99b4e05e9c7b3cc0" />
+            <ComponentRef Id="cfileea93ac6aa1763cd0847af7fef0d1dceb" />
+            <ComponentRef Id="cfile52339eb717203efaab6843fc588282fd" />
+            <ComponentRef Id="cfile1c746e2115c334c7b0e8a3019158dadf" />
+            <ComponentRef Id="cfile2dd6bbb3a639382a8b5c3f218f7da385" />
+            <ComponentRef Id="cfile4903e11c9d803525b88b35ff06f85bc5" />
+            <ComponentRef Id="cfile7ad32e63d73d321188eb3c311c153c30" />
+            <ComponentRef Id="cfilef3782d3ec8523abaae890a92059bd260" />
+            <ComponentRef Id="cfilebc935acd2fc338329259312b6e42bca4" />
+            <ComponentRef Id="cfile8a7d057fc8413ca8ad0ea1193fb7c870" />
+            <ComponentRef Id="cfile1fdeac3444953088bb814123683b4e1a" />
+            <ComponentRef Id="cfile8613b7b39609354cbbe894624e87210d" />
+            <ComponentRef Id="cfilee0d00eee1390351d96773c0985e20cda" />
+            <ComponentRef Id="cfile6fc62b25eb333d5486105ebd7f83f10d" />
+            <ComponentRef Id="cfile5a314b52cb593274812292b991754eea" />
+            <ComponentRef Id="cfileccc5c484362f3fc89af4fe8a46303381" />
+            <ComponentRef Id="cfileae5994a19df632569b0867c9c114cbae" />
+            <ComponentRef Id="cfile2fdb8d1b765634969f2e5e6c21529452" />
+            <ComponentRef Id="cfile5ad2c841972a3789a81a830ff17e5967" />
+            <ComponentRef Id="cfile2737a51b86ab30298bfed13030c2adb6" />
+            <ComponentRef Id="cfileec964b7072603f7da442fad66860c69e" />
+            <ComponentRef Id="cfile6266e16b8b1b3d7ba5c5bb011ff5acd7" />
+            <ComponentRef Id="cfilef108b6c281263d9296b45f280128def8" />
+            <ComponentRef Id="cfile7a5c125d70d13e0e826fdd99a4d484b2" />
+            <ComponentRef Id="cfile890ff3bc67c135b39a538483cd362e4a" />
+            <ComponentRef Id="cfileb240d0b2ba613621be71ab46beb48628" />
+            <ComponentRef Id="cfilede8b32f80a213cdb965ed9e673af7b9e" />
+            <ComponentRef Id="cfilec9f2ca0cb0073bfbaf5737ec3a8ef602" />
+            <ComponentRef Id="cfile6876499ba1c431a7abeda885d670f49b" />
+            <ComponentRef Id="cfile14e7cf1867b8344f93e8a2a98a764cd7" />
+            <ComponentRef Id="cfile9cf282d0fb2e379a9128b3b4c373e428" />
+            <ComponentRef Id="cfile0ea6f9ce4e013aaeab90848d30b3575b" />
+            <ComponentRef Id="cfile7901f84adcf33cb6b42f68077f876feb" />
+            <ComponentRef Id="cfile035a07c4d963304887d5d42c099eadd7" />
+            <ComponentRef Id="cfilee7fe97df1fef334caa822bd7732c5812" />
+            <ComponentRef Id="cfile41a6007289c5312b8f9572c3b63799d6" />
+            <ComponentRef Id="cfile002b481e9e0634599fd279d4d3b38491" />
+            <ComponentRef Id="cfile4b1e268fb00735358f89123322676cd4" />
+            <ComponentRef Id="cfileacb0029ae09b3b3b85018ae2e3cf95d7" />
+            <ComponentRef Id="cfile47567960b6dc3139a128bc400c643530" />
+            <ComponentRef Id="cfileea8eb6963d1b38d686b9544a3bce9348" />
+            <ComponentRef Id="cfile82207aab4be534b1926be8df36bcbc44" />
+            <ComponentRef Id="cfile75c5284318603151a62b7086f7b80976" />
+            <ComponentRef Id="cfile844319eeaa6e38cc976f2f648a71f5d8" />
+            <ComponentRef Id="cfilebabbebcd7c993cc999d4231d3bb26e83" />
+            <ComponentRef Id="cfile87f38e9a6f4834399b2fac54c94766ed" />
+            <ComponentRef Id="cfile44d724e1f67e3fdeb7e3e0b4720bed31" />
+            <ComponentRef Id="cfile36f487fed9dd38c48340ad1d3770000f" />
+            <ComponentRef Id="cfilecd31f163074a35b4a83ca19408f44e20" />
+            <ComponentRef Id="cfile6318d0d5dbd43ddbb3cd1dd2ad525f09" />
+            <ComponentRef Id="cfileb54f801d4ef831aea870dee318d3e651" />
+            <ComponentRef Id="cfile4d75cc4b9aad3cc7853fcd922f5828d1" />
+            <ComponentRef Id="cfile48f69e4578c43b58b6b373e5e24d907d" />
+            <ComponentRef Id="cfile7d9a506d46373ebc9edb5a25dfcefc33" />
+            <ComponentRef Id="cfile64c30881014f3465812b1cb7cf570719" />
+            <ComponentRef Id="cfile3e881be1c3be323384154aa90ae9d0f3" />
+            <ComponentRef Id="cfiledb4ea206621e394aac4756e9617ce79d" />
+            <ComponentRef Id="cfilec5ed419ac9eb33308ab3184c08fffc30" />
+            <ComponentRef Id="cfile7399c8b0438b3155a8e422129009e15f" />
+            <ComponentRef Id="cfile77548d21cd5f3c558a4f4f19e08e99d7" />
+            <ComponentRef Id="cfile7a41d497ca17320e8588a6aacba92bb9" />
+            <ComponentRef Id="cfile031c138cf1f431269b6e0bdd99b00e5c" />
+            <ComponentRef Id="cfile358f4cfe5b563484aeb28b7aecbd91c6" />
+            <ComponentRef Id="cfilefceb3845b44c3e8487f4958e83561f80" />
+            <ComponentRef Id="cfilee5dbe130c27537c28098d77be7973906" />
+            <ComponentRef Id="cfile499f6cd4dc8f3ac5a3ef897aa5ce7650" />
+            <ComponentRef Id="cfileb1db5d2038cd36baa905e56ff64ed85e" />
+            <ComponentRef Id="cfile5af03526a0a639e3af85beb12e34d9a9" />
+            <ComponentRef Id="cfile86eb86d7fca535e4b5e478d82a5c2c7d" />
+            <ComponentRef Id="cfile145a2c13949538a19c47c4ec1d962742" />
+            <ComponentRef Id="cfile6cdffda1809c37c084ea8864cfda5ad3" />
+            <ComponentRef Id="cfile1d252731852a3cd79a427c6b087220f2" />
+            <ComponentRef Id="cfilebbef28601bf43a0fab7a0a27252e0a08" />
+            <ComponentRef Id="cfilea00d1c8e9cf43226950a03042d6ad409" />
+            <ComponentRef Id="cfileef18fbff6c233858beb19712296531e3" />
+            <ComponentRef Id="cfilee2df652706073eb9bb47882430e3fac5" />
+            <ComponentRef Id="cfile2bee21ad8f5b32c899333416c52a7222" />
+            <ComponentRef Id="cfile0f5b10a730be334f8357ce47ca949388" />
+            <ComponentRef Id="cfile62d7b0fa975c373aa3fe3d51723d0c98" />
+            <ComponentRef Id="cfileef91bb691dd735ceac2288acae49c363" />
+            <ComponentRef Id="cfilea9afc0450c3f3778ad893db2f8ec482f" />
+            <ComponentRef Id="cfile3ff5f3ce43783ae2b00c4a9e858234cd" />
+            <ComponentRef Id="cfile9b2ff9594a7e3cdaa1b2994a389d49ce" />
+            <ComponentRef Id="cfileb21761bea3b037d68c135fff4e569440" />
+            <ComponentRef Id="cfile6449fbc15eb7360a85b36231790d7742" />
+            <ComponentRef Id="cfile4ae8c420a2733caf8f8272e9f8bdf550" />
+            <ComponentRef Id="cfilefd7f5f4086ef35129470b8fe26a820ef" />
+            <ComponentRef Id="cfilecd58148ae688371398ed76652841a5a6" />
+            <ComponentRef Id="cfile66d1d259d6b9366087fc5022a6543c88" />
+            <ComponentRef Id="cfile544d7b96f30b30c4a775694f7abacc10" />
+            <ComponentRef Id="cfile2b71777a7ad638a8a4b2976bfb2541d7" />
+            <ComponentRef Id="cfile5f5b6ccfa7a73378967992c108a36cd8" />
+            <ComponentRef Id="cfile208055db563d3c18b3b09f490b03c0b1" />
+            <ComponentRef Id="cfile69721213e9e53d81aa407c9ae4fca894" />
+            <ComponentRef Id="cfile4eea489136293baa915c65ad256e04dd" />
+            <ComponentRef Id="cfilef590100e993f3f718b326dedf646ce4c" />
+            <ComponentRef Id="cfilec060d506679a3903b1ff75ca06aee1a8" />
+            <ComponentRef Id="cfilefa556ed1f3953f4d96b5186a472f1eda" />
+            <ComponentRef Id="cfile589506d5333336218bc4b6b3fc60be76" />
+            <ComponentRef Id="cfileb5a641362e6833a28f8bffdb85a0fbf5" />
+            <ComponentRef Id="cfileb1766a3d11ae3036b055a4a850f5da4d" />
+            <ComponentRef Id="cfile7deb37d0e4ef3dddb6cb971ff0958722" />
+            <ComponentRef Id="cfile4e6810dc2d4433ecb44e2e5a2fae04fd" />
+            <ComponentRef Id="cfilef04ea9b702033f5584194ff9e867b7ac" />
+            <ComponentRef Id="cfilea993dc90414735a1a3ffafa7845bb702" />
+            <ComponentRef Id="cfileeb95acfbd3d731b7b31d7042b289b3fe" />
+            <ComponentRef Id="cfile4b4ca80665dc395f9e2218a903abf4d1" />
+            <ComponentRef Id="cfile4ade60e305703f72bb07f4c5796e9bc6" />
+            <ComponentRef Id="cfileb5efe261c4f030c29cd44dd7311ddd0f" />
+            <ComponentRef Id="cfilee45c4147a1313ecd89e3eedb2ea0fd75" />
+            <ComponentRef Id="cfile0575f23782fc3c8088352bd75869c42c" />
+            <ComponentRef Id="cfilee430dcae70693f3d83975092f9bcfb57" />
+            <ComponentRef Id="cfile5ec96651e1d43186954d938b90e4b64e" />
+            <ComponentRef Id="cfile85a4e33d6d573f4f9ec256382ca6df24" />
+            <ComponentRef Id="cfile70f23862e1673142a008d4522b2b89df" />
+            <ComponentRef Id="cfile68ab70acd58b38c39f9c57c83855d10d" />
+            <ComponentRef Id="cfilef13dc0087e5b3a4fabfb3f1d0002b995" />
+            <ComponentRef Id="cfilebbef2391af203711a20599c997c6ebf5" />
+            <ComponentRef Id="cfile6f5a7dd50e5736d2b891fc060f72001b" />
+            <ComponentRef Id="cfile8c446f9e554b3b54ac0f2dd0599d5c75" />
+            <ComponentRef Id="cfile48e6d746cf333898883320cace4652ac" />
+            <ComponentRef Id="cfiled93916c7c9853c34a2cd7fe76b157ef6" />
+            <ComponentRef Id="cfile6f7c7d5343c83a2ca20a2c7c143169f7" />
+            <ComponentRef Id="cfile13acf131414a356db4900fd4f431a6f4" />
+            <ComponentRef Id="cfile9c7109609fa231e4b8db202b77083e5b" />
+            <ComponentRef Id="cfile91d1a6b4c55c3932aed7e85b138ebb91" />
+            <ComponentRef Id="cfilef6b3f1b323033617806a9601e154baa0" />
+            <ComponentRef Id="cfilea209e42791ff3112b7fa706e072314f2" />
+            <ComponentRef Id="cfile987393bfbef13fc8bef210a8c99482b1" />
+            <ComponentRef Id="cfile7928fa2d45ce3375bbe9b62e245ff9d7" />
+            <ComponentRef Id="cfilec6cc04cc8a973247a7b7b2ebdee3fcca" />
+            <ComponentRef Id="cfile5f8b27e96d1a394a93c12f03080d9d6c" />
+            <ComponentRef Id="cmkdir5c97b751f66930aa9f5d3c54eae3bf2d" />
+            <ComponentRef Id="crm_rf48431aecbd69377ea800d62616352f20" />
+        </Feature>
+        <Icon Id="JpARPPRODUCTICON" SourceFile="f:\idea_pro\WpsAdbTool\desktopApp\build\msi-decompiled\Icon\JpARPPRODUCTICON" />
+        <Media Id="1" Cabinet="Data.cab" EmbedCab="yes" />
+        <Property Id="ALLUSERS" Value="1" />
+        <Property Id="ARPPRODUCTICON" Value="JpARPPRODUCTICON" />
+        <Property Id="JP_DOWNGRADABLE_FOUND" Secure="yes" />
+        <Property Id="JP_UPGRADABLE_FOUND" Secure="yes" />
+        <Property Id="RM_RF48431AECBD69377EA800D62616352F20">
+            <RegistrySearch Id="regsearch44413c41962833c69ffb8268f3119343" Root="HKLM" Key="Software\未知\WpsAdbTool\1.0.0" Name="RM_RF48431AECBD69377EA800D62616352F20" Type="raw" Win64="yes" />
+        </Property>
+        <UI>
+            <Dialog Id="InstallDirNotEmptyDlg" X="50" Y="50" Width="300" Height="85" Title="[ProductName] Setup">
+                <Control Id="Yes" Type="PushButton" X="100" Y="55" Width="50" Height="15" Text="是(&amp;Y)" TabSkip="no">
+                    <Publish Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
+                </Control>
+                <Control Id="No" Type="PushButton" X="150" Y="55" Width="50" Height="15" Text="否(&amp;N)" TabSkip="no" Default="yes" Cancel="yes">
+                    <Publish Event="NewDialog" Value="InstallDirDlg">1</Publish>
+                </Control>
+                <Control Id="Text" Type="Text" X="25" Y="15" Width="250" Height="30" Text="文件夹 [INSTALLDIR] 已存在。是否仍要安装到该文件夹？" TabSkip="no" />
+            </Dialog>
+        </UI>
+        <UIRef Id="WixUI_InstallDir" />
+        <Upgrade Id="{B26E1D83-F8DB-311B-8A3D-A9C7B2AA9C75}">
+            <UpgradeVersion Maximum="1.0.0" Property="JP_UPGRADABLE_FOUND" MigrateFeatures="yes" IncludeMinimum="yes" />
+            <UpgradeVersion Minimum="1.0.0" Property="JP_DOWNGRADABLE_FOUND" MigrateFeatures="yes" />
+        </Upgrade>
+        <InstallExecuteSequence>
+            <Custom Action="JpSetARPCOMMENTS" Sequence="1001">Not Installed</Custom>
+            <Custom Action="JpSetARPCONTACT" Sequence="1002">Not Installed</Custom>
+            <Custom Action="JpSetARPINSTALLLOCATION" Sequence="1003">Not Installed</Custom>
+            <Custom Action="JpSetARPSIZE" Sequence="1004">Not Installed</Custom>
+            <FindRelatedProducts Sequence="25" />
+            <ValidateProductID Sequence="700" />
+            <CostInitialize Sequence="800" />
+            <FileCost Sequence="900" />
+            <CostFinalize Sequence="1000" />
+            <MigrateFeatureStates Sequence="1200" />
+            <InstallValidate Sequence="1400" />
+            <InstallInitialize Sequence="1500" />
+            <ProcessComponents Sequence="1600" />
+            <UnpublishFeatures Sequence="1800" />
+            <RemoveRegistryValues Sequence="2600" />
+            <RemoveFiles Sequence="3500" />
+            <RemoveFolders Sequence="3600" />
+            <CreateFolders Sequence="3700" />
+            <InstallFiles Sequence="4000" />
+            <WriteRegistryValues Sequence="5000" />
+            <RegisterUser Sequence="6000" />
+            <RegisterProduct Sequence="6100" />
+            <PublishFeatures Sequence="6300" />
+            <PublishProduct Sequence="6400" />
+            <InstallFinalize Sequence="6600" />
+            <RemoveExistingProducts Sequence="798" />
+        </InstallExecuteSequence>
+    </Product>
+</Wix>
