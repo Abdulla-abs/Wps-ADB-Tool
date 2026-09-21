@@ -127,15 +127,15 @@ class SceneBridgeHostControllerTest {
     }
 
     @Test
-    fun selectObject_whenReady_sendsUpdateSelection() = runTest(UnconfinedTestDispatcher()) {
+    fun selectObject_whenReady_sendsSelectionChange() = runTest(UnconfinedTestDispatcher()) {
         val channel = FakeSceneBridgeChannel(BridgeConnectionState.READY)
         val controller = SceneBridgeHostController(channel = channel, scope = backgroundScope)
 
         controller.selectObject("slot_pixel", focusCamera = true)
 
         assertEquals(1, channel.sentMessages.size)
-        assertIs<SceneBridgeMessage.UpdateSelection>(channel.sentMessages.first())
-        val update = channel.sentMessages.first() as SceneBridgeMessage.UpdateSelection
+        assertIs<SceneBridgeMessage.SelectionChange>(channel.sentMessages.first())
+        val update = channel.sentMessages.first() as SceneBridgeMessage.SelectionChange
         assertEquals("slot_pixel", update.selectedObjectId)
         assertTrue(update.focusCamera)
     }

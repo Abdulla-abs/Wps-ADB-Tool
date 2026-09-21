@@ -25,7 +25,7 @@ class DefaultSceneBridgeSerializer : SceneBridgeSerializer {
             is SceneBridgeMessage.InitScene -> append(serializeInitScene(message))
             is SceneBridgeMessage.SyncState -> append(serializeSyncState(message))
             is SceneBridgeMessage.UpdateBinding -> append(serializeDeviceVisual(message.device))
-            is SceneBridgeMessage.UpdateSelection -> append(serializeSelection(message))
+            is SceneBridgeMessage.SelectionChange -> append(serializeSelection(message))
             is SceneBridgeMessage.CameraCommand -> append(serializeCameraCommand(message))
             is SceneBridgeMessage.RendererReady -> append(serializeRendererReady(message))
             is SceneBridgeMessage.ObjectClicked -> append(serializeObjectClicked(message))
@@ -48,9 +48,8 @@ class DefaultSceneBridgeSerializer : SceneBridgeSerializer {
 
             when (type) {
                 TYPE_RENDERER_READY -> SceneBridgeMessage.RendererReady(
-                    webglVendor = (p["webglVendor"] as? MiniJson.Str)?.value.orEmpty(),
-                    webglRenderer = (p["webglRenderer"] as? MiniJson.Str)?.value.orEmpty(),
-                    maxTextureSize = (p["maxTextureSize"] as? MiniJson.Num)?.value?.toInt() ?: 2048,
+                    protocolVersion = (p["protocolVersion"] as? MiniJson.Num)?.value?.toInt() ?: version,
+                    rendererVersion = (p["rendererVersion"] as? MiniJson.Str)?.value ?: "1.0",
                     timestamp = timestamp,
                 )
                 TYPE_OBJECT_CLICKED -> SceneBridgeMessage.ObjectClicked(
@@ -75,6 +74,7 @@ class DefaultSceneBridgeSerializer : SceneBridgeSerializer {
                 TYPE_RENDERER_ERROR -> SceneBridgeMessage.RendererError(
                     code = (p["code"] as? MiniJson.Str)?.value.orEmpty(),
                     message = (p["message"] as? MiniJson.Str)?.value.orEmpty(),
+                    category = (p["category"] as? MiniJson.Str)?.value,
                     timestamp = timestamp,
                 )
                 TYPE_SCENE_INIT -> {
@@ -98,7 +98,7 @@ class DefaultSceneBridgeSerializer : SceneBridgeSerializer {
                         timestamp = timestamp,
                     )
                 }
-                TYPE_SELECTION_CHANGE -> SceneBridgeMessage.UpdateSelection(
+                TYPE_SELECTION_CHANGE -> SceneBridgeMessage.SelectionChange(
                     selectedObjectId = (p["selectedObjectId"] as? MiniJson.Str)?.value,
                     focusCamera = (p["focusCamera"] as? MiniJson.Bool)?.value ?: false,
                     timestamp = timestamp,
@@ -125,7 +125,7 @@ class DefaultSceneBridgeSerializer : SceneBridgeSerializer {
         is SceneBridgeMessage.InitScene -> TYPE_SCENE_INIT
         is SceneBridgeMessage.SyncState -> TYPE_STATE_SYNC
         is SceneBridgeMessage.UpdateBinding -> TYPE_BINDING_UPDATE
-        is SceneBridgeMessage.UpdateSelection -> TYPE_SELECTION_CHANGE
+        is SceneBridgeMessage.SelectionChange -> TYPE_SELECTION_CHANGE
         is SceneBridgeMessage.CameraCommand -> TYPE_CAMERA_COMMAND
         is SceneBridgeMessage.RendererReady -> TYPE_RENDERER_READY
         is SceneBridgeMessage.ObjectClicked -> TYPE_OBJECT_CLICKED
@@ -198,7 +198,7 @@ class DefaultSceneBridgeSerializer : SceneBridgeSerializer {
         append("}}")
     }
 
-    private fun serializeSelection(msg: SceneBridgeMessage.UpdateSelection): String = buildString {
+    private fun serializeSelection(msg: SceneBridgeMessage.SelectionChange): String = buildString {
         append("{\"selectedObjectId\":")
         if (msg.selectedObjectId != null) append(quote(msg.selectedObjectId)) else append("null")
         append(",\"focusCamera\":").append(msg.focusCamera)
@@ -213,9 +213,8 @@ class DefaultSceneBridgeSerializer : SceneBridgeSerializer {
     }
 
     private fun serializeRendererReady(msg: SceneBridgeMessage.RendererReady): String = buildString {
-        append("{\"webglVendor\":").append(quote(msg.webglVendor))
-        append(",\"webglRenderer\":").append(quote(msg.webglRenderer))
-        append(",\"maxTextureSize\":").append(msg.maxTextureSize)
+        append("{\"protocolVersion\":").append(msg.protocolVersion)
+        append(",\"rendererVersion\":").append(quote(msg.rendererVersion))
         append("}")
     }
 
@@ -245,6 +244,9 @@ class DefaultSceneBridgeSerializer : SceneBridgeSerializer {
     private fun serializeRendererError(msg: SceneBridgeMessage.RendererError): String = buildString {
         append("{\"code\":").append(quote(msg.code))
         append(",\"message\":").append(quote(msg.message))
+        if (msg.category != null) {
+            append(",\"category\":").append(quote(msg.category))
+        }
         append("}")
     }
 

@@ -85,9 +85,8 @@ class SceneBridgeChannelTest {
         assertEquals(BridgeConnectionState.CONNECTED, channel.state.value)
 
         val readyMsg = SceneBridgeMessage.RendererReady(
-            webglVendor = "NVIDIA",
-            webglRenderer = "RTX 4090",
-            maxTextureSize = 8192,
+            protocolVersion = 1,
+            rendererVersion = "1.0",
         )
         transport.emitIncoming(serializer.serialize(readyMsg))
 
@@ -132,7 +131,7 @@ class SceneBridgeChannelTest {
         assertTrue(transport.sentPayloads.isEmpty())
 
         // Now Renderer becomes ready
-        val readyMsg = SceneBridgeMessage.RendererReady("Intel", "Iris", 4096)
+        val readyMsg = SceneBridgeMessage.RendererReady(protocolVersion = 1, rendererVersion = "1.0")
         transport.emitIncoming(serializer.serialize(readyMsg))
 
         // State moves to READY and queued message is immediately flushed
@@ -149,10 +148,10 @@ class SceneBridgeChannelTest {
         val channel = DefaultSceneBridgeChannel(transport = transport, serializer = serializer, scope = backgroundScope)
 
         channel.connect()
-        transport.emitIncoming(serializer.serialize(SceneBridgeMessage.RendererReady("Vendor", "Renderer", 2048)))
+        transport.emitIncoming(serializer.serialize(SceneBridgeMessage.RendererReady(protocolVersion = 1, rendererVersion = "1.0")))
         assertEquals(BridgeConnectionState.READY, channel.state.value)
 
-        val selectMsg = SceneBridgeMessage.UpdateSelection("slot_phone", focusCamera = true)
+        val selectMsg = SceneBridgeMessage.SelectionChange("slot_phone", focusCamera = true)
         channel.send(selectMsg)
 
         assertEquals(1, transport.sentPayloads.size)
@@ -167,21 +166,33 @@ class SceneBridgeChannelTest {
         val channel = DefaultSceneBridgeChannel(transport = transport, serializer = serializer, scope = backgroundScope)
 
         channel.connect()
+        transport.emitIncoming(serializer.serialize(SceneBridgeMessage.RendererReady(protocolVersion = 1, rendererVersion = "1.0")))
+        assertEquals(BridgeConnectionState.READY, channel.state.value)
 
-        var receivedMessage: SceneBridgeMessage? = null
+        val receivedMessages = mutableListOf<SceneBridgeMessage>()
         val job = backgroundScope.launch {
             channel.incoming.collect {
-                receivedMessage = it
+                receivedMessages.add(it)
             }
         }
 
-        val clickMsg = SceneBridgeMessage.ObjectClicked("phone_slot_9", screenX = 100f, screenY = 200f)
-        transport.emitIncoming(serializer.serialize(clickMsg))
+        val clickedMsg = SceneBridgeMessage.ObjectClicked(
+            objectId = "phone_slot_1",
+            screenX = 100f,
+            screenY = 200f,
+            isCtrlPressed = false,
+            isShiftPressed = true,
+        )
+        transport.emitIncoming(serializer.serialize(clickedMsg))
         advanceUntilIdle()
 
-        assertNotNull(receivedMessage)
-        assertIs<SceneBridgeMessage.ObjectClicked>(receivedMessage)
-        assertEquals("phone_slot_9", (receivedMessage as SceneBridgeMessage.ObjectClicked).objectId)
+        assertEquals(1, receivedMessages.size)
+        val msg = receivedMessages.first()
+        assertIs<SceneBridgeMessage.ObjectClicked>(msg)
+        assertEquals("phone_slot_1", msg.objectId)
+        assertEquals(100f, msg.screenX)
+        assertEquals(200f, msg.screenY)
+        assertTrue(msg.isShiftPressed)
 
         job.cancel()
     }
@@ -193,7 +204,7 @@ class SceneBridgeChannelTest {
         val channel = DefaultSceneBridgeChannel(transport = transport, serializer = serializer, scope = backgroundScope)
 
         channel.connect()
-        transport.emitIncoming(serializer.serialize(SceneBridgeMessage.RendererReady("Vendor", "Renderer", 2048)))
+        transport.emitIncoming(serializer.serialize(SceneBridgeMessage.RendererReady(protocolVersion = 1, rendererVersion = "1.0")))
         assertEquals(BridgeConnectionState.READY, channel.state.value)
 
         var lastValidMessage: SceneBridgeMessage? = null
@@ -242,7 +253,7 @@ class SceneBridgeChannelTest {
         assertEquals(BridgeConnectionState.CONNECTED, channel.state.value)
 
         // Add a message while in CONNECTED
-        channel.send(SceneBridgeMessage.UpdateSelection("test_obj"))
+        channel.send(SceneBridgeMessage.SelectionChange("test_obj"))
 
         // Disconnect before reaching READY
         channel.disconnect()
@@ -253,7 +264,7 @@ class SceneBridgeChannelTest {
         // Reconnect and move to READY; the previous message was cleared, so nothing sent
         transport.isClosed = false
         channel.connect()
-        transport.emitIncoming(DefaultSceneBridgeSerializer().serialize(SceneBridgeMessage.RendererReady("V", "R", 1024)))
+        transport.emitIncoming(DefaultSceneBridgeSerializer().serialize(SceneBridgeMessage.RendererReady(protocolVersion = 1, rendererVersion = "1.0")))
         assertEquals(BridgeConnectionState.READY, channel.state.value)
         assertTrue(transport.sentPayloads.isEmpty())
     }

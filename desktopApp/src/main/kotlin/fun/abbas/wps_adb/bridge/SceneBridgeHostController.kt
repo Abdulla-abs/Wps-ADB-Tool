@@ -70,7 +70,7 @@ class SceneBridgeHostController(
             selectedObjectId = objectId
             if (channel.state.value == BridgeConnectionState.READY) {
                 channel.send(
-                    SceneBridgeMessage.UpdateSelection(
+                    SceneBridgeMessage.SelectionChange(
                         selectedObjectId = objectId,
                         focusCamera = focusCamera,
                     )

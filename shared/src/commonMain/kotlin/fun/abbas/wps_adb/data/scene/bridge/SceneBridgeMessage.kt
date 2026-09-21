@@ -2,11 +2,23 @@ package `fun`.abbas.wps_adb.data.scene.bridge
 
 import `fun`.abbas.wps_adb.model.scene.SceneVector3
 
+const val CURRENT_BRIDGE_PROTOCOL_VERSION: Int = 1
+
+/**
+ * Standard protocol error codes for [SceneBridgeMessage.RendererError].
+ */
+object BridgeErrorCodes {
+    const val PROTOCOL_VERSION_MISMATCH = "PROTOCOL_VERSION_MISMATCH"
+    const val INVALID_MESSAGE = "INVALID_MESSAGE"
+    const val INVALID_PAYLOAD = "INVALID_PAYLOAD"
+    const val INTERNAL_ERROR = "INTERNAL_ERROR"
+}
+
 /**
  * Base sealed interface for all messages crossing the Scene Bridge.
  */
 sealed interface SceneBridgeMessage {
-    val version: Int get() = 1
+    val version: Int get() = CURRENT_BRIDGE_PROTOCOL_VERSION
     val timestamp: Long
 
     // ==========================================
@@ -15,6 +27,7 @@ sealed interface SceneBridgeMessage {
 
     /**
      * Initializes the 3D scene environment, assets, and camera.
+     * Wire type: SCENE_INIT
      */
     data class InitScene(
         val sceneDescriptor: SceneDescriptor,
@@ -23,6 +36,7 @@ sealed interface SceneBridgeMessage {
 
     /**
      * Synchronizes full visual state snapshot of bound devices and active selection.
+     * Wire type: STATE_SYNC
      */
     data class SyncState(
         val snapshot: SceneVisualSnapshot,
@@ -31,6 +45,7 @@ sealed interface SceneBridgeMessage {
 
     /**
      * Incremental update for a single device binding to avoid full snapshot overhead.
+     * Wire type: BINDING_UPDATE
      */
     data class UpdateBinding(
         val device: DeviceVisualDescriptor,
@@ -39,8 +54,9 @@ sealed interface SceneBridgeMessage {
 
     /**
      * Updates selection state independently without rebuilding device descriptors.
+     * Wire type: SELECTION_CHANGE
      */
-    data class UpdateSelection(
+    data class SelectionChange(
         val selectedObjectId: String?,
         val focusCamera: Boolean = false,
         override val timestamp: Long = 0L,
@@ -48,6 +64,7 @@ sealed interface SceneBridgeMessage {
 
     /**
      * Controls camera target or position from host UI.
+     * Wire type: CAMERA_COMMAND
      */
     data class CameraCommand(
         val position: SceneVector3,
@@ -61,17 +78,18 @@ sealed interface SceneBridgeMessage {
     // ==========================================
 
     /**
-     * Sent when the WebGL renderer has initialized and capabilities are queried.
+     * Sent when the JS Runtime has initialized and bridge contract version is confirmed.
+     * Wire type: RENDERER_READY
      */
     data class RendererReady(
-        val webglVendor: String,
-        val webglRenderer: String,
-        val maxTextureSize: Int,
+        val protocolVersion: Int = CURRENT_BRIDGE_PROTOCOL_VERSION,
+        val rendererVersion: String = "1.0",
         override val timestamp: Long = 0L,
     ) : SceneBridgeMessage
 
     /**
      * Sent when a 3D object was clicked / picked by raycasting in the canvas.
+     * Wire type: OBJECT_CLICKED
      */
     data class ObjectClicked(
         val objectId: String,
@@ -84,6 +102,7 @@ sealed interface SceneBridgeMessage {
 
     /**
      * Sent when mouse enters or leaves a 3D object bounding box.
+     * Wire type: OBJECT_HOVERED
      */
     data class ObjectHovered(
         val objectId: String?,
@@ -92,6 +111,7 @@ sealed interface SceneBridgeMessage {
 
     /**
      * Sent when an object transform is modified via 3D gizmos in the viewport.
+     * Wire type: OBJECT_TRANSFORM_CHANGED
      */
     data class ObjectTransformChanged(
         val objectId: String,
@@ -102,11 +122,13 @@ sealed interface SceneBridgeMessage {
     ) : SceneBridgeMessage
 
     /**
-     * Sent when renderer encounters an error (e.g., shader compile error, WebGL context lost).
+     * Sent when renderer encounters an error.
+     * Wire type: RENDERER_ERROR
      */
     data class RendererError(
         val code: String,
         val message: String,
+        val category: String? = null,
         override val timestamp: Long = 0L,
     ) : SceneBridgeMessage
 
@@ -119,3 +141,8 @@ sealed interface SceneBridgeMessage {
         override val timestamp: Long = 0L,
     ) : SceneBridgeMessage
 }
+
+/**
+ * Backward compatibility type alias for [SceneBridgeMessage.SelectionChange].
+ */
+typealias UpdateSelection = SceneBridgeMessage.SelectionChange
