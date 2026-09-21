@@ -1,5 +1,6 @@
 package `fun`.abbas.wps_adb
 
+import `fun`.abbas.wps_adb.data.scene.DefaultSceneBindingResolver
 import `fun`.abbas.wps_adb.data.scene.bridge.DefaultSceneVisualProjector
 import `fun`.abbas.wps_adb.data.scene.bridge.VisualStatus
 import `fun`.abbas.wps_adb.data.scene.bridge.toDescriptor
@@ -94,6 +95,59 @@ class SceneVisualProjectorTest {
         assertEquals("phone_slot_3", descriptor.displayName)
         assertEquals(VisualStatus.OFFLINE, descriptor.status)
         assertTrue(descriptor.visual.isDimmed)
+    }
+
+    @Test
+    fun fullChain_missingDevice_projectsAsOfflineNotUnbound() {
+        val resolver = DefaultSceneBindingResolver()
+        val scene = DeviceScene(
+            id = "chain_scene_1",
+            name = "Chain Scene",
+            bindings = listOf(
+                SceneBinding("slot_1", DeviceIdentityRef("HW-OFFLINE-01")),
+            ),
+        )
+
+        // Resolver runs with empty physical devices -> device is null, identity is null, status is OFFLINE
+        val resolvedState = resolver.resolve(scene, emptyList())
+        assertEquals(1, resolvedState.bindings.size)
+        val resolvedBinding = resolvedState.bindings.first()
+        assertEquals(BindingStatus.OFFLINE, resolvedBinding.status)
+        assertNull(resolvedBinding.device)
+        assertNull(resolvedBinding.identity)
+
+        // Full chain projection: must project as OFFLINE, retaining deviceIdentity, NOT UNBOUND
+        val snapshot = projector.project(resolvedState)
+        assertEquals(1, snapshot.devices.size)
+        val descriptor = snapshot.devices.first()
+        assertEquals("slot_1", descriptor.objectId)
+        assertEquals("HW-OFFLINE-01", descriptor.deviceIdentity)
+        assertEquals(VisualStatus.OFFLINE, descriptor.status)
+        assertEquals(DefaultSceneVisualProjector.COLOR_OFFLINE, descriptor.visual.statusColorHex)
+        assertTrue(descriptor.visual.isDimmed)
+    }
+
+    @Test
+    fun fullChain_emptyIdentityBinding_projectsAsUnbound() {
+        val resolver = DefaultSceneBindingResolver()
+        val scene = DeviceScene(
+            id = "chain_scene_2",
+            name = "Chain Scene 2",
+            bindings = listOf(
+                SceneBinding("slot_unbound", DeviceIdentityRef("")),
+            ),
+        )
+
+        val resolvedState = resolver.resolve(scene, emptyList())
+        val snapshot = projector.project(resolvedState)
+        assertEquals(1, snapshot.devices.size)
+        val descriptor = snapshot.devices.first()
+        assertEquals("slot_unbound", descriptor.objectId)
+        assertNull(descriptor.deviceIdentity)
+        assertEquals(VisualStatus.UNBOUND, descriptor.status)
+        assertEquals(DefaultSceneVisualProjector.COLOR_UNBOUND, descriptor.visual.statusColorHex)
+        assertEquals("UNBOUND", descriptor.visual.badgeText)
+        assertFalse(descriptor.visual.isDimmed)
     }
 
     @Test

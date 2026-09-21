@@ -1,7 +1,11 @@
 package `fun`.abbas.wps_adb.data.scene.bridge
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,6 +15,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 /**
  * Default implementation of [SceneBridgeChannel] connecting Host and Renderer.
@@ -40,45 +45,95 @@ class DefaultSceneBridgeChannel(
 
         _state.value = BridgeConnectionState.CONNECTING
         try {
-            transport.connect()
             _state.value = BridgeConnectionState.CONNECTED
 
-            listenJob?.cancel()
-            listenJob = scope.launch {
+            listenJob?.cancelAndJoin()
+            listenJob = scope.launch(start = CoroutineStart.UNDISPATCHED) {
                 try {
                     transport.incoming.collect { rawPayload ->
                         handleIncomingPayload(rawPayload)
                     }
+                } catch (_: CancellationException) {
+                    // Normal coroutine cancellation on disconnect/close, do not treat as error
                 } catch (_: Throwable) {
-                    _state.value = BridgeConnectionState.ERROR
+                    clearPendingQueueAndSetError()
+                    try {
+                        transport.close()
+                    } catch (_: Throwable) {
+                        // Safe cleanup
+                    }
                     _state.value = BridgeConnectionState.DISCONNECTED
                 }
             }
+            transport.connect()
+        } catch (cancellation: CancellationException) {
+            withContext(NonCancellable) {
+                listenJob?.cancelAndJoin()
+                listenJob = null
+                try {
+                    transport.close()
+                } catch (_: Throwable) {
+                    // Safe cleanup
+                }
+                queueMutex.withLock {
+                    pendingQueue.clear()
+                }
+                _state.value = BridgeConnectionState.DISCONNECTED
+            }
+            throw cancellation
         } catch (_: Throwable) {
-            _state.value = BridgeConnectionState.ERROR
+            listenJob?.cancelAndJoin()
+            listenJob = null
+            clearPendingQueueAndSetError()
+            try {
+                transport.close()
+            } catch (_: Throwable) {
+                // Safe cleanup
+            }
             _state.value = BridgeConnectionState.DISCONNECTED
         }
     }
 
     override suspend fun send(message: SceneBridgeMessage) {
+        var transportFailed = false
         queueMutex.withLock {
-            if (_state.value == BridgeConnectionState.READY) {
-                try {
-                    val payload = serializer.serialize(message)
-                    transport.send(payload)
-                } catch (_: Throwable) {
-                    _state.value = BridgeConnectionState.ERROR
-                    _state.value = BridgeConnectionState.DISCONNECTED
+            when (_state.value) {
+                BridgeConnectionState.READY -> {
+                    try {
+                        val payload = serializer.serialize(message)
+                        transport.send(payload)
+                    } catch (_: Throwable) {
+                        pendingQueue.clear()
+                        _state.value = BridgeConnectionState.ERROR
+                        transportFailed = true
+                    }
                 }
-            } else {
-                // Buffer message if renderer is not ready yet
-                pendingQueue.add(message)
+                BridgeConnectionState.CONNECTING,
+                BridgeConnectionState.CONNECTED -> {
+                    // Buffer message while awaiting handshake completion
+                    pendingQueue.add(message)
+                }
+                BridgeConnectionState.ERROR,
+                BridgeConnectionState.DISCONNECTED -> {
+                    // Refuse/drop message in error or disconnected state to prevent unbounded memory growth
+                }
             }
+        }
+
+        if (transportFailed) {
+            listenJob?.cancelAndJoin()
+            listenJob = null
+            try {
+                transport.close()
+            } catch (_: Throwable) {
+                // Safe cleanup
+            }
+            _state.value = BridgeConnectionState.DISCONNECTED
         }
     }
 
     override suspend fun disconnect() {
-        listenJob?.cancel()
+        listenJob?.cancelAndJoin()
         listenJob = null
 
         try {
@@ -93,12 +148,38 @@ class DefaultSceneBridgeChannel(
         _state.value = BridgeConnectionState.DISCONNECTED
     }
 
-    override fun markRendererReady() {
-        if (_state.value != BridgeConnectionState.READY) {
-            _state.value = BridgeConnectionState.READY
-            scope.launch {
-                flushPendingQueue()
+    private suspend fun transitionToReady() {
+        var transportFailed = false
+        queueMutex.withLock {
+            if (_state.value != BridgeConnectionState.CONNECTED) {
+                return@withLock
             }
+
+            val toFlush = pendingQueue.toList()
+            pendingQueue.clear()
+            for (message in toFlush) {
+                try {
+                    transport.send(serializer.serialize(message))
+                } catch (_: Throwable) {
+                    pendingQueue.clear()
+                    _state.value = BridgeConnectionState.ERROR
+                    transportFailed = true
+                    return@withLock
+                }
+            }
+
+            // Publish READY only after every older queued frame has been sent. This
+            // prevents READY observers from sending a fresh snapshot ahead of stale data.
+            _state.value = BridgeConnectionState.READY
+        }
+
+        if (transportFailed) {
+            try {
+                transport.close()
+            } catch (_: Throwable) {
+                // Safe cleanup
+            }
+            _state.value = BridgeConnectionState.DISCONNECTED
         }
     }
 
@@ -112,28 +193,22 @@ class DefaultSceneBridgeChannel(
 
         if (message != null) {
             if (message is SceneBridgeMessage.RendererReady) {
-                markRendererReady()
+                if (message.version == CURRENT_BRIDGE_PROTOCOL_VERSION &&
+                    message.protocolVersion == CURRENT_BRIDGE_PROTOCOL_VERSION
+                ) {
+                    transitionToReady()
+                } else {
+                    clearPendingQueueAndSetError()
+                }
             }
             _incoming.emit(message)
         }
     }
 
-    private suspend fun flushPendingQueue() {
+    private suspend fun clearPendingQueueAndSetError() {
         queueMutex.withLock {
-            if (pendingQueue.isNotEmpty()) {
-                val toFlush = pendingQueue.toList()
-                pendingQueue.clear()
-                for (msg in toFlush) {
-                    try {
-                        val payload = serializer.serialize(msg)
-                        transport.send(payload)
-                    } catch (_: Throwable) {
-                        _state.value = BridgeConnectionState.ERROR
-                        _state.value = BridgeConnectionState.DISCONNECTED
-                        break
-                    }
-                }
-            }
+            pendingQueue.clear()
+            _state.value = BridgeConnectionState.ERROR
         }
     }
 }

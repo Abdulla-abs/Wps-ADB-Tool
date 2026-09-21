@@ -8,6 +8,7 @@ import `fun`.abbas.wps_adb.data.scene.bridge.SceneBridgeMessage
 import `fun`.abbas.wps_adb.data.scene.bridge.SceneCameraDescriptor
 import `fun`.abbas.wps_adb.data.scene.bridge.SceneDescriptor
 import `fun`.abbas.wps_adb.model.scene.SceneVector3
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -35,8 +37,12 @@ class SceneBridgeChannelTest {
         var isClosed = false
         var shouldFailConnect = false
         var shouldFailSend = false
+        var connectGate: CompletableDeferred<Unit>? = null
+        val connectStarted = CompletableDeferred<Unit>()
 
         override suspend fun connect() {
+            connectStarted.complete(Unit)
+            connectGate?.await()
             if (shouldFailConnect) throw IllegalStateException("Transport connect failure")
             isConnected = true
         }
@@ -94,15 +100,58 @@ class SceneBridgeChannelTest {
     }
 
     @Test
-    fun markRendererReady_transitionsStateToReadyDirectly() = runTest(UnconfinedTestDispatcher()) {
+    fun rendererReady_versionMismatch_envelopeVersion_transitionsToError_andClearsPendingQueue() = runTest(UnconfinedTestDispatcher()) {
         val transport = FakeBridgeTransport()
-        val channel = DefaultSceneBridgeChannel(transport = transport, scope = backgroundScope)
+        val serializer = DefaultSceneBridgeSerializer()
+        val channel = DefaultSceneBridgeChannel(transport = transport, serializer = serializer, scope = backgroundScope)
 
         channel.connect()
         assertEquals(BridgeConnectionState.CONNECTED, channel.state.value)
 
-        channel.markRendererReady()
-        assertEquals(BridgeConnectionState.READY, channel.state.value)
+        // Queue a message before ready
+        channel.send(SceneBridgeMessage.SelectionChange("obj_1"))
+
+        // Emit RENDERER_READY with incompatible envelope version
+        val badEnvelopeJson = """{"type":"RENDERER_READY","version":999,"timestamp":100,"payload":{"protocolVersion":1,"rendererVersion":"1.0"}}"""
+        transport.emitIncoming(badEnvelopeJson)
+
+        assertEquals(BridgeConnectionState.ERROR, channel.state.value)
+        assertTrue(transport.sentPayloads.isEmpty())
+    }
+
+    @Test
+    fun rendererReady_versionMismatch_protocolVersion_transitionsToError_andDoesNotFlushQueue() = runTest(UnconfinedTestDispatcher()) {
+        val transport = FakeBridgeTransport()
+        val serializer = DefaultSceneBridgeSerializer()
+        val channel = DefaultSceneBridgeChannel(transport = transport, serializer = serializer, scope = backgroundScope)
+
+        channel.connect()
+        assertEquals(BridgeConnectionState.CONNECTED, channel.state.value)
+
+        channel.send(SceneBridgeMessage.SelectionChange("obj_2"))
+
+        // Emit RENDERER_READY with incompatible protocolVersion
+        val badProtocolJson = """{"type":"RENDERER_READY","version":1,"timestamp":100,"payload":{"protocolVersion":999,"rendererVersion":"1.0"}}"""
+        transport.emitIncoming(badProtocolJson)
+
+        assertEquals(BridgeConnectionState.ERROR, channel.state.value)
+        assertTrue(transport.sentPayloads.isEmpty())
+    }
+
+    @Test
+    fun send_whenInErrorState_dropsMessagesWithoutQueuing() = runTest(UnconfinedTestDispatcher()) {
+        val transport = FakeBridgeTransport()
+        val channel = DefaultSceneBridgeChannel(transport = transport, scope = backgroundScope)
+
+        channel.connect()
+        // Cause ERROR state
+        val badEnvelopeJson = """{"type":"RENDERER_READY","version":999,"timestamp":100,"payload":{"protocolVersion":1,"rendererVersion":"1.0"}}"""
+        transport.emitIncoming(badEnvelopeJson)
+        assertEquals(BridgeConnectionState.ERROR, channel.state.value)
+
+        // Attempting to send in ERROR state drops message without buffering
+        channel.send(SceneBridgeMessage.SelectionChange("obj_drop"))
+        assertTrue(transport.sentPayloads.isEmpty())
     }
 
     @Test
@@ -139,6 +188,35 @@ class SceneBridgeChannelTest {
         assertEquals(1, transport.sentPayloads.size)
         assertTrue(transport.sentPayloads.first().contains("\"type\":\"SCENE_INIT\""))
         assertTrue(transport.sentPayloads.first().contains("\"id\":\"lab_1\""))
+    }
+
+    @Test
+    fun rendererReady_flushesPendingMessagesBeforeReadyObserversCanSend() = runTest {
+        val transport = FakeBridgeTransport()
+        val serializer = DefaultSceneBridgeSerializer()
+        val channel = DefaultSceneBridgeChannel(transport = transport, serializer = serializer, scope = backgroundScope)
+
+        channel.connect()
+        channel.send(SceneBridgeMessage.SelectionChange("queued_before_ready"))
+
+        val observer = backgroundScope.launch {
+            channel.state.collect { state ->
+                if (state == BridgeConnectionState.READY) {
+                    channel.send(SceneBridgeMessage.SelectionChange("sent_by_ready_observer"))
+                }
+            }
+        }
+        runCurrent()
+
+        transport.emitIncoming(
+            serializer.serialize(SceneBridgeMessage.RendererReady(protocolVersion = 1, rendererVersion = "1.0"))
+        )
+        runCurrent()
+
+        assertEquals(2, transport.sentPayloads.size)
+        assertTrue(transport.sentPayloads[0].contains("queued_before_ready"))
+        assertTrue(transport.sentPayloads[1].contains("sent_by_ready_observer"))
+        observer.cancel()
     }
 
     @Test
@@ -242,6 +320,36 @@ class SceneBridgeChannelTest {
 
         assertEquals(BridgeConnectionState.DISCONNECTED, channel.state.value)
         assertFalse(transport.isConnected)
+    }
+
+    @Test
+    fun transportError_onConnect_clearsMessagesQueuedDuringConnectionAttempt() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        val transport = FakeBridgeTransport().apply {
+            shouldFailConnect = true
+            connectGate = gate
+        }
+        val serializer = DefaultSceneBridgeSerializer()
+        val channel = DefaultSceneBridgeChannel(transport = transport, serializer = serializer, scope = backgroundScope)
+
+        val connectJob = backgroundScope.launch { channel.connect() }
+        transport.connectStarted.await()
+        channel.send(SceneBridgeMessage.SelectionChange("stale_from_failed_connection"))
+        gate.complete(Unit)
+        connectJob.join()
+
+        assertEquals(BridgeConnectionState.DISCONNECTED, channel.state.value)
+
+        transport.shouldFailConnect = false
+        transport.connectGate = null
+        channel.connect()
+        transport.emitIncoming(
+            serializer.serialize(SceneBridgeMessage.RendererReady(protocolVersion = 1, rendererVersion = "1.0"))
+        )
+        runCurrent()
+
+        assertEquals(BridgeConnectionState.READY, channel.state.value)
+        assertTrue(transport.sentPayloads.isEmpty())
     }
 
     @Test

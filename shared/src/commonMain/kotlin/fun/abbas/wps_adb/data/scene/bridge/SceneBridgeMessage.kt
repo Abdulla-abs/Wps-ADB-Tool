@@ -82,6 +82,7 @@ sealed interface SceneBridgeMessage {
      * Wire type: RENDERER_READY
      */
     data class RendererReady(
+        override val version: Int = CURRENT_BRIDGE_PROTOCOL_VERSION,
         val protocolVersion: Int = CURRENT_BRIDGE_PROTOCOL_VERSION,
         val rendererVersion: String = "1.0",
         override val timestamp: Long = 0L,

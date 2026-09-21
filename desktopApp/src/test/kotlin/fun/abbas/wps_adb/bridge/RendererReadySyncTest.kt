@@ -43,7 +43,7 @@ class RendererReadySyncTest {
 
         val sentMessages = mutableListOf<SceneBridgeMessage>()
 
-        override fun markRendererReady() {
+        fun markRendererReady() {
             _state.value = BridgeConnectionState.READY
         }
 

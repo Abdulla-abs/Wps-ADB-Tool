@@ -42,13 +42,14 @@ class DefaultSceneBridgeSerializer : SceneBridgeSerializer {
         return try {
             val root = MiniJson.parse(payload) as? MiniJson.Obj ?: return null
             val type = (root["type"] as? MiniJson.Str)?.value ?: return null
-            val version = (root["version"] as? MiniJson.Num)?.value?.toInt() ?: 1
+            val envelopeVersion = (root["version"] as? MiniJson.Num)?.value?.toInt() ?: -1
             val timestamp = (root["timestamp"] as? MiniJson.Num)?.value?.toLong() ?: 0L
             val p = root["payload"] as? MiniJson.Obj ?: MiniJson.Obj(emptyMap())
 
             when (type) {
                 TYPE_RENDERER_READY -> SceneBridgeMessage.RendererReady(
-                    protocolVersion = (p["protocolVersion"] as? MiniJson.Num)?.value?.toInt() ?: version,
+                    version = envelopeVersion,
+                    protocolVersion = (p["protocolVersion"] as? MiniJson.Num)?.value?.toInt() ?: -1,
                     rendererVersion = (p["rendererVersion"] as? MiniJson.Str)?.value ?: "1.0",
                     timestamp = timestamp,
                 )

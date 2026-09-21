@@ -50,7 +50,7 @@ class SceneBridgeHostControllerTest {
             _state.value = newState
         }
 
-        override fun markRendererReady() {
+        fun markRendererReady() {
             _state.value = BridgeConnectionState.READY
         }
 

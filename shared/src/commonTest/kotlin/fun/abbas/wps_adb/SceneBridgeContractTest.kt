@@ -151,8 +151,56 @@ class SceneBridgeContractTest {
         val readyParsed = serializer.deserialize(readyJson)
         assertIs<SceneBridgeMessage.RendererReady>(readyParsed)
         assertTrue(readyParsed.timestamp >= 0L, "Timestamp must be >= 0")
+        assertEquals(CURRENT_BRIDGE_PROTOCOL_VERSION, readyParsed.version)
         assertEquals(CURRENT_BRIDGE_PROTOCOL_VERSION, readyParsed.protocolVersion)
         assertEquals("1.0", readyParsed.rendererVersion)
+    }
+
+    @Test
+    fun deserialize_rendererReady_preservesDistinctEnvelopeAndProtocolVersions() {
+        val rawJson = """
+            {
+              "type": "RENDERER_READY",
+              "version": 2,
+              "timestamp": 5000,
+              "payload": {
+                "protocolVersion": 3,
+                "rendererVersion": "2.0"
+              }
+            }
+        """.trimIndent()
+        val parsed = serializer.deserialize(rawJson)
+        assertIs<SceneBridgeMessage.RendererReady>(parsed)
+        assertEquals(2, parsed.version)
+        assertEquals(3, parsed.protocolVersion)
+        assertEquals("2.0", parsed.rendererVersion)
+    }
+
+    @Test
+    fun roundtrip_deviceVisual_supportsUnboundStatus() {
+        val unboundDevice = DeviceVisualDescriptor(
+            objectId = "slot_empty",
+            deviceIdentity = null,
+            displayName = "slot_empty",
+            status = VisualStatus.UNBOUND,
+            connectionType = "NONE",
+            visual = VisualStyle(
+                statusColorHex = "#3B82F6",
+                isEmissive = false,
+                emissiveIntensity = 0f,
+                badgeText = "UNBOUND",
+                isDimmed = false,
+            ),
+        )
+        val message = SceneBridgeMessage.UpdateBinding(device = unboundDevice, timestamp = 3500L)
+        val json = serializer.serialize(message)
+        assertTrue(json.contains("\"status\":\"UNBOUND\""))
+
+        val deserialized = serializer.deserialize(json)
+        assertIs<SceneBridgeMessage.UpdateBinding>(deserialized)
+        assertEquals(VisualStatus.UNBOUND, deserialized.device.status)
+        assertEquals("slot_empty", deserialized.device.displayName)
+        assertEquals("#3B82F6", deserialized.device.visual.statusColorHex)
     }
 
     @Test

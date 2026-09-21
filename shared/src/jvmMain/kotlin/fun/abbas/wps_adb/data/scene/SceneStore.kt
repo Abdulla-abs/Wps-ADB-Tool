@@ -206,9 +206,11 @@ class SceneStore(
         }
 
         val rawName = sourceFile.name
-        val safeName = rawName.replace(Regex("[^a-zA-Z0-9._-]"), "_").let {
+        val safeBaseName = rawName.replace(Regex("[^a-zA-Z0-9._-]"), "_").let {
             if (it.endsWith(".glb", ignoreCase = true)) it else "$it.glb"
         }
+        val safeAssetId = assetId.replace(Regex("[^a-zA-Z0-9._-]"), "_")
+        val safeName = "${safeAssetId}_$safeBaseName"
 
         val targetFile = File(assetsDir, safeName)
         val canonicalAssetsDir = assetsDir.canonicalFile

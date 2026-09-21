@@ -26,7 +26,12 @@ class DefaultSceneVisualProjector : SceneVisualProjector {
 
     override fun projectBinding(binding: ResolvedBinding): DeviceVisualDescriptor {
         val objectId = binding.binding.objectId
-        val deviceIdentity = binding.identity?.value ?: binding.binding.deviceIdentity.value
+        val hasIdentity = binding.binding.deviceIdentity.value.isNotBlank()
+        val deviceIdentity = if (hasIdentity) {
+            binding.identity?.value ?: binding.binding.deviceIdentity.value
+        } else {
+            null
+        }
         val device = binding.device
 
         val status: VisualStatus
@@ -49,7 +54,7 @@ class DefaultSceneVisualProjector : SceneVisualProjector {
                 )
             }
             BindingStatus.OFFLINE -> {
-                if (binding.identity == null && device == null) {
+                if (!hasIdentity) {
                     status = VisualStatus.UNBOUND
                     displayName = objectId
                     connectionTypeStr = "NONE"

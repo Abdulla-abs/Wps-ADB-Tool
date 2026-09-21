@@ -56,9 +56,13 @@ Scene Bridge 连接 Kotlin 宿主环境与嵌入式 Web 渲染端（基于 JCEF�
 | 字段 | 类型 | 必填 | 说明 |
 | :--- | :--- | :---: | :--- |
 | `type` | `string` | 是 | 冻结的 Wire Type 常量标识符 |
-| `version` | `number` | 是 | 协议版本号（当前固定为 `1`） |
+| `version` | `number` | 是 | 报文信封格式版本号（Envelope Schema Version，当前固定为 `1`） |
 | `timestamp` | `number` | 是 | 毫秒时间戳（`timestamp >= 0`，不参与精确相等性判定） |
 | `payload` | `object` | 是 | 具体报文结构体，必须为有效 JSON 对象 |
+
+> **版本定义区分**：
+> * **`Envelope.version`**：信封外层 Schema 结构版本（控制外层 `type`, `version`, `timestamp`, `payload` 的组织形态）。
+> * **`payload.protocolVersion`**：Bridge 运行时协议兼容版本（在 `RENDERER_READY` 等握手报文中声明业务与契约交互代数）。
 
 ---
 

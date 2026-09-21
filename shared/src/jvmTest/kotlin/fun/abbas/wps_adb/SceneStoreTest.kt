@@ -152,7 +152,7 @@ class SceneStoreTest {
             val asset = loaded.assets[0]
             assertEquals("phone_01", asset.id)
             assertEquals("My Pixel", asset.name)
-            assertEquals("assets/temp_phone.glb", asset.fileName)
+            assertEquals("assets/phone_01_temp_phone.glb", asset.fileName)
             assertEquals(2.5, asset.transform.position.x)
             assertEquals(1.0, asset.transform.position.y)
             assertEquals(-3.0, asset.transform.position.z)
@@ -228,13 +228,42 @@ class SceneStoreTest {
             store.importAsset(sceneId = "asset_scene", assetId = "phone1", sourceFile = tempAsset)
 
             val sceneDir = File(rootDir, "asset_scene")
-            val managedAsset = File(sceneDir, "assets/external_asset.glb")
+            val managedAsset = File(sceneDir, "assets/phone1_external_asset.glb")
             assertTrue(managedAsset.exists())
             assertTrue(managedAsset.length() == tempAsset.length())
 
             val loaded = store.loadScene("asset_scene")
             assertEquals(1, loaded.assets.size)
-            assertEquals("assets/external_asset.glb", loaded.assets[0].fileName)
+            assertEquals("assets/phone1_external_asset.glb", loaded.assets[0].fileName)
+        } finally {
+            rootDir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun importedAsset_sameNameDifferentAssetIds_doNotOverwriteEachOther() {
+        val (store, rootDir) = createTempStore()
+        val tempSource = File(rootDir, "model.glb")
+        createDummyGlb(tempSource)
+        try {
+            store.createScene(name = "Collision Scene", id = "collision_scene")
+            store.importAsset(sceneId = "collision_scene", assetId = "phone_a", sourceFile = tempSource)
+            store.importAsset(sceneId = "collision_scene", assetId = "phone_b", sourceFile = tempSource)
+
+            val sceneDir = File(rootDir, "collision_scene")
+            val fileA = File(sceneDir, "assets/phone_a_model.glb")
+            val fileB = File(sceneDir, "assets/phone_b_model.glb")
+
+            assertTrue(fileA.exists())
+            assertTrue(fileB.exists())
+
+            val loaded = store.loadScene("collision_scene")
+            assertEquals(2, loaded.assets.size)
+            val assetA = loaded.assets.first { it.id == "phone_a" }
+            val assetB = loaded.assets.first { it.id == "phone_b" }
+
+            assertEquals("assets/phone_a_model.glb", assetA.fileName)
+            assertEquals("assets/phone_b_model.glb", assetB.fileName)
         } finally {
             rootDir.deleteRecursively()
         }

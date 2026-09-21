@@ -76,4 +76,61 @@ class CefBridgeTransportTest {
 
         assertNull(fakeBridge.currentListener)
     }
+
+    @Test
+    fun connect_close_connect_lifecycle_canReceiveMessagesAfterReconnect() = runTest(UnconfinedTestDispatcher()) {
+        val fakeBridge = FakeCefJsBridge()
+        val transport = CefBridgeTransport(cefBridge = fakeBridge)
+
+        val received = mutableListOf<String>()
+        val job = backgroundScope.launch {
+            transport.incoming.collect {
+                received.add(it)
+            }
+        }
+
+        fakeBridge.emitFromJs("""{"type":"FIRST"}""")
+        advanceUntilIdle()
+        assertEquals(1, received.size)
+        assertEquals("""{"type":"FIRST"}""", received[0])
+
+        // Close transport
+        transport.close()
+        assertNull(fakeBridge.currentListener)
+
+        // Reconnect
+        transport.connect()
+        assertTrue(fakeBridge.currentListener != null)
+
+        fakeBridge.emitFromJs("""{"type":"SECOND"}""")
+        advanceUntilIdle()
+        assertEquals(2, received.size)
+        assertEquals("""{"type":"SECOND"}""", received[1])
+
+        job.cancel()
+    }
+
+    @Test
+    fun incoming_buffersFirstFrame_whenEmittedBeforeCollector() = runTest(UnconfinedTestDispatcher()) {
+        val fakeBridge = FakeCefJsBridge()
+        val transport = CefBridgeTransport(cefBridge = fakeBridge)
+
+        // Emit from JS BEFORE any collector has started
+        fakeBridge.emitFromJs("""{"type":"RENDERER_READY","payload":{"version":1}}""")
+
+        // Now start collector
+        val received = mutableListOf<String>()
+        val job = backgroundScope.launch {
+            transport.incoming.collect {
+                received.add(it)
+            }
+        }
+        advanceUntilIdle()
+
+        // Verifies the first frame was buffered in channel and received by collector
+        assertEquals(1, received.size)
+        assertEquals("""{"type":"RENDERER_READY","payload":{"version":1}}""", received.first())
+
+        job.cancel()
+    }
 }

@@ -98,7 +98,13 @@ export interface InitScenePayload {
   sceneDescriptor: SceneDescriptor;
 }
 
-export type VisualStatus = "ONLINE" | "OFFLINE" | "UNAUTHORIZED" | "CONNECTING" | "ERROR";
+export const VISUAL_STATUSES = {
+  ONLINE: "ONLINE",
+  OFFLINE: "OFFLINE",
+  UNBOUND: "UNBOUND",
+} as const;
+
+export type VisualStatus = typeof VISUAL_STATUSES[keyof typeof VISUAL_STATUSES];
 
 export interface VisualStyle {
   statusColorHex: string;
