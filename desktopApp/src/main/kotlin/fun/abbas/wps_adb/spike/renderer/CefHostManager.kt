@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * Manages the embedded local resource server and the JCEF Chromium browser lifecycle.
  */
 class CefHostManager(
+    val resourceRoot: String = "spike-renderer",
     private val onJsMessage: (String) -> Unit
 ) {
     private var httpServer: HttpServer? = null
@@ -44,23 +45,48 @@ class CefHostManager(
     private fun startLocalServer() {
         val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
         serverPort = server.address.port
-        server.createContext("/", ResourceHttpHandler("http://127.0.0.1:$serverPort"))
+        server.createContext("/", ResourceHttpHandler(resourceRoot, "http://127.0.0.1:$serverPort"))
         server.executor = Executors.newCachedThreadPool { runnable ->
             Thread(runnable, "Spike-HttpServer").apply { isDaemon = true }
         }
         server.start()
         httpServer = server
-        println("[CefHostManager] Embedded HTTP resource server started on port $serverPort")
+        println("[CefHostManager] Embedded HTTP resource server started on port $serverPort (serving: $resourceRoot)")
     }
 
-    private class ResourceHttpHandler(private val allowedOrigin: String) : HttpHandler {
+    private class ResourceHttpHandler(
+        private val resourceRoot: String,
+        private val allowedOrigin: String
+    ) : HttpHandler {
         override fun handle(exchange: HttpExchange) {
             try {
-                val path = exchange.requestURI.path.trimStart('/')
-                val resourcePath = if (path.isEmpty() || path == "/") {
-                    "spike-renderer/index.html"
-                } else {
-                    "spike-renderer/$path"
+                val rawPath = exchange.requestURI.path.orEmpty()
+
+                // 1) Reject traversal markers on the raw path before normalize can erase them
+                //    (e.g. "/../secret" → normalize → "/secret" would otherwise bypass a post-normalize ".." check).
+                if (isUnsafeRawPath(rawPath)) {
+                    sendForbidden(exchange, "403 Forbidden: Invalid resource path")
+                    return
+                }
+
+                // 2) Normalize only after raw-path checks pass
+                val normalized = java.net.URI(null, null, rawPath, null).normalize().path
+                    ?.trimStart('/')
+                    .orEmpty()
+
+                // 3) Post-normalize hardening
+                if (normalized.contains("..") || normalized.contains('\\') || normalized.startsWith("/")) {
+                    sendForbidden(exchange, "403 Forbidden: Invalid resource path")
+                    return
+                }
+
+                val subPath = if (normalized.isEmpty()) "index.html" else normalized
+                val resourcePath = "$resourceRoot/$subPath"
+
+                // 4) Ensure the resolved classpath resource stays under resourceRoot/
+                if (!resourcePath.startsWith("$resourceRoot/") || resourcePath.contains("..")) {
+                    sendForbidden(exchange, "403 Forbidden: Path traversal detected")
+                    return
                 }
 
                 val inputStream = Thread.currentThread().contextClassLoader.getResourceAsStream(resourcePath)
@@ -68,8 +94,8 @@ class CefHostManager(
                     ?: ResourceHttpHandler::class.java.getResourceAsStream("/$resourcePath")
 
                 if (inputStream == null) {
-                    val notFound = "404 Not Found: $resourcePath".toByteArray()
-                    exchange.responseHeaders.set("Content-Type", "text/plain")
+                    val notFound = "404 Not Found: Resource '$subPath' not found in '$resourceRoot'".toByteArray(Charsets.UTF_8)
+                    exchange.responseHeaders.set("Content-Type", "text/plain; charset=utf-8")
                     exchange.responseHeaders.set("Access-Control-Allow-Origin", allowedOrigin)
                     exchange.sendResponseHeaders(404, notFound.size.toLong())
                     exchange.responseBody.use { it.write(notFound) }
@@ -95,6 +121,25 @@ class CefHostManager(
             } finally {
                 exchange.close()
             }
+        }
+
+        private fun isUnsafeRawPath(rawPath: String): Boolean {
+            if (rawPath.contains('\\')) return true
+            for (segment in rawPath.split('/')) {
+                if (segment == "..") return true
+                if (segment.contains('\\')) return true
+                // Absolute / drive-letter style segments (e.g. "C:")
+                if (segment.length >= 2 && segment[1] == ':') return true
+            }
+            return false
+        }
+
+        private fun sendForbidden(exchange: HttpExchange, message: String) {
+            val forbidden = message.toByteArray(Charsets.UTF_8)
+            exchange.responseHeaders.set("Content-Type", "text/plain; charset=utf-8")
+            exchange.responseHeaders.set("Access-Control-Allow-Origin", allowedOrigin)
+            exchange.sendResponseHeaders(403, forbidden.size.toLong())
+            exchange.responseBody.use { it.write(forbidden) }
         }
     }
 

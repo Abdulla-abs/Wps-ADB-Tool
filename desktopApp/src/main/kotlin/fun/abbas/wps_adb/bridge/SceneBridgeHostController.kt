@@ -100,6 +100,7 @@ class SceneBridgeHostController(
     private suspend fun onRendererReady() {
         stateMutex.withLock {
             val state = latestState ?: return
+            println("[SceneBridgeHostController] Renderer READY received. Initializing scene: ${state.scene.id}")
             syncInitialScene(state)
         }
     }
@@ -110,6 +111,7 @@ class SceneBridgeHostController(
                 sceneDescriptor = state.scene.toDescriptor(),
             )
         )
+        println("[SceneBridgeHostController] InitScene sent for scene: ${state.scene.id}")
         lastSentSceneId = state.scene.id
 
         val snapshot = projector.project(state, selectedObjectId)
