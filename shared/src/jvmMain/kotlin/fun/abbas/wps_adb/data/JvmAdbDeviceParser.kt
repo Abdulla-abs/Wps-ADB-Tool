@@ -6,6 +6,8 @@ import `fun`.abbas.wps_adb.model.DeviceStatus
 import `fun`.abbas.wps_adb.model.DeviceType
 import `fun`.abbas.wps_adb.model.ScreenFormFactor
 
+import `fun`.abbas.wps_adb.model.DeviceIdentity
+
 data class ParsedAdbDevice(
     val serial: String,
     val status: DeviceStatus,
@@ -50,12 +52,18 @@ object JvmAdbDeviceParser {
         formFactor: ScreenFormFactor = ScreenFormFactor.UNKNOWN,
         screenWidthPx: Int = 0,
         screenHeightPx: Int = 0,
+        identity: DeviceIdentity? = null,
     ): Device {
         val isEmulator = parsed.serial.startsWith("emulator-") ||
             parsed.model?.contains("sdk", ignoreCase = true) == true ||
             parsed.product?.contains("sdk", ignoreCase = true) == true
         val connectionType = DeviceTransportDeduplicator.resolveConnectionType(parsed.serial, isEmulator)
         val displayName = parsed.model?.replace('_', ' ') ?: parsed.product ?: parsed.serial
+        val resolvedIdentity = identity ?: if (isEmulator) {
+            DeviceIdentity.fromEmulator(parsed.serial, parsed.deviceName)
+        } else {
+            DeviceIdentity.fromTransport(parsed.serial)
+        }
         return Device(
             id = parsed.serial,
             name = displayName,
@@ -75,6 +83,7 @@ object JvmAdbDeviceParser {
             screenWidthPx = screenWidthPx,
             screenHeightPx = screenHeightPx,
             activityLog = emptyList(),
+            identity = resolvedIdentity,
         )
     }
 

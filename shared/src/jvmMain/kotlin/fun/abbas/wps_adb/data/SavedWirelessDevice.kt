@@ -6,6 +6,8 @@ import `fun`.abbas.wps_adb.model.DeviceStatus
 import `fun`.abbas.wps_adb.model.DeviceType
 import `fun`.abbas.wps_adb.model.ScreenFormFactor
 
+import `fun`.abbas.wps_adb.model.DeviceIdentity
+
 data class SavedWirelessDevice(
     val host: String,
     val port: Int,
@@ -16,7 +18,7 @@ data class SavedWirelessDevice(
 ) {
     val endpoint: String get() = "$host:$port"
 
-    fun toOfflineDevice(): Device = Device(
+    fun toOfflineDevice(identity: DeviceIdentity? = null): Device = Device(
         id = endpoint,
         name = name.ifBlank { endpoint },
         serial = endpoint,
@@ -35,5 +37,6 @@ data class SavedWirelessDevice(
         screenWidthPx = screenWidthPx,
         screenHeightPx = screenHeightPx,
         activityLog = emptyList(),
+        identity = identity ?: DeviceIdentity.fromTransport(endpoint),
     )
 }

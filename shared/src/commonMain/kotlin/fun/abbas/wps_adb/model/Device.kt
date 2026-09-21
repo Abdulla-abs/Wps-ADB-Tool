@@ -29,4 +29,5 @@ data class Device(
     val apps: List<DeviceApp> = emptyList(),
     val currentAppIndex: Int = 0,
     val activityLog: List<String> = emptyList(),
+    val identity: DeviceIdentity = DeviceIdentity.fromTransport(id),
 )

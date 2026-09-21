@@ -16,7 +16,7 @@ data class LogcatSession(
     val pid: Int,
 )
 
-class JvmAdbRunner(
+open class JvmAdbRunner(
     private val adbPathProvider: () -> String = { "adb" },
 ) {
     fun isAvailable(): Boolean {
@@ -266,7 +266,7 @@ class JvmAdbRunner(
         }
     }
 
-    fun run(args: List<String>, serial: String? = null): AdbProcessResult {
+    open fun run(args: List<String>, serial: String? = null): AdbProcessResult {
         val command = buildList {
             add(resolveAdbPath())
             if (serial != null) {

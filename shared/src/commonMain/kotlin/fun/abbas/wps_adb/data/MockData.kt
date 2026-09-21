@@ -4,6 +4,8 @@ import `fun`.abbas.wps_adb.model.AdbLog
 import `fun`.abbas.wps_adb.model.ConnectionType
 import `fun`.abbas.wps_adb.model.Device
 import `fun`.abbas.wps_adb.model.DeviceApp
+import `fun`.abbas.wps_adb.model.DeviceIdentity
+import `fun`.abbas.wps_adb.model.DeviceIdentitySource
 import `fun`.abbas.wps_adb.model.DeviceStatus
 import `fun`.abbas.wps_adb.model.DeviceType
 import `fun`.abbas.wps_adb.model.LogLevel
@@ -40,6 +42,11 @@ object MockData {
                 "photoflow: Refreshing network feed image indices...",
                 "window_manager: Focus gained by com.android.photoflow/MainActivity",
             ),
+            identity = DeviceIdentity(
+                value = "2201117PG",
+                source = DeviceIdentitySource.RO_SERIALNO,
+                rawHardwareSerial = "2201117PG",
+            ),
         ),
         Device(
             id = "galaxys22",
@@ -69,6 +76,11 @@ object MockData {
                 "gpu_monitor: Vulkan render context loaded.",
                 "power_manager: State changed from normal to idle saver.",
             ),
+            identity = DeviceIdentity(
+                value = "SM-X710",
+                source = DeviceIdentitySource.RO_SERIALNO,
+                rawHardwareSerial = "SM-X710",
+            ),
         ),
         Device(
             id = "pixel4api30",
@@ -95,6 +107,11 @@ object MockData {
                 "system_server: PackageManager found 143 installed packages.",
                 "logcat_capture: Streaming active stream buffer...",
             ),
+            identity = DeviceIdentity(
+                value = "Pixel_4_API_30",
+                source = DeviceIdentitySource.EMULATOR_FALLBACK,
+                rawHardwareSerial = null,
+            ),
         ),
         Device(
             id = "oneplus9",
@@ -114,6 +131,11 @@ object MockData {
             activityLog = listOf(
                 "adb_daemon: Connection closed by target client peer.",
                 "hardware_udev: USB disconnect on port 5-2: OP721110",
+            ),
+            identity = DeviceIdentity(
+                value = "OP721110",
+                source = DeviceIdentitySource.RO_SERIALNO,
+                rawHardwareSerial = "OP721110",
             ),
         ),
         Device(
@@ -142,6 +164,11 @@ object MockData {
                 "tv_core: HDMI display mode 3840x2160@60Hz",
                 "leanback: Home row focused on Apps row",
                 "network_service: Connected over Wi-Fi 5GHz",
+            ),
+            identity = DeviceIdentity(
+                value = "MITV4K-STICK-SERIAL",
+                source = DeviceIdentitySource.RO_SERIALNO,
+                rawHardwareSerial = "MITV4K-STICK-SERIAL",
             ),
         ),
     )

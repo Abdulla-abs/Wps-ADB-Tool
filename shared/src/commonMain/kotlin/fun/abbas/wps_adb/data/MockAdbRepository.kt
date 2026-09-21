@@ -9,6 +9,8 @@ import `fun`.abbas.wps_adb.model.AdbLog
 import `fun`.abbas.wps_adb.model.ConnectionType
 import `fun`.abbas.wps_adb.model.Device
 import `fun`.abbas.wps_adb.model.DeviceApp
+import `fun`.abbas.wps_adb.model.DeviceIdentity
+import `fun`.abbas.wps_adb.model.DeviceIdentitySource
 import `fun`.abbas.wps_adb.model.DeviceStatus
 import `fun`.abbas.wps_adb.model.DeviceType
 import `fun`.abbas.wps_adb.model.DeveloperOptionKinds
@@ -92,10 +94,11 @@ class MockAdbRepository(
 
     override suspend fun pairWirelessDevice(ip: String, port: Int): Result<Device> {
         delay(1500)
+        val generatedSerial = "GP4${Random.nextInt(100000, 999999)}"
         val newDevice = Device(
             id = "paired_${System.currentTimeMillis()}",
             name = "Pixel 7 Pro",
-            serial = "GP4${Random.nextInt(100000, 999999)}",
+            serial = generatedSerial,
             type = DeviceType.PHYSICAL,
             connectionType = ConnectionType.WIFI,
             status = DeviceStatus.ONLINE,
@@ -111,6 +114,11 @@ class MockAdbRepository(
                 DeviceApp("Launcher", "com.google.android.apps.nexuslauncher", "home"),
             ),
             activityLog = listOf("adb_daemon: Wireless pairing completed on $ip:$port"),
+            identity = DeviceIdentity(
+                value = generatedSerial,
+                source = DeviceIdentitySource.RO_SERIALNO,
+                rawHardwareSerial = generatedSerial,
+            ),
         )
         _devices.update { listOf(newDevice) + it }
         addLog(LogLevel.I, "AdbDaemon", "Client wireless handshaking paired successfully: [${newDevice.name}]", newDevice.id)

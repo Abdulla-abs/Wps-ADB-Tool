@@ -28,12 +28,16 @@ object DeviceTransportDeduplicator {
 
     fun dedupeDevices(
         devices: List<Device>,
-        hardwareSerialByTransport: Map<String, String>,
+        hardwareSerialByTransport: Map<String, String> = emptyMap(),
     ): List<Device> {
         val online = devices.filter { it.status == DeviceStatus.ONLINE }
         if (online.size < 2) return devices
 
-        val groups = online.groupBy { hardwareSerialByTransport[it.serial] ?: it.serial }
+        val groups = online.groupBy { device ->
+            device.identity.value.takeIf { it.isNotBlank() && it != device.serial }
+                ?: hardwareSerialByTransport[device.serial]
+                ?: device.serial
+        }
         val toRemove = mutableSetOf<String>()
         for ((_, group) in groups) {
             if (group.size <= 1) continue

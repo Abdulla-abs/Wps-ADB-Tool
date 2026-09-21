@@ -9,6 +9,8 @@ import `fun`.abbas.wps_adb.model.PortRangeValidator
 import `fun`.abbas.wps_adb.platform.ApkMetadataParser
 import `fun`.abbas.wps_adb.model.ConnectionType
 import `fun`.abbas.wps_adb.model.Device
+import `fun`.abbas.wps_adb.model.DeviceIdentity
+import `fun`.abbas.wps_adb.model.DeviceIdentitySource
 import `fun`.abbas.wps_adb.model.DeviceScreenMetrics
 import `fun`.abbas.wps_adb.model.DeviceStorageMetrics
 import `fun`.abbas.wps_adb.model.DeviceStorageSnapshot
@@ -225,7 +227,14 @@ class JvmAdbRepository(
     }
 
     private fun buildBasicDevice(parsed: ParsedAdbDevice, previous: Device?): Device {
-        val base = JvmAdbDeviceParser.toDevice(parsed)
+        val cachedIdentity = hardwareSerialByTransport[parsed.serial]?.let { hw ->
+            DeviceIdentity(
+                value = hw,
+                source = previous?.identity?.source ?: DeviceIdentitySource.RO_SERIALNO,
+                rawHardwareSerial = previous?.identity?.rawHardwareSerial ?: hw,
+            )
+        } ?: previous?.identity
+        val base = JvmAdbDeviceParser.toDevice(parsed, identity = cachedIdentity)
         if (parsed.status != DeviceStatus.ONLINE || previous == null) return base
         return base.copy(
             androidVersion = previous.androidVersion,
@@ -238,6 +247,7 @@ class JvmAdbRepository(
             formFactor = previous.formFactor,
             screenWidthPx = previous.screenWidthPx,
             screenHeightPx = previous.screenHeightPx,
+            identity = cachedIdentity ?: previous.identity,
         )
     }
 
@@ -339,7 +349,17 @@ class JvmAdbRepository(
                 val savedHardware = hardwareSerialByTransport[savedDevice.endpoint]
                 savedHardware == null || savedHardware !in connectedHardware
             }
-            .map { it.toOfflineDevice() }
+            .map { saved ->
+                val cachedHardware = hardwareSerialByTransport[saved.endpoint]
+                val identity = cachedHardware?.let {
+                    DeviceIdentity(
+                        value = it,
+                        source = DeviceIdentitySource.RO_SERIALNO,
+                        rawHardwareSerial = it,
+                    )
+                }
+                saved.toOfflineDevice(identity)
+            }
         return connected + offlineSaved
     }
 
@@ -1253,12 +1273,16 @@ class JvmAdbRepository(
         if (parsed.status != DeviceStatus.ONLINE) {
             return JvmAdbDeviceParser.toDevice(parsed)
         }
-        val hardwareSerialResult = runner.run(listOf("shell", "getprop", "ro.serialno"), serial = parsed.serial)
-        val hardwareSerial = hardwareSerialResult.output.trim()
-            .takeIf { it.isNotBlank() }
-            ?: parsed.deviceName?.takeIf { it.isNotBlank() }
-            ?: parsed.serial
-        hardwareSerialByTransport[parsed.serial] = hardwareSerial
+        val isEmulator = parsed.serial.startsWith("emulator-") ||
+            parsed.model?.contains("sdk", ignoreCase = true) == true ||
+            parsed.product?.contains("sdk", ignoreCase = true) == true
+        val resolvedIdentity = JvmDeviceIdentityResolver.resolveIdentity(
+            runner = runner,
+            serial = parsed.serial,
+            isEmulator = isEmulator,
+            deviceName = parsed.deviceName,
+        )
+        hardwareSerialByTransport[parsed.serial] = resolvedIdentity.value
         val versionResult = runner.run(listOf("shell", "getprop", "ro.build.version.release"), serial = parsed.serial)
         val androidVersion = if (versionResult.success) {
             "Android ${versionResult.output.trim()}"
@@ -1289,6 +1313,7 @@ class JvmAdbRepository(
             formFactor = formFactor,
             screenWidthPx = screenWidthPx,
             screenHeightPx = screenHeightPx,
+            identity = resolvedIdentity,
         )
     }
 
