@@ -25,6 +25,12 @@ interface SceneBridgeChannel {
     suspend fun send(message: SceneBridgeMessage)
 
     /**
+     * Marks the renderer as ready to receive messages.
+     * Transitions connection state to [BridgeConnectionState.READY] and flushes any pending messages.
+     */
+    fun markRendererReady()
+
+    /**
      * Connects the bridge channel and starts listening to the underlying transport.
      */
     suspend fun connect()

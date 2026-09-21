@@ -26,6 +26,9 @@ dependencies {
     implementation(libs.compose.material3)
     implementation(libs.json)
     implementation(libs.jcefmaven)
+
+    testImplementation(libs.kotlin.test)
+    testImplementation(libs.kotlinx.coroutines.test)
 }
 
 val macSignEnabled = providers.environmentVariable("MACOS_SIGN")

@@ -1,0 +1,136 @@
+package `fun`.abbas.wps_adb.bridge
+
+import `fun`.abbas.wps_adb.data.scene.bridge.BridgeConnectionState
+import `fun`.abbas.wps_adb.data.scene.bridge.DefaultSceneVisualProjector
+import `fun`.abbas.wps_adb.data.scene.bridge.SceneBridgeChannel
+import `fun`.abbas.wps_adb.data.scene.bridge.SceneBridgeMessage
+import `fun`.abbas.wps_adb.data.scene.bridge.SceneVisualProjector
+import `fun`.abbas.wps_adb.data.scene.bridge.toDescriptor
+import `fun`.abbas.wps_adb.data.scene.runtime.SceneRuntimeController
+import `fun`.abbas.wps_adb.model.scene.ResolvedSceneState
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+
+/**
+ * Host orchestration controller bridging the Scene Domain to the [SceneBridgeChannel].
+ *
+ * Responsibilities:
+ * - Listens for domain scene state changes ([ResolvedSceneState]).
+ * - Caches [latestState] to avoid sending stale intermediate frames while the renderer is loading.
+ * - On [BridgeConnectionState.READY], initializes the scene and dispatches the latest visual snapshot.
+ * - While [BridgeConnectionState.READY], projects state changes into [SceneBridgeMessage.SyncState] frames.
+ *
+ * Boundary Guarantees:
+ * - Does NOT import or reference Cef, JCEF, or Three.js.
+ * - Projector does NOT call the channel directly; only HostController controls message dispatching.
+ */
+class SceneBridgeHostController(
+    private val channel: SceneBridgeChannel,
+    private val projector: SceneVisualProjector = DefaultSceneVisualProjector(),
+    private val scope: CoroutineScope,
+) {
+
+    private val stateMutex = Mutex()
+    private var latestState: ResolvedSceneState? = null
+    private var selectedObjectId: String? = null
+    private var lastSentSceneId: String? = null
+
+    init {
+        scope.launch {
+            channel.state.collect { connectionState ->
+                if (connectionState == BridgeConnectionState.READY) {
+                    onRendererReady()
+                }
+            }
+        }
+    }
+
+    /**
+     * Handles domain scene state updates.
+     * Caches the latest state and, if the renderer is READY, synchronizes it to the bridge channel.
+     */
+    suspend fun onSceneStateChanged(state: ResolvedSceneState?) {
+        stateMutex.withLock {
+            latestState = state
+            if (channel.state.value == BridgeConnectionState.READY && state != null) {
+                syncSceneState(state)
+            }
+        }
+    }
+
+    /**
+     * Updates object selection and notifies the renderer if connection is READY.
+     */
+    suspend fun selectObject(objectId: String?, focusCamera: Boolean = false) {
+        stateMutex.withLock {
+            selectedObjectId = objectId
+            if (channel.state.value == BridgeConnectionState.READY) {
+                channel.send(
+                    SceneBridgeMessage.UpdateSelection(
+                        selectedObjectId = objectId,
+                        focusCamera = focusCamera,
+                    )
+                )
+            }
+        }
+    }
+
+    /**
+     * Binds this controller to the resolved scene state stream of a [SceneRuntimeController].
+     */
+    fun bind(runtimeController: SceneRuntimeController): Job {
+        return bind(runtimeController.resolvedState)
+    }
+
+    /**
+     * Binds this controller to an arbitrary [ResolvedSceneState] flow.
+     */
+    fun bind(stateFlow: StateFlow<ResolvedSceneState?>): Job {
+        return scope.launch {
+            stateFlow.collect { state ->
+                onSceneStateChanged(state)
+            }
+        }
+    }
+
+    private suspend fun onRendererReady() {
+        stateMutex.withLock {
+            val state = latestState ?: return
+            syncInitialScene(state)
+        }
+    }
+
+    private suspend fun syncInitialScene(state: ResolvedSceneState) {
+        channel.send(
+            SceneBridgeMessage.InitScene(
+                sceneDescriptor = state.scene.toDescriptor(),
+            )
+        )
+        lastSentSceneId = state.scene.id
+
+        val snapshot = projector.project(state, selectedObjectId)
+        channel.send(
+            SceneBridgeMessage.SyncState(
+                snapshot = snapshot,
+            )
+        )
+    }
+
+    private suspend fun syncSceneState(state: ResolvedSceneState) {
+        if (state.scene.id != lastSentSceneId) {
+            syncInitialScene(state)
+            return
+        }
+
+        val snapshot = projector.project(state, selectedObjectId)
+        channel.send(
+            SceneBridgeMessage.SyncState(
+                snapshot = snapshot,
+            )
+        )
+    }
+}

@@ -95,6 +95,18 @@ class SceneBridgeChannelTest {
     }
 
     @Test
+    fun markRendererReady_transitionsStateToReadyDirectly() = runTest(UnconfinedTestDispatcher()) {
+        val transport = FakeBridgeTransport()
+        val channel = DefaultSceneBridgeChannel(transport = transport, scope = backgroundScope)
+
+        channel.connect()
+        assertEquals(BridgeConnectionState.CONNECTED, channel.state.value)
+
+        channel.markRendererReady()
+        assertEquals(BridgeConnectionState.READY, channel.state.value)
+    }
+
+    @Test
     fun send_whenNotReady_queuesMessageAndFlushesOnceReady() = runTest(UnconfinedTestDispatcher()) {
         val transport = FakeBridgeTransport()
         val serializer = DefaultSceneBridgeSerializer()

@@ -93,6 +93,15 @@ class DefaultSceneBridgeChannel(
         _state.value = BridgeConnectionState.DISCONNECTED
     }
 
+    override fun markRendererReady() {
+        if (_state.value != BridgeConnectionState.READY) {
+            _state.value = BridgeConnectionState.READY
+            scope.launch {
+                flushPendingQueue()
+            }
+        }
+    }
+
     private suspend fun handleIncomingPayload(rawPayload: String) {
         val message = try {
             serializer.deserialize(rawPayload)
@@ -103,8 +112,7 @@ class DefaultSceneBridgeChannel(
 
         if (message != null) {
             if (message is SceneBridgeMessage.RendererReady) {
-                _state.value = BridgeConnectionState.READY
-                flushPendingQueue()
+                markRendererReady()
             }
             _incoming.emit(message)
         }
