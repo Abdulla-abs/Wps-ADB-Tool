@@ -98,7 +98,7 @@ class AppViewModel(
     private val toolInstaller: ToolInstaller = createToolInstaller(),
     customSceneRuntimeController: SceneRuntimeController? = null,
 ) : ViewModel() {
-    private val sceneRuntimeController: SceneRuntimeController =
+    val sceneRuntimeController: SceneRuntimeController =
         customSceneRuntimeController ?: DefaultSceneRuntimeController(
             devicesFlow = repository.devices,
             scope = viewModelScope,
@@ -161,8 +161,10 @@ class AppViewModel(
 
     val activeScene: StateFlow<DeviceScene?> = sceneRuntimeController.activeScene
     val resolvedSceneState: StateFlow<ResolvedSceneState?> = sceneRuntimeController.resolvedState
+    val selectedSceneObjectId: StateFlow<String?> = sceneRuntimeController.selectedObjectId
 
     fun setScene(scene: DeviceScene?) = sceneRuntimeController.setScene(scene)
+    fun selectSceneObject(objectId: String?) = sceneRuntimeController.selectObject(objectId)
 
     fun setActiveTab(tab: NavTab) {
         if (tab != NavTab.WALL && _localState.value.deviceWallRoute is DeviceWallRoute.Shell) {

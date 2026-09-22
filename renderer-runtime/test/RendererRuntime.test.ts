@@ -391,4 +391,56 @@ describe("RendererRuntime Skeleton Integration Tests", () => {
     const actual = new Set(Object.values(VISUAL_STATUSES));
     assert.deepStrictEqual(actual, expected);
   });
+
+  test("CAMERA_COMMAND: routes camera command through dispatcher and options hook exactly once", () => {
+    const bridge = new MockCefBridge();
+    let hookCameraCalls = 0;
+    let hookReservedCalls = 0;
+    let bridgeCallCount = 0;
+    let bridgeReceivedPayload: unknown = null;
+
+    const runtime = new RendererRuntime({
+      bridge,
+      hooks: {
+        onCameraCommand: (cmd) => {
+          hookCameraCalls++;
+        },
+        onReservedMessage: (envelope) => {
+          hookReservedCalls++;
+        },
+      },
+    });
+
+    // Mock sceneBridge on runtime to verify handleCameraCommand invocation count
+    (runtime as any).sceneBridge = {
+      handleCameraCommand: (payload: unknown) => {
+        bridgeCallCount++;
+        bridgeReceivedPayload = payload;
+      },
+    };
+
+    runtime.start();
+
+    bridge.emitIncoming(
+      JSON.stringify({
+        type: "CAMERA_COMMAND",
+        version: 1,
+        timestamp: 1000,
+        payload: {
+          position: { x: 5, y: 15, z: 25 },
+          target: { x: 0, y: 2, z: 0 },
+          fov: 60,
+        },
+      }),
+    );
+
+    assert.strictEqual(bridgeCallCount, 1, "sceneBridge.handleCameraCommand must be invoked exactly once");
+    assert.strictEqual(hookCameraCalls, 1, "hooks.onCameraCommand must be invoked exactly once");
+    assert.strictEqual(hookReservedCalls, 0, "hooks.onReservedMessage must NOT be invoked for CAMERA_COMMAND");
+    assert.deepStrictEqual(bridgeReceivedPayload, {
+      position: { x: 5, y: 15, z: 25 },
+      target: { x: 0, y: 2, z: 0 },
+      fov: 60,
+    });
+  });
 });

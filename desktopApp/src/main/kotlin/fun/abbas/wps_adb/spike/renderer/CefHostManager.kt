@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 class CefHostManager(
     val resourceRoot: String = "spike-renderer",
+    val scenesRoot: File? = null,
     private val onJsMessage: (String) -> Unit
 ) {
     private var httpServer: HttpServer? = null
@@ -45,13 +46,15 @@ class CefHostManager(
     private fun startLocalServer() {
         val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
         serverPort = server.address.port
-        server.createContext("/", ResourceHttpHandler(resourceRoot, "http://127.0.0.1:$serverPort"))
+        val origin = "http://127.0.0.1:$serverPort"
+        server.createContext("/", ResourceHttpHandler(resourceRoot, origin))
+        server.createContext("/scenes/", ScenesHttpHandler(scenesRoot, origin))
         server.executor = Executors.newCachedThreadPool { runnable ->
             Thread(runnable, "Spike-HttpServer").apply { isDaemon = true }
         }
         server.start()
         httpServer = server
-        println("[CefHostManager] Embedded HTTP resource server started on port $serverPort (serving: $resourceRoot)")
+        println("[CefHostManager] Embedded HTTP resource server started on port $serverPort (serving: $resourceRoot, scenes: ${scenesRoot?.name ?: "disabled"})")
     }
 
     private class ResourceHttpHandler(
@@ -140,6 +143,126 @@ class CefHostManager(
             exchange.responseHeaders.set("Access-Control-Allow-Origin", allowedOrigin)
             exchange.sendResponseHeaders(403, forbidden.size.toLong())
             exchange.responseBody.use { it.write(forbidden) }
+        }
+    }
+
+    private class ScenesHttpHandler(
+        private val scenesRoot: File?,
+        private val allowedOrigin: String,
+    ) : HttpHandler {
+        companion object {
+            private const val MAX_GLB_BYTES = 100L * 1024 * 1024 // 100MB limit
+        }
+
+        override fun handle(exchange: HttpExchange) {
+            try {
+                val method = exchange.requestMethod.uppercase()
+                if (method != "GET" && method != "HEAD") {
+                    exchange.responseHeaders.set("Allow", "GET, HEAD")
+                    exchange.sendResponseHeaders(405, -1)
+                    return
+                }
+
+                if (scenesRoot == null || !scenesRoot.exists() || !scenesRoot.isDirectory) {
+                    sendNotFound(exchange)
+                    return
+                }
+
+                val rawPath = exchange.requestURI.path.orEmpty()
+                val subPath = rawPath.removePrefix("/scenes").removePrefix("/").trim()
+                if (subPath.isEmpty() || isUnsafePath(subPath)) {
+                    sendForbidden(exchange)
+                    return
+                }
+
+                // Strictly restrict to .glb files only
+                if (!subPath.endsWith(".glb", ignoreCase = true)) {
+                    sendForbidden(exchange)
+                    return
+                }
+
+                val canonicalRoot = scenesRoot.canonicalFile
+                val candidate = File(canonicalRoot, subPath)
+                val canonicalTarget = candidate.canonicalFile
+
+                // Path traversal check
+                if (!canonicalTarget.toPath().startsWith(canonicalRoot.toPath())) {
+                    sendForbidden(exchange)
+                    return
+                }
+
+                // Check real path / symlink escapes
+                val realPath = try {
+                    canonicalTarget.toPath().toRealPath()
+                } catch (_: Exception) {
+                    null
+                }
+                if (realPath == null || !realPath.startsWith(canonicalRoot.toPath())) {
+                    sendNotFound(exchange)
+                    return
+                }
+
+                if (!canonicalTarget.exists() || !canonicalTarget.isFile) {
+                    sendNotFound(exchange)
+                    return
+                }
+
+                val fileLength = canonicalTarget.length()
+                if (fileLength > MAX_GLB_BYTES) {
+                    sendPayloadTooLarge(exchange)
+                    return
+                }
+
+                exchange.responseHeaders.set("Content-Type", "model/gltf-binary")
+                exchange.responseHeaders.set("Access-Control-Allow-Origin", allowedOrigin)
+
+                if (method == "HEAD") {
+                    exchange.sendResponseHeaders(200, -1)
+                } else {
+                    exchange.sendResponseHeaders(200, fileLength)
+                    canonicalTarget.inputStream().use { input ->
+                        exchange.responseBody.use { output ->
+                            input.copyTo(output, bufferSize = 8192)
+                        }
+                    }
+                }
+            } catch (t: Throwable) {
+                t.printStackTrace()
+            } finally {
+                exchange.close()
+            }
+        }
+
+        private fun isUnsafePath(path: String): Boolean {
+            if (path.contains('\\') || path.contains(':')) return true
+            for (seg in path.split('/')) {
+                if (seg == ".." || seg == "." || seg.contains('\\') || seg.contains(':')) return true
+            }
+            return false
+        }
+
+        private fun sendForbidden(exchange: HttpExchange) {
+            val msg = "403 Forbidden".toByteArray(Charsets.UTF_8)
+            exchange.responseHeaders.set("Content-Type", "text/plain; charset=utf-8")
+            exchange.responseHeaders.set("Access-Control-Allow-Origin", allowedOrigin)
+            exchange.sendResponseHeaders(403, msg.size.toLong())
+            exchange.responseBody.use { it.write(msg) }
+        }
+
+        private fun sendNotFound(exchange: HttpExchange) {
+            val msg = "404 Not Found".toByteArray(Charsets.UTF_8)
+            exchange.responseHeaders.set("Content-Type", "text/plain; charset=utf-8")
+            exchange.responseHeaders.set("Access-Control-Allow-Origin", allowedOrigin)
+            exchange.sendResponseHeaders(404, msg.size.toLong())
+            exchange.responseBody.use { it.write(msg) }
+        }
+
+        private fun sendPayloadTooLarge(exchange: HttpExchange) {
+            val msg = "413 Payload Too Large".toByteArray(Charsets.UTF_8)
+            exchange.responseHeaders.set("Content-Type", "text/plain; charset=utf-8")
+            exchange.responseHeaders.set("Access-Control-Allow-Origin", allowedOrigin)
+            exchange.sendResponseHeaders(413, msg.size.toLong())
+            exchange.responseBody.use { it.write(msg) }
         }
     }
 

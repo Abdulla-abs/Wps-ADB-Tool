@@ -8,6 +8,9 @@ import `fun`.abbas.wps_adb.data.scene.bridge.BridgeTransport
 import `fun`.abbas.wps_adb.data.scene.bridge.CURRENT_BRIDGE_PROTOCOL_VERSION
 import `fun`.abbas.wps_adb.data.scene.bridge.DefaultSceneBridgeChannel
 import `fun`.abbas.wps_adb.data.scene.bridge.SceneBridgeChannel
+import `fun`.abbas.wps_adb.data.scene.DeviceSceneRepository
+import `fun`.abbas.wps_adb.data.scene.SceneStore
+import `fun`.abbas.wps_adb.data.scene.runtime.SceneRuntimeController
 import `fun`.abbas.wps_adb.model.scene.DeviceScene
 import `fun`.abbas.wps_adb.model.scene.ResolvedSceneState
 import `fun`.abbas.wps_adb.model.scene.SceneCamera
@@ -45,9 +48,12 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 class SceneRuntimeHost(
     parentScope: CoroutineScope,
+    val sceneRuntimeController: SceneRuntimeController? = null,
+    val sceneRepository: `fun`.abbas.wps_adb.data.scene.DeviceSceneRepository? = null,
     private val customTransport: BridgeTransport? = null,
     private val cefHostManagerProvider: (() -> CefHostManager)? = null,
     val resourceRoot: String = "scene-runtime",
+    val scenesRoot: java.io.File? = null,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main,
 ) {
@@ -95,13 +101,42 @@ class SceneRuntimeHost(
             }
         }
 
-        // Initialize default active scene
-        val initialScene = createDefaultScene()
-        _state.update { it.copy(activeSceneId = initialScene.id) }
-        hostScope.launch {
-            hostController.onSceneStateChanged(
-                ResolvedSceneState(scene = initialScene, bindings = emptyList())
-            )
+        // Initialize active scene and bind controller
+        if (sceneRuntimeController != null) {
+            hostController.bind(sceneRuntimeController)
+
+            val initialScene = if (sceneRepository != null) {
+                val scenes = sceneRepository.listScenes()
+                if (scenes.isNotEmpty()) {
+                    scenes.first()
+                } else {
+                    try {
+                        sceneRepository.createScene("Default 3D Scene", "scene_default")
+                    } catch (_: Throwable) {
+                        createDefaultScene()
+                    }
+                }
+            } else {
+                sceneRuntimeController.activeScene.value ?: createDefaultScene()
+            }
+
+            sceneRuntimeController.setScene(initialScene)
+            _state.update { it.copy(activeSceneId = initialScene.id) }
+
+            hostScope.launch {
+                sceneRuntimeController.activeScene.collect { scene ->
+                    _state.update { it.copy(activeSceneId = scene?.id) }
+                }
+            }
+        } else {
+            // Standalone test / fallback setup
+            val initialScene = createDefaultScene()
+            _state.update { it.copy(activeSceneId = initialScene.id) }
+            hostScope.launch {
+                hostController.onSceneStateChanged(
+                    ResolvedSceneState(scene = initialScene, bindings = emptyList())
+                )
+            }
         }
 
         // Start channel listening
@@ -120,9 +155,17 @@ class SceneRuntimeHost(
     private fun initializeJcefBrowser() {
         hostScope.launch(ioDispatcher) {
             try {
-                val mgr = cefHostManagerProvider?.invoke() ?: CefHostManager(resourceRoot = resourceRoot) { rawMessage ->
+                val resolvedScenesRoot = scenesRoot
+                    ?: (sceneRepository as? SceneStore)?.getScenesRoot()
+                    ?: `fun`.abbas.wps_adb.data.AppDataPaths.defaultScenesRoot()
+
+                val mgr = cefHostManagerProvider?.invoke() ?: CefHostManager(
+                    resourceRoot = resourceRoot,
+                    scenesRoot = resolvedScenesRoot,
+                ) { rawMessage ->
                     bridgeAdapter?.handleIncomingJsMessage(rawMessage)
                 }
+
                 cefHostManager = mgr
                 bridgeAdapter?.bind(mgr)
 
@@ -171,6 +214,7 @@ class SceneRuntimeHost(
         }
         withContext(NonCancellable) {
             println("[SceneRuntimeHost] Disposing SceneRuntimeHost (graceful close)...")
+            hostController.dispose()
             try {
                 channel.disconnect()
             } catch (_: Throwable) {

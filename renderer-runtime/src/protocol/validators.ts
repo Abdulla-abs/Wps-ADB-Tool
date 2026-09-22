@@ -5,6 +5,8 @@ import type {
   SelectionChangePayload,
   RendererReadyPayload,
   RendererErrorPayload,
+  CameraCommandPayload,
+  Vector3,
 } from "../../../renderer-contract/scene-bridge-contract.ts";
 
 export function isObject(value: unknown): value is Record<string, unknown> {
@@ -56,4 +58,22 @@ export function isRendererReadyPayload(payload: unknown): payload is RendererRea
 export function isRendererErrorPayload(payload: unknown): payload is RendererErrorPayload {
   if (!isObject(payload)) return false;
   return typeof payload.code === "string" && typeof payload.message === "string";
+}
+
+export function isVector3(value: unknown): value is Vector3 {
+  return (
+    isObject(value) &&
+    typeof value.x === "number" &&
+    typeof value.y === "number" &&
+    typeof value.z === "number"
+  );
+}
+
+export function isCameraCommandPayload(payload: unknown): payload is CameraCommandPayload {
+  if (!isObject(payload)) return false;
+  return (
+    isVector3(payload.position) &&
+    isVector3(payload.target) &&
+    (payload.fov === undefined || typeof payload.fov === "number")
+  );
 }

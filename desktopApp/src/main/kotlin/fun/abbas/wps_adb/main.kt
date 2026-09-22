@@ -5,10 +5,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import `fun`.abbas.wps_adb.data.createAdbRepository
+import `fun`.abbas.wps_adb.data.createDeviceShellService
+import `fun`.abbas.wps_adb.data.createScrcpyMirrorService
+import `fun`.abbas.wps_adb.data.scene.SceneStore
 import `fun`.abbas.wps_adb.scene.SceneRuntimeHost
 import `fun`.abbas.wps_adb.scene.SceneView
 import `fun`.abbas.wps_adb.spike.renderer.RendererSpikeView
 import `fun`.abbas.wps_adb.ui.editor.installSmaliSyntaxHighlighting
+import `fun`.abbas.wps_adb.viewmodel.AppViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -24,12 +29,19 @@ object SceneRuntimeContainer {
     var hostFactory: ((CoroutineScope) -> SceneRuntimeHost)? = null
 
     @Synchronized
-    fun getOrCreate(): SceneRuntimeHost {
+    fun getOrCreate(
+        runtimeController: `fun`.abbas.wps_adb.data.scene.runtime.SceneRuntimeController? = null,
+        repository: `fun`.abbas.wps_adb.data.scene.DeviceSceneRepository? = null,
+    ): SceneRuntimeHost {
         val existing = instance
         if (existing != null) return existing
         val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
         appScope = scope
-        val host = hostFactory?.invoke(scope) ?: SceneRuntimeHost(scope)
+        val host = hostFactory?.invoke(scope) ?: SceneRuntimeHost(
+            parentScope = scope,
+            sceneRuntimeController = runtimeController,
+            sceneRepository = repository,
+        )
         instance = host
         return host
     }
@@ -53,8 +65,11 @@ object SceneRuntimeContainer {
  * Convenient helper for Composable scopes to access the Application-level runtime host.
  */
 @Composable
-fun rememberSceneRuntime(): SceneRuntimeHost {
-    return SceneRuntimeContainer.getOrCreate()
+fun rememberSceneRuntime(
+    runtimeController: `fun`.abbas.wps_adb.data.scene.runtime.SceneRuntimeController? = null,
+    repository: `fun`.abbas.wps_adb.data.scene.DeviceSceneRepository? = null,
+): SceneRuntimeHost {
+    return SceneRuntimeContainer.getOrCreate(runtimeController, repository)
 }
 
 fun main(args: Array<String>) {
@@ -66,7 +81,24 @@ fun main(args: Array<String>) {
 
     application {
         // Only initialize SceneRuntimeHost when Scene view is requested
-        val sceneRuntimeHost = if (isSceneRequested) rememberSceneRuntime() else null
+        val sceneRuntimeHost = if (isSceneRequested) {
+            val repository = createAdbRepository()
+            val appViewModel = AppViewModel(
+                repository = repository,
+                scrcpyMirrorService = createScrcpyMirrorService(
+                    scrcpyPathProvider = { repository.settings.value.scrcpyPath },
+                    adbPathProvider = { repository.settings.value.adbPath },
+                ),
+                deviceShellService = createDeviceShellService(
+                    adbPathProvider = { repository.settings.value.adbPath },
+                ),
+            )
+            val sceneStore = SceneStore()
+            rememberSceneRuntime(
+                runtimeController = appViewModel.sceneRuntimeController,
+                repository = sceneStore,
+            )
+        } else null
 
         Window(
             onCloseRequest = {

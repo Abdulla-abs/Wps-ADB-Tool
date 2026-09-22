@@ -3,7 +3,9 @@ import {
   createRendererReadyMessage,
   CURRENT_BRIDGE_PROTOCOL_VERSION,
   DEFAULT_RENDERER_VERSION,
+  WIRE_TYPES,
 } from "../../renderer-contract/scene-bridge-contract.ts";
+import type { CameraCommandPayload } from "../../renderer-contract/scene-bridge-contract.ts";
 import { CefBridgeReceiver } from "./bridge/CefBridgeReceiver.ts";
 import { CefBridgeSender } from "./bridge/CefBridgeSender.ts";
 import type { CefJsBridgeApi } from "./bridge/CefBridgeSender.ts";
@@ -11,6 +13,8 @@ import { ErrorBoundary } from "./bridge/ErrorBoundary.ts";
 import { MessageDispatcher } from "./bridge/MessageDispatcher.ts";
 import type { DispatcherHooks } from "./bridge/MessageDispatcher.ts";
 import { RendererStateStore } from "./store/RendererStateStore.ts";
+import { DeviceSceneRenderer } from "./scene/DeviceSceneRenderer.ts";
+import { RendererSceneBridge } from "./bridge/RendererSceneBridge.ts";
 
 export interface RendererRuntimeOptions {
   bridge?: CefJsBridgeApi;
@@ -30,6 +34,9 @@ export class RendererRuntime {
   private readonly dispatcher: MessageDispatcher;
   private readonly receiver: CefBridgeReceiver;
   private readonly rendererVersion: string;
+  private sceneRenderer: DeviceSceneRenderer | null = null;
+  private sceneBridge: RendererSceneBridge | null = null;
+  private pendingCameraCommand: CameraCommandPayload | null = null;
 
   constructor(options: RendererRuntimeOptions = {}) {
     this.rendererVersion = options.rendererVersion ?? DEFAULT_RENDERER_VERSION;
@@ -37,8 +44,50 @@ export class RendererRuntime {
     this.store = new RendererStateStore();
     this.sender = new CefBridgeSender(options.bridge);
     this.errorBoundary = new ErrorBoundary(this.store, this.sender);
-    this.dispatcher = new MessageDispatcher(this.store, this.errorBoundary, options.hooks);
+    this.dispatcher = new MessageDispatcher(this.store, this.errorBoundary, {
+      ...options.hooks,
+      onCameraCommand: (payload) => {
+        options.hooks?.onCameraCommand?.(payload);
+        this.pendingCameraCommand = payload;
+        this.sceneBridge?.handleCameraCommand(payload);
+      },
+      onReservedMessage: (message) => {
+        options.hooks?.onReservedMessage?.(message);
+      },
+    });
     this.receiver = new CefBridgeReceiver(options.bridge, this.dispatcher, this.errorBoundary);
+  }
+
+  /**
+   * Mounts the 3D scene renderer into the specified container element.
+   */
+  mount(container: HTMLElement, baseUrlPrefix?: string): DeviceSceneRenderer {
+    if (this.sceneBridge) {
+      this.sceneBridge.dispose();
+      this.sceneBridge = null;
+    }
+    if (this.sceneRenderer) {
+      this.sceneRenderer.dispose();
+      this.sceneRenderer = null;
+    }
+    this.sceneRenderer = new DeviceSceneRenderer({ container });
+    this.sceneBridge = new RendererSceneBridge({
+      runtime: this,
+      sceneRenderer: this.sceneRenderer,
+      baseUrlPrefix,
+    });
+    if (this.pendingCameraCommand) {
+      this.sceneBridge.handleCameraCommand(this.pendingCameraCommand);
+    }
+    return this.sceneRenderer;
+  }
+
+  getSceneRenderer(): DeviceSceneRenderer | null {
+    return this.sceneRenderer;
+  }
+
+  getSceneBridge(): RendererSceneBridge | null {
+    return this.sceneBridge;
   }
 
   /**
@@ -64,6 +113,15 @@ export class RendererRuntime {
   stop(): void {
     this.receiver.disconnect();
     this.store.setConnectionState("DISCONNECTED");
+    this.pendingCameraCommand = null;
+    if (this.sceneBridge) {
+      this.sceneBridge.dispose();
+      this.sceneBridge = null;
+    }
+    if (this.sceneRenderer) {
+      this.sceneRenderer.dispose();
+      this.sceneRenderer = null;
+    }
   }
 
   /**

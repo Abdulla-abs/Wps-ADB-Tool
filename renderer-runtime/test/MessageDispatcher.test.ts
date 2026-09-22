@@ -74,4 +74,64 @@ describe("MessageDispatcher Unit Tests", () => {
     assert.strictEqual(reservedHookCalled, true);
     assert.strictEqual(bridge.sentMessages.length, 0);
   });
+
+  test("CAMERA_COMMAND: valid payload invokes onCameraCommand hook", () => {
+    const bridge = new MockCefBridge();
+    const store = new RendererStateStore();
+    const sender = new CefBridgeSender(bridge);
+    const errorBoundary = new ErrorBoundary(store, sender);
+
+    let receivedCameraCommand: unknown = null;
+    const dispatcher = new MessageDispatcher(store, errorBoundary, {
+      onCameraCommand: (payload) => {
+        receivedCameraCommand = payload;
+      },
+    });
+
+    dispatcher.dispatch({
+      type: WIRE_TYPES.CAMERA_COMMAND,
+      version: 1,
+      timestamp: 1234,
+      payload: {
+        position: { x: 10, y: 20, z: 30 },
+        target: { x: 0, y: 1, z: 2 },
+        fov: 50,
+      },
+    });
+
+    assert.deepStrictEqual(receivedCameraCommand, {
+      position: { x: 10, y: 20, z: 30 },
+      target: { x: 0, y: 1, z: 2 },
+      fov: 50,
+    });
+    assert.strictEqual(bridge.sentMessages.length, 0);
+  });
+
+  test("CAMERA_COMMAND: invalid payload triggers ErrorBoundary", () => {
+    const bridge = new MockCefBridge();
+    const store = new RendererStateStore();
+    const sender = new CefBridgeSender(bridge);
+    const errorBoundary = new ErrorBoundary(store, sender);
+
+    let receivedCameraCommand: unknown = null;
+    const dispatcher = new MessageDispatcher(store, errorBoundary, {
+      onCameraCommand: (payload) => {
+        receivedCameraCommand = payload;
+      },
+    });
+
+    dispatcher.dispatch({
+      type: WIRE_TYPES.CAMERA_COMMAND,
+      version: 1,
+      timestamp: 1234,
+      payload: {
+        position: { x: "invalid" }, // Missing target and invalid position
+      },
+    });
+
+    assert.strictEqual(receivedCameraCommand, null);
+    assert.strictEqual(bridge.sentMessages.length, 1);
+    const err = bridge.getLastSentPayload<{ payload: { code: string; message: string } }>();
+    assert.strictEqual(err.payload.code, "INVALID_PAYLOAD");
+  });
 });

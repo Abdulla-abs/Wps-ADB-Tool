@@ -49,7 +49,16 @@ class DefaultSceneRuntimeController(
         },
     )
 
+    private val _selectedObjectId = MutableStateFlow<String?>(null)
+    override val selectedObjectId: StateFlow<String?> = _selectedObjectId.asStateFlow()
+
     override fun setScene(scene: DeviceScene?) {
         _activeScene.value = scene
+        _selectedObjectId.value = null
+    }
+
+    override fun selectObject(objectId: String?) {
+        _selectedObjectId.value = objectId
     }
 }
+

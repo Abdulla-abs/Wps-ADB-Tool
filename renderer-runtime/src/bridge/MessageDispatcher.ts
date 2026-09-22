@@ -2,9 +2,10 @@ import {
   CURRENT_BRIDGE_PROTOCOL_VERSION,
   WIRE_TYPES,
 } from "../../../renderer-contract/scene-bridge-contract.ts";
-import type { BridgeEnvelope } from "../../../renderer-contract/scene-bridge-contract.ts";
+import type { BridgeEnvelope, CameraCommandPayload } from "../../../renderer-contract/scene-bridge-contract.ts";
 import {
   isBridgeEnvelope,
+  isCameraCommandPayload,
   isRendererErrorPayload,
   isSceneInitPayload,
   isSelectionChangePayload,
@@ -16,6 +17,7 @@ import { ErrorBoundary } from "./ErrorBoundary.ts";
 export interface DispatcherHooks {
   onUnknownMessage?: (envelope: BridgeEnvelope<unknown>) => void;
   onReservedMessage?: (envelope: BridgeEnvelope<unknown>) => void;
+  onCameraCommand?: (payload: CameraCommandPayload) => void;
 }
 
 /**
@@ -91,8 +93,20 @@ export class MessageDispatcher {
           break;
         }
 
+        case WIRE_TYPES.CAMERA_COMMAND: {
+          if (!isCameraCommandPayload(payload)) {
+            this.errorBoundary.handleInvalidPayload(type, "Missing or invalid camera command parameters");
+            return;
+          }
+          if (this.hooks.onCameraCommand) {
+            this.hooks.onCameraCommand(payload);
+          } else {
+            this.hooks.onReservedMessage?.(raw);
+          }
+          break;
+        }
+
         case WIRE_TYPES.BINDING_UPDATE:
-        case WIRE_TYPES.CAMERA_COMMAND:
         case WIRE_TYPES.OBJECT_HOVERED:
         case WIRE_TYPES.OBJECT_TRANSFORM_CHANGED: {
           this.hooks.onReservedMessage?.(raw);

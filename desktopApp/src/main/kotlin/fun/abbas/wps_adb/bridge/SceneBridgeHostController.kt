@@ -10,6 +10,7 @@ import `fun`.abbas.wps_adb.data.scene.runtime.SceneRuntimeController
 import `fun`.abbas.wps_adb.model.scene.ResolvedSceneState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -62,6 +63,8 @@ class SceneBridgeHostController(
         }
     }
 
+    private var runtimeBindingJob: Job? = null
+
     /**
      * Updates object selection and notifies the renderer if connection is READY.
      */
@@ -80,10 +83,49 @@ class SceneBridgeHostController(
     }
 
     /**
-     * Binds this controller to the resolved scene state stream of a [SceneRuntimeController].
+     * Binds this controller to both resolved state and selection synchronization
+     * of a [SceneRuntimeController], listening to inbound [SceneBridgeMessage.ObjectClicked] events.
      */
     fun bind(runtimeController: SceneRuntimeController): Job {
-        return bind(runtimeController.resolvedState)
+        runtimeBindingJob?.cancel()
+
+        val bindingJob = SupervisorJob(scope.coroutineContext[Job])
+        val bindingScope = CoroutineScope(scope.coroutineContext + bindingJob)
+
+        bindingScope.launch {
+            runtimeController.resolvedState.collect { state ->
+                onSceneStateChanged(state)
+            }
+        }
+
+        bindingScope.launch {
+            runtimeController.selectedObjectId.collect { objectId ->
+                stateMutex.withLock {
+                    if (selectedObjectId != objectId) {
+                        selectedObjectId = objectId
+                        if (channel.state.value == BridgeConnectionState.READY) {
+                            channel.send(SceneBridgeMessage.SelectionChange(objectId, false))
+                        }
+                    }
+                }
+            }
+        }
+
+        bindingScope.launch {
+            channel.incoming.collect { message ->
+                when (message) {
+                    is SceneBridgeMessage.ObjectClicked -> {
+                        println("[SceneBridgeHostController] Received ObjectClicked: ${message.objectId}")
+                        runtimeController.selectObject(message.objectId)
+                        selectObject(message.objectId)
+                    }
+                    else -> {}
+                }
+            }
+        }
+
+        runtimeBindingJob = bindingJob
+        return bindingJob
     }
 
     /**
@@ -96,6 +138,13 @@ class SceneBridgeHostController(
             }
         }
     }
+
+    fun dispose() {
+        runtimeBindingJob?.cancel()
+        runtimeBindingJob = null
+    }
+
+
 
     private suspend fun onRendererReady() {
         stateMutex.withLock {

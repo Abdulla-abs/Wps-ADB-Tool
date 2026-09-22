@@ -26,6 +26,7 @@ dependencies {
 
     implementation(libs.compose.uiToolingPreview)
     implementation(libs.compose.material3)
+    implementation(libs.androidx.lifecycle.viewmodelCompose)
     implementation(libs.json)
     implementation(libs.jcefmaven)
 

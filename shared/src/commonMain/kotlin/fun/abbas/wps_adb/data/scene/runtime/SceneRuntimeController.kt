@@ -7,6 +7,8 @@ import kotlinx.coroutines.flow.StateFlow
 interface SceneRuntimeController {
     val activeScene: StateFlow<DeviceScene?>
     val resolvedState: StateFlow<ResolvedSceneState?>
+    val selectedObjectId: StateFlow<String?>
 
     fun setScene(scene: DeviceScene?)
+    fun selectObject(objectId: String?)
 }

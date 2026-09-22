@@ -36,6 +36,13 @@ const bridge: CefJsBridgeApi = {
 const runtime = new RendererRuntime({ bridge });
 (window as any).__wpsRendererRuntime = runtime;
 
+// Mount 3D Scene to container
+const container = document.getElementById("canvas-container");
+if (container) {
+  runtime.mount(container);
+  console.log("[RendererRuntimeEntry] 3D DeviceSceneRenderer mounted to #canvas-container");
+}
+
 // Wire HUD display to reactive store changes
 runtime.getStore().subscribe((state) => {
   const statusEl = document.getElementById("hud-status");

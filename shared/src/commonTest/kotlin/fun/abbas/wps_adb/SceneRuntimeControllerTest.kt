@@ -274,6 +274,38 @@ class SceneRuntimeControllerTest {
         assertEquals(scene, recovered.scene)
     }
 
+    @Test
+    fun selectObject_updatesSelectedObjectIdAndClearsOnSetScene() = runTest(UnconfinedTestDispatcher()) {
+        val devicesFlow = MutableStateFlow<List<Device>>(emptyList())
+        val controller = DefaultSceneRuntimeController(
+            devicesFlow = devicesFlow,
+            scope = backgroundScope,
+        )
+
+        assertNull(controller.selectedObjectId.value)
+
+        // Select an object
+        controller.selectObject("phone_mesh_1")
+        assertEquals("phone_mesh_1", controller.selectedObjectId.value)
+
+        // Select another object
+        controller.selectObject("phone_mesh_2")
+        assertEquals("phone_mesh_2", controller.selectedObjectId.value)
+
+        // Deselect
+        controller.selectObject(null)
+        assertNull(controller.selectedObjectId.value)
+
+        // Re-select then switch scene -> selection is reset to null
+        controller.selectObject("phone_mesh_3")
+        assertEquals("phone_mesh_3", controller.selectedObjectId.value)
+
+        val newScene = DeviceScene(id = "scene_new", name = "New Scene")
+        controller.setScene(newScene)
+        assertNull(controller.selectedObjectId.value, "Switching scene must clear selectedObjectId")
+    }
+
+
     private fun createDevice(serial: String, identity: String, status: DeviceStatus): Device = Device(
         id = serial,
         name = "Device $serial",

@@ -3,8 +3,11 @@ package `fun`.abbas.wps_adb.scene
 import `fun`.abbas.wps_adb.SceneRuntimeContainer
 import `fun`.abbas.wps_adb.data.scene.bridge.BridgeConnectionState
 import `fun`.abbas.wps_adb.data.scene.bridge.BridgeTransport
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -199,4 +202,219 @@ class SceneRuntimeHostTest {
 
         SceneRuntimeContainer.dispose()
     }
+
+    @Test
+    fun test_incomingObjectClicked_updatesControllerSelectionAndEmitsSelectionChange() = runTest(UnconfinedTestDispatcher()) {
+        val fakeTransport = FakeBridgeTransport()
+        val devicesFlow = kotlinx.coroutines.flow.MutableStateFlow<List<`fun`.abbas.wps_adb.model.Device>>(emptyList())
+        val controllerScope = CoroutineScope(coroutineContext + SupervisorJob())
+        try {
+            val controller = `fun`.abbas.wps_adb.data.scene.runtime.DefaultSceneRuntimeController(
+                devicesFlow = devicesFlow,
+                scope = controllerScope,
+            )
+
+            val host = SceneRuntimeHost(
+                parentScope = this,
+                sceneRuntimeController = controller,
+                customTransport = fakeTransport,
+            )
+
+            // Remote renderer emits RENDERER_READY
+            fakeTransport.emitIncoming("""{"type":"RENDERER_READY","version":1,"timestamp":100,"payload":{"protocolVersion":1,"rendererVersion":"1.0"}}""")
+            assertEquals(BridgeConnectionState.READY, host.state.value.connectionState)
+
+            // Clear initial INIT and SYNC messages
+            fakeTransport.sentMessages.clear()
+
+            // Remote renderer emits OBJECT_CLICKED
+            val clickFrame = """
+                {
+                    "type": "OBJECT_CLICKED",
+                    "version": 1,
+                    "timestamp": 200,
+                    "payload": {
+                        "objectId": "phone_slot_3",
+                        "screenX": 100,
+                        "screenY": 200,
+                        "isCtrlPressed": false,
+                        "isShiftPressed": false
+                    }
+                }
+            """.trimIndent()
+            fakeTransport.emitIncoming(clickFrame)
+
+            // Verify controller updated selection
+            assertEquals("phone_slot_3", controller.selectedObjectId.value)
+
+            // Verify SELECTION_CHANGE was dispatched to confirm highlight
+            val selectionMessages = fakeTransport.sentMessages.map { JSONObject(it) }.filter { it.getString("type") == "SELECTION_CHANGE" }
+            assertTrue(selectionMessages.isNotEmpty(), "Expected SELECTION_CHANGE to be dispatched")
+            assertEquals("phone_slot_3", selectionMessages.last().getJSONObject("payload").getString("selectedObjectId"))
+
+            host.dispose()
+        } finally {
+            controllerScope.cancel()
+        }
+    }
+
+    @Test
+    fun test_host_dispatchesStateSync_whenRealDeviceConnectsAndControllerResolves() = runTest(UnconfinedTestDispatcher()) {
+        val fakeTransport = FakeBridgeTransport()
+        val devicesFlow = kotlinx.coroutines.flow.MutableStateFlow<List<`fun`.abbas.wps_adb.model.Device>>(emptyList())
+        val controllerScope = CoroutineScope(coroutineContext + SupervisorJob())
+
+        try {
+            val controller = `fun`.abbas.wps_adb.data.scene.runtime.DefaultSceneRuntimeController(
+                devicesFlow = devicesFlow,
+                scope = controllerScope,
+            )
+
+            val initialScene = `fun`.abbas.wps_adb.model.scene.DeviceScene(
+                id = "scene_active",
+                name = "Active Scene",
+                bindings = listOf(
+                    `fun`.abbas.wps_adb.model.scene.SceneBinding(
+                        objectId = "phone_slot_1",
+                        deviceIdentity = `fun`.abbas.wps_adb.model.scene.DeviceIdentityRef("HW-PIXEL-8"),
+                    )
+                ),
+            )
+            controller.setScene(initialScene)
+
+            val host = SceneRuntimeHost(
+                parentScope = this,
+                sceneRuntimeController = controller,
+                customTransport = fakeTransport,
+            )
+
+            // Emit RENDERER_READY
+            fakeTransport.emitIncoming("""{"type":"RENDERER_READY","version":1,"timestamp":100,"payload":{"protocolVersion":1,"rendererVersion":"1.0"}}""")
+            assertEquals(BridgeConnectionState.READY, host.state.value.connectionState)
+
+            // Initially, device is OFFLINE
+            val syncMessagesBefore = fakeTransport.sentMessages.map { JSONObject(it) }.filter { it.getString("type") == "STATE_SYNC" }
+            assertTrue(syncMessagesBefore.isNotEmpty())
+            val firstDevice = syncMessagesBefore.last().getJSONObject("payload").getJSONObject("snapshot").getJSONArray("devices").getJSONObject(0)
+            assertEquals("OFFLINE", firstDevice.getString("status"))
+
+            // Real device connects via ADB flow
+            val realDevice = `fun`.abbas.wps_adb.model.Device(
+                id = "dev_usb_1",
+                name = "Google Pixel 8",
+                serial = "dev_usb_1",
+                type = `fun`.abbas.wps_adb.model.DeviceType.PHYSICAL,
+                connectionType = `fun`.abbas.wps_adb.model.ConnectionType.USB,
+                status = `fun`.abbas.wps_adb.model.DeviceStatus.ONLINE,
+                androidVersion = "14",
+                batteryLevel = 90,
+                isCharging = true,
+                storageUsed = "10GB",
+                storageTotal = "128GB",
+                storagePercent = 8,
+                screenshotUrl = "",
+                screenDescription = "Screen",
+                identity = `fun`.abbas.wps_adb.model.DeviceIdentity(
+                    value = "HW-PIXEL-8",
+                    source = `fun`.abbas.wps_adb.model.DeviceIdentitySource.RO_SERIALNO,
+                    rawHardwareSerial = "HW-PIXEL-8",
+                ),
+            )
+            devicesFlow.value = listOf(realDevice)
+
+            // Verify STATE_SYNC is dispatched with ONLINE status
+            val syncMessagesAfter = fakeTransport.sentMessages.map { JSONObject(it) }.filter { it.getString("type") == "STATE_SYNC" }
+            val updatedDevice = syncMessagesAfter.last().getJSONObject("payload").getJSONObject("snapshot").getJSONArray("devices").getJSONObject(0)
+            assertEquals("ONLINE", updatedDevice.getString("status"))
+            assertEquals("phone_slot_1", updatedDevice.getString("objectId"))
+
+            host.dispose()
+        } finally {
+            controllerScope.cancel()
+        }
+    }
+
+    @Test
+    fun test_hostController_rebindCancelsPreviousJobsWithoutLeak() = runTest(UnconfinedTestDispatcher()) {
+        val fakeTransport = FakeBridgeTransport()
+        val controllerScope = CoroutineScope(coroutineContext + SupervisorJob())
+
+        try {
+            val controller1 = `fun`.abbas.wps_adb.data.scene.runtime.DefaultSceneRuntimeController(
+                devicesFlow = kotlinx.coroutines.flow.MutableStateFlow(emptyList()),
+                scope = controllerScope,
+            )
+            val controller2 = `fun`.abbas.wps_adb.data.scene.runtime.DefaultSceneRuntimeController(
+                devicesFlow = kotlinx.coroutines.flow.MutableStateFlow(emptyList()),
+                scope = controllerScope,
+            )
+
+            val host = SceneRuntimeHost(
+                parentScope = this,
+                customTransport = fakeTransport,
+            )
+
+            // Bind controller 1
+            val job1 = host.hostController.bind(controller1)
+            assertTrue(job1.isActive)
+
+            // Rebind controller 2
+            val job2 = host.hostController.bind(controller2)
+            assertTrue(job2.isActive)
+            assertTrue(job1.isCancelled, "Rebinding must cancel previous binding job")
+
+            host.dispose()
+            assertTrue(job2.isCancelled, "Host dispose must cancel current binding job")
+        } finally {
+            controllerScope.cancel()
+        }
+    }
+
+    @Test
+    fun test_scenesRoot_consistencyBetweenSceneStoreAndHost() {
+        val tempDir = java.nio.file.Files.createTempDirectory("scenes_root_test").toFile()
+        try {
+            val sceneStore = `fun`.abbas.wps_adb.data.scene.SceneStore(scenesRoot = tempDir)
+            val scope = CoroutineScope(SupervisorJob())
+            val host = SceneRuntimeHost(
+                parentScope = scope,
+                sceneRepository = sceneStore,
+                customTransport = FakeBridgeTransport(),
+            )
+
+            assertEquals(tempDir.canonicalPath, sceneStore.getScenesRoot().canonicalPath)
+            host.dispose()
+            scope.cancel()
+        } finally {
+            tempDir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun test_sceneRuntimeContainer_injectsControllerAndRepository() {
+        val controllerScope = CoroutineScope(SupervisorJob())
+        try {
+            val controller = `fun`.abbas.wps_adb.data.scene.runtime.DefaultSceneRuntimeController(
+                devicesFlow = kotlinx.coroutines.flow.MutableStateFlow(emptyList()),
+                scope = controllerScope,
+            )
+            val tempDir = java.nio.file.Files.createTempDirectory("container_scene_test").toFile()
+            val store = `fun`.abbas.wps_adb.data.scene.SceneStore(scenesRoot = tempDir)
+
+            val host = SceneRuntimeContainer.getOrCreate(
+                runtimeController = controller,
+                repository = store,
+            )
+
+            assertSame(controller, host.sceneRuntimeController)
+            assertSame(store, host.sceneRepository)
+
+            SceneRuntimeContainer.dispose()
+            tempDir.deleteRecursively()
+        } finally {
+            controllerScope.cancel()
+        }
+    }
 }
+
+

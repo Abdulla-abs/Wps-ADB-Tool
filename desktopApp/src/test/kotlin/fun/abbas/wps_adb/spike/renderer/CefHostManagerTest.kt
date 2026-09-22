@@ -103,4 +103,76 @@ class CefHostManagerTest {
             manager.dispose()
         }
     }
+
+    @Test
+    fun test_scenesEndpoint_servesGlbAndRejectsNonGlbAndTraversal() {
+        val tempDir = java.nio.file.Files.createTempDirectory("scenes_test").toFile()
+        try {
+            val sceneDir = java.io.File(tempDir, "scene_01").apply { mkdirs() }
+            val glbFile = java.io.File(sceneDir, "environment.glb").apply {
+                writeBytes("GLB_DUMMY_HEADER_BYTES".toByteArray(Charsets.UTF_8))
+            }
+            val jsonFile = java.io.File(sceneDir, "scene.json").apply {
+                writeText("{\"id\":\"scene_01\"}")
+            }
+
+            val manager = CefHostManager(
+                resourceRoot = "scene-runtime",
+                scenesRoot = tempDir,
+            ) { }
+
+            try {
+                val port = URI.create(manager.serverUrl).port
+
+                // 1. Valid .glb access -> 200 OK
+                val glbUri = URI.create("http://127.0.0.1:$port/scenes/scene_01/environment.glb")
+                val glbResp = httpClient.send(
+                    HttpRequest.newBuilder().uri(glbUri).GET().build(),
+                    HttpResponse.BodyHandlers.ofByteArray(),
+                )
+                assertEquals(200, glbResp.statusCode())
+                assertEquals("model/gltf-binary", glbResp.headers().firstValue("Content-Type").orElse(""))
+                assertEquals("GLB_DUMMY_HEADER_BYTES", String(glbResp.body(), Charsets.UTF_8))
+
+                // 2. Non-.glb access -> 403 Forbidden
+                val jsonUri = URI.create("http://127.0.0.1:$port/scenes/scene_01/scene.json")
+                val jsonResp = httpClient.send(
+                    HttpRequest.newBuilder().uri(jsonUri).GET().build(),
+                    HttpResponse.BodyHandlers.ofString(),
+                )
+                assertEquals(403, jsonResp.statusCode())
+
+                // 3. Traversal attempt -> 403 Forbidden
+                val statusAndBody = sendRawHttpGet(port, "/scenes/../secret.glb")
+                assertEquals(403, statusAndBody.first)
+
+                // 4. Missing glb -> 404 Not Found
+                val missingUri = URI.create("http://127.0.0.1:$port/scenes/scene_01/missing.glb")
+                val missingResp = httpClient.send(
+                    HttpRequest.newBuilder().uri(missingUri).GET().build(),
+                    HttpResponse.BodyHandlers.ofString(),
+                )
+                assertEquals(404, missingResp.statusCode())
+
+                // 5. HEAD method supported
+                val headResp = httpClient.send(
+                    HttpRequest.newBuilder().uri(glbUri).method("HEAD", HttpRequest.BodyPublishers.noBody()).build(),
+                    HttpResponse.BodyHandlers.discarding(),
+                )
+                assertEquals(200, headResp.statusCode())
+
+                // 6. POST method rejected -> 405
+                val postResp = httpClient.send(
+                    HttpRequest.newBuilder().uri(glbUri).POST(HttpRequest.BodyPublishers.noBody()).build(),
+                    HttpResponse.BodyHandlers.discarding(),
+                )
+                assertEquals(405, postResp.statusCode())
+            } finally {
+                manager.dispose()
+            }
+        } finally {
+            tempDir.deleteRecursively()
+        }
+    }
 }
+
