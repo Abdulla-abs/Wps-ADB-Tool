@@ -1,6 +1,8 @@
 package `fun`.abbas.wps_adb.data.scene
 
+import `fun`.abbas.wps_adb.model.scene.DeviceIdentityRef
 import `fun`.abbas.wps_adb.model.scene.DeviceScene
+import `fun`.abbas.wps_adb.model.scene.SceneCamera
 import `fun`.abbas.wps_adb.model.scene.SceneTransform
 import java.io.File
 
@@ -18,4 +20,9 @@ interface DeviceSceneRepository {
         transform: SceneTransform = SceneTransform(),
         customName: String? = null,
     ): DeviceScene
+
+    fun bindDevice(sceneId: String, objectId: String, deviceIdentity: DeviceIdentityRef): DeviceScene
+    fun unbindDevice(sceneId: String, objectId: String): DeviceScene
+    fun updateBinding(sceneId: String, objectId: String, deviceIdentity: DeviceIdentityRef?): DeviceScene
+    fun saveCamera(sceneId: String, camera: SceneCamera): DeviceScene
 }

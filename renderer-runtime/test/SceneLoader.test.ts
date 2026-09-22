@@ -72,4 +72,22 @@ describe("SceneLoader Unit Tests", () => {
     assert.strictEqual(reportedCategory, "ENVIRONMENT_LOAD_FAILED");
     assert.notStrictEqual(reportedError, null);
   });
+
+  test("creates fallback bindable objects when no GLB exists", async () => {
+    const contentGroup = new THREE.Group();
+    const loader = new SceneLoader({ contentGroup });
+
+    const defaultCamera = { position: { x: 0, y: 0, z: 0 }, target: { x: 0, y: 0, z: 0 }, fov: 45 };
+    const result = await loader.loadScene({
+      id: "scene_default",
+      name: "Default",
+      camera: defaultCamera,
+      assets: [],
+      bindableObjectIds: ["device_slot_1", "device_slot_2"],
+    });
+
+    assert.strictEqual(result.objectsById.has("device_slot_1"), true);
+    assert.strictEqual(result.objectsById.has("device_slot_2"), true);
+    assert.strictEqual(result.pickableObjects.length, 2);
+  });
 });

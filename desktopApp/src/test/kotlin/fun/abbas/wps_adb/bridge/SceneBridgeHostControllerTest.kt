@@ -65,6 +65,10 @@ class SceneBridgeHostControllerTest {
         override suspend fun disconnect() {
             _state.value = BridgeConnectionState.DISCONNECTED
         }
+
+        suspend fun emitIncoming(message: SceneBridgeMessage) {
+            _incoming.emit(message)
+        }
     }
 
     @Test
@@ -159,6 +163,48 @@ class SceneBridgeHostControllerTest {
         assertEquals("lab_2", (channel.sentMessages[2] as SceneBridgeMessage.InitScene).sceneDescriptor.id)
         assertIs<SceneBridgeMessage.SyncState>(channel.sentMessages[3])
         assertEquals("lab_2", (channel.sentMessages[3] as SceneBridgeMessage.SyncState).snapshot.sceneId)
+    }
+
+    @Test
+    fun cameraChanged_fromChannel_updatesRuntimeController() = runTest(UnconfinedTestDispatcher()) {
+        val channel = FakeSceneBridgeChannel(BridgeConnectionState.READY)
+        val controller = SceneBridgeHostController(channel = channel, scope = backgroundScope)
+
+        val devicesFlow = MutableStateFlow<List<Device>>(emptyList())
+        val runtimeController = `fun`.abbas.wps_adb.data.scene.runtime.DefaultSceneRuntimeController(
+            devicesFlow = devicesFlow,
+            scope = backgroundScope,
+        )
+        controller.bind(runtimeController)
+
+        val camMsg = SceneBridgeMessage.CameraChanged(
+            position = SceneVector3(5.0, 10.0, 15.0),
+            target = SceneVector3(1.0, 2.0, 3.0),
+            fov = 55.0,
+        )
+        channel.emitIncoming(camMsg)
+
+        val currentCam = runtimeController.runtimeCamera.value
+        kotlin.test.assertNotNull(currentCam)
+        assertEquals(SceneVector3(5.0, 10.0, 15.0), currentCam.position)
+        assertEquals(SceneVector3(1.0, 2.0, 3.0), currentCam.target)
+        assertEquals(55.0, currentCam.fov)
+    }
+
+    @Test
+    fun resetCamera_whenReady_sendsCameraCommand() = runTest(UnconfinedTestDispatcher()) {
+        val channel = FakeSceneBridgeChannel(BridgeConnectionState.READY)
+        val controller = SceneBridgeHostController(channel = channel, scope = backgroundScope)
+
+        val targetCam = SceneCamera(SceneVector3(1.0, 2.0, 3.0), SceneVector3.ZERO, 45.0)
+        controller.resetCamera(targetCam)
+
+        assertEquals(1, channel.sentMessages.size)
+        assertIs<SceneBridgeMessage.CameraCommand>(channel.sentMessages[0])
+        val cmd = channel.sentMessages[0] as SceneBridgeMessage.CameraCommand
+        assertEquals(targetCam.position, cmd.position)
+        assertEquals(targetCam.target, cmd.target)
+        assertEquals(targetCam.fov, cmd.fov)
     }
 
     private fun createResolvedState(sceneId: String, deviceName: String): ResolvedSceneState {

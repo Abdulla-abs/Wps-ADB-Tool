@@ -23,6 +23,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotSame
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
+import kotlin.test.assertFalse
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SceneRuntimeHostTest {
@@ -413,6 +414,122 @@ class SceneRuntimeHostTest {
             tempDir.deleteRecursively()
         } finally {
             controllerScope.cancel()
+        }
+    }
+
+    @Test
+    fun test_startupRestoresConfiguredActiveSceneId() {
+        val testScope = CoroutineScope(SupervisorJob())
+        val tempDir = java.nio.file.Files.createTempDirectory("active_scene_restore_test").toFile()
+        try {
+            val store = `fun`.abbas.wps_adb.data.scene.SceneStore(scenesRoot = tempDir)
+            store.createScene("Scene 1", "scene_1")
+            store.createScene("Scene 2", "scene_2")
+
+            val controller = `fun`.abbas.wps_adb.data.scene.runtime.DefaultSceneRuntimeController(
+                devicesFlow = kotlinx.coroutines.flow.MutableStateFlow(emptyList()),
+                scope = testScope,
+            )
+
+            var changedId: String? = null
+            val host = SceneRuntimeHost(
+                parentScope = testScope,
+                sceneRuntimeController = controller,
+                sceneRepository = store,
+                initialActiveSceneId = "scene_2",
+                onActiveSceneIdChanged = { changedId = it },
+                customTransport = FakeBridgeTransport(),
+            )
+
+            assertEquals("scene_2", host.state.value.activeSceneId)
+            assertEquals("scene_2", controller.activeScene.value?.id)
+
+            host.dispose()
+        } finally {
+            testScope.cancel()
+            tempDir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun test_startupFallsBackWhenConfiguredActiveSceneIdNotFound() {
+        val testScope = CoroutineScope(SupervisorJob())
+        val tempDir = java.nio.file.Files.createTempDirectory("active_scene_fallback_test").toFile()
+        try {
+            val store = `fun`.abbas.wps_adb.data.scene.SceneStore(scenesRoot = tempDir)
+            store.createScene("Scene 1", "scene_1")
+
+            val controller = `fun`.abbas.wps_adb.data.scene.runtime.DefaultSceneRuntimeController(
+                devicesFlow = kotlinx.coroutines.flow.MutableStateFlow(emptyList()),
+                scope = testScope,
+            )
+
+            var writtenBackId: String? = null
+            val host = SceneRuntimeHost(
+                parentScope = testScope,
+                sceneRuntimeController = controller,
+                sceneRepository = store,
+                initialActiveSceneId = "deleted_or_missing_scene",
+                onActiveSceneIdChanged = { writtenBackId = it },
+                customTransport = FakeBridgeTransport(),
+            )
+
+            assertEquals("scene_1", host.state.value.activeSceneId)
+            assertEquals("scene_1", controller.activeScene.value?.id)
+            assertEquals("scene_1", writtenBackId, "Fallback should write back valid scene id")
+
+            host.dispose()
+        } finally {
+            testScope.cancel()
+            tempDir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun test_selectingScene_updatesActiveSceneAndRuntimeState() {
+        val testScope = CoroutineScope(SupervisorJob())
+        val tempDir = java.nio.file.Files.createTempDirectory("select_scene_test").toFile()
+        try {
+            val store = `fun`.abbas.wps_adb.data.scene.SceneStore(scenesRoot = tempDir)
+            store.createScene("Scene 1", "scene_1")
+            store.createScene("Scene 2", "scene_2")
+
+            val controller = `fun`.abbas.wps_adb.data.scene.runtime.DefaultSceneRuntimeController(
+                devicesFlow = kotlinx.coroutines.flow.MutableStateFlow(emptyList()),
+                scope = testScope,
+            )
+
+            var changedId: String? = null
+            val host = SceneRuntimeHost(
+                parentScope = testScope,
+                sceneRuntimeController = controller,
+                sceneRepository = store,
+                initialActiveSceneId = "scene_1",
+                onActiveSceneIdChanged = { changedId = it },
+                customTransport = FakeBridgeTransport(),
+            )
+
+            assertEquals("scene_1", host.state.value.activeSceneId)
+            assertEquals("scene_1", controller.activeScene.value?.id)
+
+            // Select scene_2
+            val success = host.selectScene("scene_2")
+            assertTrue(success)
+            assertEquals("scene_2", host.state.value.activeSceneId)
+            assertEquals("scene_2", controller.activeScene.value?.id)
+            assertEquals("scene_2", changedId)
+
+            // Attempt to select invalid scene
+            val fail = host.selectScene("non_existent")
+            assertFalse(fail)
+            // State should remain on scene_2
+            assertEquals("scene_2", host.state.value.activeSceneId)
+            assertEquals("scene_2", controller.activeScene.value?.id)
+
+            host.dispose()
+        } finally {
+            testScope.cancel()
+            tempDir.deleteRecursively()
         }
     }
 }

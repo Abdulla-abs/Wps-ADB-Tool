@@ -29,6 +29,21 @@ class ExecutableLocatorTest {
     }
 
     @Test
+    fun resolveRunnableAdbPath_usesAbsolutePathWhenConfiguredFileExists() {
+        val temp = File.createTempFile("wps-adb-locator", ".bat")
+        temp.deleteOnExit()
+        assertEquals(temp.absolutePath, ExecutableLocator.resolveRunnableAdbPath(temp.absolutePath))
+    }
+
+    @Test
+    fun resolveRunnableAdbPath_fallsBackToDiscoveredWhenMissingOrUnconfigured() {
+        val discovered = ExecutableLocator.discoverAdbPath()
+        assertEquals(discovered, ExecutableLocator.resolveRunnableAdbPath(""))
+        assertEquals(discovered, ExecutableLocator.resolveRunnableAdbPath("adb"))
+        assertEquals(discovered, ExecutableLocator.resolveRunnableAdbPath("C:\\nonexistent\\adb.exe"))
+    }
+
+    @Test
     fun isAdbConfigured_requiresExplicitPath() {
         assertFalse(ExecutableLocator.isAdbConfigured(""))
         assertFalse(ExecutableLocator.isAdbConfigured("adb"))

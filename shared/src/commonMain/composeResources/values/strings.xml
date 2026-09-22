@@ -5,9 +5,14 @@
 
     <!-- Sidebar -->
     <string name="nav_device_wall">Device Wall</string>
+    <string name="nav_3d_scene">3D Device Scene</string>
     <string name="nav_group_command">Group Command</string>
     <string name="nav_decompile">Decompile</string>
     <string name="nav_global_settings">Global Settings</string>
+    <string name="settings_3d_scene_title">3D Device Scene</string>
+    <string name="settings_3d_scene_enable">Enable 3D Device Scene</string>
+    <string name="settings_3d_scene_desc">Experimental 3D spatial view for managing and inspecting ADB devices</string>
+    <string name="settings_3d_scene_not_supported">3D Device Scene is currently only supported on Desktop (JVM).</string>
     <string name="sidebar_installing_apk">Installing APK...</string>
     <string name="sidebar_drop_apk_title">DROP APK TO INSTALL</string>
     <string name="sidebar_drop_apk_subtitle">Will install on %1$d online devices</string>

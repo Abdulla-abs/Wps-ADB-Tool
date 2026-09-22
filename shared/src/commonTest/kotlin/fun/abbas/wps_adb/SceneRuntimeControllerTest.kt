@@ -305,6 +305,110 @@ class SceneRuntimeControllerTest {
         assertNull(controller.selectedObjectId.value, "Switching scene must clear selectedObjectId")
     }
 
+    @Test
+    fun runtimeCamera_tracksSceneCameraAndManualUpdates() = runTest(UnconfinedTestDispatcher()) {
+        val devicesFlow = MutableStateFlow<List<Device>>(emptyList())
+        val controller = DefaultSceneRuntimeController(
+            devicesFlow = devicesFlow,
+            scope = backgroundScope,
+        )
+
+        assertNull(controller.runtimeCamera.value)
+
+        val camera = `fun`.abbas.wps_adb.model.scene.SceneCamera(
+            position = `fun`.abbas.wps_adb.model.scene.SceneVector3(1.0, 2.0, 3.0),
+            target = `fun`.abbas.wps_adb.model.scene.SceneVector3.ZERO,
+            fov = 50.0,
+        )
+        val scene = DeviceScene(id = "scene_cam", name = "Cam Scene", camera = camera)
+        controller.setScene(scene)
+
+        assertEquals(camera, controller.runtimeCamera.value)
+
+        val newCam = `fun`.abbas.wps_adb.model.scene.SceneCamera(
+            position = `fun`.abbas.wps_adb.model.scene.SceneVector3(10.0, 20.0, 30.0),
+            target = `fun`.abbas.wps_adb.model.scene.SceneVector3(1.0, 1.0, 1.0),
+            fov = 60.0,
+        )
+        controller.updateRuntimeCamera(newCam)
+        assertEquals(newCam, controller.runtimeCamera.value)
+
+        controller.setScene(null)
+        assertNull(controller.runtimeCamera.value)
+    }
+
+    @Test
+    fun updateScene_onBindDevice_preservesSelectedObjectId() = runTest(UnconfinedTestDispatcher()) {
+        val devicesFlow = MutableStateFlow<List<Device>>(emptyList())
+        val controller = DefaultSceneRuntimeController(
+            devicesFlow = devicesFlow,
+            scope = backgroundScope,
+        )
+        val initialScene = DeviceScene(id = "scene_test", name = "Test Scene")
+        controller.setScene(initialScene)
+        controller.selectObject("slot_1")
+        assertEquals("slot_1", controller.selectedObjectId.value)
+
+        // Simulate binding a device
+        val updatedScene = initialScene.copy(
+            bindings = listOf(SceneBinding("slot_1", DeviceIdentityRef("HW-123")))
+        )
+        controller.updateScene(updatedScene)
+
+        assertEquals("slot_1", controller.selectedObjectId.value, "Binding device must preserve selectedObjectId")
+        assertEquals(updatedScene, controller.activeScene.value)
+    }
+
+    @Test
+    fun updateScene_onUnbindDevice_preservesSelectedObjectId() = runTest(UnconfinedTestDispatcher()) {
+        val devicesFlow = MutableStateFlow<List<Device>>(emptyList())
+        val controller = DefaultSceneRuntimeController(
+            devicesFlow = devicesFlow,
+            scope = backgroundScope,
+        )
+        val initialScene = DeviceScene(
+            id = "scene_test",
+            name = "Test Scene",
+            bindings = listOf(SceneBinding("slot_1", DeviceIdentityRef("HW-123"))),
+        )
+        controller.setScene(initialScene)
+        controller.selectObject("slot_1")
+        assertEquals("slot_1", controller.selectedObjectId.value)
+
+        // Simulate unbinding a device
+        val updatedScene = initialScene.copy(bindings = emptyList())
+        controller.updateScene(updatedScene)
+
+        assertEquals("slot_1", controller.selectedObjectId.value, "Unbinding device must preserve selectedObjectId")
+        assertEquals(updatedScene, controller.activeScene.value)
+    }
+
+    @Test
+    fun updateScene_onSaveCamera_preservesSelectedObjectIdAndRuntimeCamera() = runTest(UnconfinedTestDispatcher()) {
+        val devicesFlow = MutableStateFlow<List<Device>>(emptyList())
+        val controller = DefaultSceneRuntimeController(
+            devicesFlow = devicesFlow,
+            scope = backgroundScope,
+        )
+        val initialScene = DeviceScene(id = "scene_test", name = "Test Scene")
+        controller.setScene(initialScene)
+        controller.selectObject("slot_1")
+
+        val modifiedCam = `fun`.abbas.wps_adb.model.scene.SceneCamera(
+            position = `fun`.abbas.wps_adb.model.scene.SceneVector3(20.0, 30.0, 40.0),
+            target = `fun`.abbas.wps_adb.model.scene.SceneVector3.ZERO,
+            fov = 60.0,
+        )
+        controller.updateRuntimeCamera(modifiedCam)
+
+        // Simulate saving camera
+        val updatedScene = initialScene.copy(camera = modifiedCam)
+        controller.updateScene(updatedScene)
+
+        assertEquals("slot_1", controller.selectedObjectId.value, "Saving camera must preserve selectedObjectId")
+        assertEquals(modifiedCam, controller.runtimeCamera.value, "Saving camera must preserve runtimeCamera")
+    }
+
 
     private fun createDevice(serial: String, identity: String, status: DeviceStatus): Device = Device(
         id = serial,

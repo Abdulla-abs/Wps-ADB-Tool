@@ -27,6 +27,7 @@ class DefaultSceneBridgeSerializer : SceneBridgeSerializer {
             is SceneBridgeMessage.UpdateBinding -> append(serializeDeviceVisual(message.device))
             is SceneBridgeMessage.SelectionChange -> append(serializeSelection(message))
             is SceneBridgeMessage.CameraCommand -> append(serializeCameraCommand(message))
+            is SceneBridgeMessage.CameraChanged -> append(serializeCameraChanged(message))
             is SceneBridgeMessage.RendererReady -> append(serializeRendererReady(message))
             is SceneBridgeMessage.ObjectClicked -> append(serializeObjectClicked(message))
             is SceneBridgeMessage.ObjectHovered -> append(serializeObjectHovered(message))
@@ -110,6 +111,12 @@ class DefaultSceneBridgeSerializer : SceneBridgeSerializer {
                     fov = (p["fov"] as? MiniJson.Num)?.value,
                     timestamp = timestamp,
                 )
+                TYPE_CAMERA_CHANGED -> SceneBridgeMessage.CameraChanged(
+                    position = parseVector3(p["position"] as? MiniJson.Obj),
+                    target = parseVector3(p["target"] as? MiniJson.Obj),
+                    fov = (p["fov"] as? MiniJson.Num)?.value ?: 45.0,
+                    timestamp = timestamp,
+                )
                 else -> SceneBridgeMessage.Unknown(
                     rawType = type,
                     rawPayload = p.toJson(),
@@ -128,6 +135,7 @@ class DefaultSceneBridgeSerializer : SceneBridgeSerializer {
         is SceneBridgeMessage.UpdateBinding -> TYPE_BINDING_UPDATE
         is SceneBridgeMessage.SelectionChange -> TYPE_SELECTION_CHANGE
         is SceneBridgeMessage.CameraCommand -> TYPE_CAMERA_COMMAND
+        is SceneBridgeMessage.CameraChanged -> TYPE_CAMERA_CHANGED
         is SceneBridgeMessage.RendererReady -> TYPE_RENDERER_READY
         is SceneBridgeMessage.ObjectClicked -> TYPE_OBJECT_CLICKED
         is SceneBridgeMessage.ObjectHovered -> TYPE_OBJECT_HOVERED
@@ -210,6 +218,13 @@ class DefaultSceneBridgeSerializer : SceneBridgeSerializer {
         append("{\"position\":").append(serializeVector3(msg.position))
         append(",\"target\":").append(serializeVector3(msg.target))
         if (msg.fov != null) append(",\"fov\":").append(msg.fov)
+        append("}")
+    }
+
+    private fun serializeCameraChanged(msg: SceneBridgeMessage.CameraChanged): String = buildString {
+        append("{\"position\":").append(serializeVector3(msg.position))
+        append(",\"target\":").append(serializeVector3(msg.target))
+        append(",\"fov\":").append(msg.fov)
         append("}")
     }
 
@@ -363,6 +378,7 @@ class DefaultSceneBridgeSerializer : SceneBridgeSerializer {
         const val TYPE_BINDING_UPDATE = "BINDING_UPDATE"
         const val TYPE_SELECTION_CHANGE = "SELECTION_CHANGE"
         const val TYPE_CAMERA_COMMAND = "CAMERA_COMMAND"
+        const val TYPE_CAMERA_CHANGED = "CAMERA_CHANGED"
         const val TYPE_RENDERER_READY = "RENDERER_READY"
         const val TYPE_OBJECT_CLICKED = "OBJECT_CLICKED"
         const val TYPE_OBJECT_HOVERED = "OBJECT_HOVERED"

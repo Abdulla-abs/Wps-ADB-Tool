@@ -5,9 +5,14 @@
 
     <!-- Sidebar -->
     <string name="nav_device_wall">设备墙</string>
+    <string name="nav_3d_scene">3D 设备空间</string>
     <string name="nav_group_command">分组命令</string>
     <string name="nav_decompile">反编译</string>
     <string name="nav_global_settings">全局设置</string>
+    <string name="settings_3d_scene_title">3D 设备空间</string>
+    <string name="settings_3d_scene_enable">启用 3D 设备空间</string>
+    <string name="settings_3d_scene_desc">实验性 3D 空间视图，通过 3D 场景可视化管理与操作真实 ADB 设备</string>
+    <string name="settings_3d_scene_not_supported">3D 设备空间当前仅支持 Desktop (JVM) 平台。</string>
     <string name="sidebar_installing_apk">正在安装 APK...</string>
     <string name="sidebar_drop_apk_title">拖放 APK 安装</string>
     <string name="sidebar_drop_apk_subtitle">将安装到 %1$d 台在线设备</string>

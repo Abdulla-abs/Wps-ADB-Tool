@@ -1,8 +1,11 @@
 package `fun`.abbas.wps_adb.data.scene
 
 import `fun`.abbas.wps_adb.data.AppDataPaths
+import `fun`.abbas.wps_adb.model.scene.DeviceIdentityRef
 import `fun`.abbas.wps_adb.model.scene.DeviceScene
 import `fun`.abbas.wps_adb.model.scene.SceneAssetInstance
+import `fun`.abbas.wps_adb.model.scene.SceneBinding
+import `fun`.abbas.wps_adb.model.scene.SceneCamera
 import `fun`.abbas.wps_adb.model.scene.SceneEnvironment
 import `fun`.abbas.wps_adb.model.scene.SceneTransform
 import java.io.File
@@ -251,6 +254,60 @@ class SceneStore(
         val updatedAssets = scene.assets.filterNot { it.id == assetId } + newAsset
         val updatedScene = scene.copy(
             assets = updatedAssets,
+            updatedAtMillis = System.currentTimeMillis(),
+        )
+        return saveScene(updatedScene)
+    }
+
+    override fun bindDevice(
+        sceneId: String,
+        objectId: String,
+        deviceIdentity: DeviceIdentityRef,
+    ): DeviceScene {
+        validateSceneId(sceneId)
+        if (objectId.isBlank()) throw SceneValidationException("Object ID cannot be blank")
+        val scene = loadSceneOrExisting(sceneId)
+        val newBinding = SceneBinding(
+            objectId = objectId,
+            deviceIdentity = deviceIdentity,
+        )
+        val updatedBindings = scene.bindings.filterNot { it.objectId == objectId } + newBinding
+        val updatedScene = scene.copy(
+            bindings = updatedBindings,
+            updatedAtMillis = System.currentTimeMillis(),
+        )
+        return saveScene(updatedScene)
+    }
+
+    override fun unbindDevice(sceneId: String, objectId: String): DeviceScene {
+        validateSceneId(sceneId)
+        if (objectId.isBlank()) throw SceneValidationException("Object ID cannot be blank")
+        val scene = loadSceneOrExisting(sceneId)
+        val updatedBindings = scene.bindings.filterNot { it.objectId == objectId }
+        val updatedScene = scene.copy(
+            bindings = updatedBindings,
+            updatedAtMillis = System.currentTimeMillis(),
+        )
+        return saveScene(updatedScene)
+    }
+
+    override fun updateBinding(
+        sceneId: String,
+        objectId: String,
+        deviceIdentity: DeviceIdentityRef?,
+    ): DeviceScene {
+        return if (deviceIdentity != null) {
+            bindDevice(sceneId, objectId, deviceIdentity)
+        } else {
+            unbindDevice(sceneId, objectId)
+        }
+    }
+
+    override fun saveCamera(sceneId: String, camera: SceneCamera): DeviceScene {
+        validateSceneId(sceneId)
+        val scene = loadSceneOrExisting(sceneId)
+        val updatedScene = scene.copy(
+            camera = camera,
             updatedAtMillis = System.currentTimeMillis(),
         )
         return saveScene(updatedScene)

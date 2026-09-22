@@ -42,6 +42,7 @@ fun Sidebar(
     onTabChange: (NavTab) -> Unit,
     onlineCount: Int,
     onApkInstall: suspend (String) -> Unit,
+    threeDSceneEnabled: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     var installingFile by remember { mutableStateOf<String?>(null) }
@@ -69,6 +70,9 @@ fun Sidebar(
 
         Column(modifier = Modifier.weight(1f).padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             NavItem(stringResource(Res.string.nav_device_wall), activeTab == NavTab.WALL) { onTabChange(NavTab.WALL) }
+            if (threeDSceneEnabled) {
+                NavItem(stringResource(Res.string.nav_3d_scene), activeTab == NavTab.SCENE) { onTabChange(NavTab.SCENE) }
+            }
             NavItem(stringResource(Res.string.nav_group_command), activeTab == NavTab.GROUPS) { onTabChange(NavTab.GROUPS) }
             NavItem(stringResource(Res.string.nav_decompile), activeTab == NavTab.DECOMPILE) { onTabChange(NavTab.DECOMPILE) }
             NavItem(stringResource(Res.string.nav_global_settings), activeTab == NavTab.SETTINGS) { onTabChange(NavTab.SETTINGS) }

@@ -45,6 +45,13 @@ data class SceneAssetInstance(
     val transform: SceneTransform = SceneTransform(),
 )
 
+val DEFAULT_BINDABLE_OBJECT_IDS: List<String> = listOf(
+    "device_slot_1",
+    "device_slot_2",
+    "device_slot_3",
+    "device_slot_4",
+)
+
 data class DeviceScene(
     val schemaVersion: Int = CURRENT_SCENE_SCHEMA_VERSION,
     val id: String,
@@ -53,6 +60,7 @@ data class DeviceScene(
     val camera: SceneCamera = SceneCamera(),
     val assets: List<SceneAssetInstance> = emptyList(),
     val bindings: List<SceneBinding> = emptyList(),
+    val bindableObjectIds: List<String> = emptyList(),
     val createdAtMillis: Long = 0L,
     val updatedAtMillis: Long = 0L,
 )

@@ -5,7 +5,11 @@ import {
   DEFAULT_RENDERER_VERSION,
   WIRE_TYPES,
 } from "../../renderer-contract/scene-bridge-contract.ts";
-import type { CameraCommandPayload } from "../../renderer-contract/scene-bridge-contract.ts";
+import type {
+  CameraChangedMessage,
+  CameraChangedPayload,
+  CameraCommandPayload,
+} from "../../renderer-contract/scene-bridge-contract.ts";
 import { CefBridgeReceiver } from "./bridge/CefBridgeReceiver.ts";
 import { CefBridgeSender } from "./bridge/CefBridgeSender.ts";
 import type { CefJsBridgeApi } from "./bridge/CefBridgeSender.ts";
@@ -142,6 +146,16 @@ export class RendererRuntime {
       isCtrlPressed,
       isShiftPressed,
     );
+    this.sender.send(message);
+  }
+
+  sendCameraChanged(payload: CameraChangedPayload): void {
+    const message: CameraChangedMessage = {
+      type: WIRE_TYPES.CAMERA_CHANGED,
+      version: CURRENT_BRIDGE_PROTOCOL_VERSION,
+      timestamp: Date.now(),
+      payload,
+    };
     this.sender.send(message);
   }
 

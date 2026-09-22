@@ -342,6 +342,40 @@ class SceneBridgeContractTest {
     }
 
     @Test
+    fun roundtrip_cameraCommand_serializesAndDeserializes() {
+        val message = SceneBridgeMessage.CameraCommand(
+            position = SceneVector3(10.0, 20.0, 30.0),
+            target = SceneVector3(0.0, 1.0, 0.0),
+            fov = 50.0,
+            timestamp = 8500L,
+        )
+        val json = serializer.serialize(message)
+        assertEnvelopeInvariants(json, "CAMERA_COMMAND")
+        val deserialized = serializer.deserialize(json)
+        assertIs<SceneBridgeMessage.CameraCommand>(deserialized)
+        assertEquals(SceneVector3(10.0, 20.0, 30.0), deserialized.position)
+        assertEquals(SceneVector3(0.0, 1.0, 0.0), deserialized.target)
+        assertEquals(50.0, deserialized.fov)
+    }
+
+    @Test
+    fun roundtrip_cameraChanged_serializesAndDeserializes() {
+        val message = SceneBridgeMessage.CameraChanged(
+            position = SceneVector3(12.5, 22.5, 32.5),
+            target = SceneVector3(1.0, 2.0, 3.0),
+            fov = 45.0,
+            timestamp = 9000L,
+        )
+        val json = serializer.serialize(message)
+        assertEnvelopeInvariants(json, "CAMERA_CHANGED")
+        val deserialized = serializer.deserialize(json)
+        assertIs<SceneBridgeMessage.CameraChanged>(deserialized)
+        assertEquals(SceneVector3(12.5, 22.5, 32.5), deserialized.position)
+        assertEquals(SceneVector3(1.0, 2.0, 3.0), deserialized.target)
+        assertEquals(45.0, deserialized.fov)
+    }
+
+    @Test
     fun deserialize_blankInput_returnsNullGracefully() {
         assertNull(serializer.deserialize(""))
         assertNull(serializer.deserialize("   "))

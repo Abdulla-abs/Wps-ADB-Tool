@@ -78,12 +78,44 @@ export class SceneLoader {
       }
     }
 
+    // 3. Fallback: if no bindable objects were indexed from GLBs, generate default slot placeholders
+    if (
+      this.objectsById.size === 0 &&
+      descriptor.bindableObjectIds &&
+      descriptor.bindableObjectIds.length > 0
+    ) {
+      this.createFallbackObjects(descriptor.bindableObjectIds);
+    }
+
     return {
       root: this.contentGroup,
       objectsById: this.objectsById,
       pickableObjects: this.pickableObjects,
       hasEnvironmentModel,
     };
+  }
+
+  private createFallbackObjects(bindableObjectIds: string[]): void {
+    bindableObjectIds.forEach((objectId, index) => {
+      const geometry = new THREE.BoxGeometry(1.2, 2.2, 0.35);
+      const material = new THREE.MeshStandardMaterial({
+        color: 0x334155,
+        emissive: 0x000000,
+        roughness: 0.7,
+        metalness: 0.1,
+      });
+
+      const object = new THREE.Mesh(geometry, material);
+      object.name = objectId;
+      object.position.set(
+        (index % 4) * 2.0 - 3.0,
+        1.1,
+        Math.floor(index / 4) * 1.5,
+      );
+
+      this.registerObject(objectId, object);
+      this.contentGroup.add(object);
+    });
   }
 
   private async loadAsset(

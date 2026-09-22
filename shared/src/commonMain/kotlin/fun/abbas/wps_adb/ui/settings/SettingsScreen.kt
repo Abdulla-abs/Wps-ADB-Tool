@@ -61,6 +61,8 @@ fun SettingsScreen(
     var logRetention by remember(settings) { mutableStateOf(settings.logRetention.toString()) }
     var autoApproveKey by remember(settings) { mutableStateOf(settings.autoApproveKey) }
     var dataCacheDir by remember(settings) { mutableStateOf(settings.dataCacheDir) }
+    var threeDSceneEnabled by remember(settings) { mutableStateOf(settings.threeDSceneEnabled) }
+    var activeSceneId by remember(settings) { mutableStateOf(settings.activeSceneId) }
     var adbPathInvalid by remember { mutableStateOf(false) }
     var scrcpyPathInvalid by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -87,6 +89,8 @@ fun SettingsScreen(
                 autoApproveKey = autoApproveKey,
                 diagnosticTelemetry = settings.diagnosticTelemetry,
                 dataCacheDir = dataCacheDir.trim(),
+                threeDSceneEnabled = threeDSceneEnabled,
+                activeSceneId = activeSceneId,
             ),
         )
     }
@@ -233,6 +237,32 @@ fun SettingsScreen(
             }
             FieldLabel(stringResource(Res.string.settings_log_retention))
             OutlinedTextField(logRetention, { logRetention = it }, Modifier.fillMaxWidth(), singleLine = true, colors = fieldColors())
+        }
+
+        SettingsCard(stringResource(Res.string.settings_3d_scene_title)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Checkbox(
+                    checked = threeDSceneEnabled,
+                    onCheckedChange = { threeDSceneEnabled = it },
+                    colors = CheckboxDefaults.colors(checkedColor = CarbonColors.Primary),
+                )
+                Column(modifier = Modifier.padding(start = 8.dp)) {
+                    Text(
+                        stringResource(Res.string.settings_3d_scene_enable),
+                        fontSize = 14.sp,
+                        color = CarbonColors.OnSurface,
+                    )
+                    Text(
+                        stringResource(Res.string.settings_3d_scene_desc),
+                        fontSize = 11.sp,
+                        color = CarbonColors.Outline,
+                        modifier = Modifier.padding(top = 2.dp),
+                    )
+                }
+            }
         }
         }
 

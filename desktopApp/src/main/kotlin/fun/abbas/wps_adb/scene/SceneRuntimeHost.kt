@@ -50,6 +50,8 @@ class SceneRuntimeHost(
     parentScope: CoroutineScope,
     val sceneRuntimeController: SceneRuntimeController? = null,
     val sceneRepository: `fun`.abbas.wps_adb.data.scene.DeviceSceneRepository? = null,
+    val initialActiveSceneId: String? = null,
+    val onActiveSceneIdChanged: ((String) -> Unit)? = null,
     private val customTransport: BridgeTransport? = null,
     private val cefHostManagerProvider: (() -> CefHostManager)? = null,
     val resourceRoot: String = "scene-runtime",
@@ -64,6 +66,32 @@ class SceneRuntimeHost(
 
     private val _state = MutableStateFlow(SceneRuntimeState())
     val state: StateFlow<SceneRuntimeState> = _state.asStateFlow()
+
+    private val _availableScenes = MutableStateFlow<List<SceneOption>>(emptyList())
+    val availableScenes: StateFlow<List<SceneOption>> = _availableScenes.asStateFlow()
+
+    fun refreshScenes() {
+        val repo = sceneRepository ?: return
+        val list = try {
+            repo.listScenes().map { SceneOption(it.id, it.name) }
+        } catch (_: Throwable) {
+            emptyList()
+        }
+        _availableScenes.value = list
+    }
+
+    fun selectScene(sceneId: String): Boolean {
+        val repository = sceneRepository ?: return false
+        val scene = try {
+            repository.loadScene(sceneId)
+        } catch (_: Throwable) {
+            return false
+        }
+        sceneRuntimeController?.setScene(scene)
+        _state.update { it.copy(activeSceneId = scene.id) }
+        onActiveSceneIdChanged?.invoke(scene.id)
+        return true
+    }
 
     var browserComponent: Component? = null
         private set
@@ -106,26 +134,49 @@ class SceneRuntimeHost(
             hostController.bind(sceneRuntimeController)
 
             val initialScene = if (sceneRepository != null) {
-                val scenes = sceneRepository.listScenes()
-                if (scenes.isNotEmpty()) {
-                    scenes.first()
-                } else {
+                val configuredScene = initialActiveSceneId?.let { id ->
                     try {
-                        sceneRepository.createScene("Default 3D Scene", "scene_default")
+                        sceneRepository.loadScene(id)
                     } catch (_: Throwable) {
-                        createDefaultScene()
+                        null
+                    }
+                }
+                if (configuredScene != null) {
+                    configuredScene
+                } else {
+                    val scenes = sceneRepository.listScenes()
+                    if (scenes.isNotEmpty()) {
+                        scenes.first()
+                    } else {
+                        try {
+                            val defaultScene = createDefaultScene()
+                            sceneRepository.saveScene(defaultScene)
+                            defaultScene
+                        } catch (_: Throwable) {
+                            createDefaultScene()
+                        }
                     }
                 }
             } else {
                 sceneRuntimeController.activeScene.value ?: createDefaultScene()
             }
 
+            refreshScenes()
+
             sceneRuntimeController.setScene(initialScene)
             _state.update { it.copy(activeSceneId = initialScene.id) }
 
+            if (initialActiveSceneId != initialScene.id) {
+                onActiveSceneIdChanged?.invoke(initialScene.id)
+            }
+
             hostScope.launch {
                 sceneRuntimeController.activeScene.collect { scene ->
-                    _state.update { it.copy(activeSceneId = scene?.id) }
+                    val newId = scene?.id
+                    _state.update { it.copy(activeSceneId = newId) }
+                    if (newId != null) {
+                        onActiveSceneIdChanged?.invoke(newId)
+                    }
                 }
             }
         } else {
@@ -201,6 +252,7 @@ class SceneRuntimeHost(
             ),
             assets = emptyList(),
             bindings = emptyList(),
+            bindableObjectIds = `fun`.abbas.wps_adb.model.scene.DEFAULT_BINDABLE_OBJECT_IDS,
         )
     }
 

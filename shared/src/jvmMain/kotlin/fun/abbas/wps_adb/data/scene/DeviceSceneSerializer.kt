@@ -61,6 +61,12 @@ object DeviceSceneSerializer {
         }
         root.put("bindings", bindingsArray)
 
+        val bindableArray = JSONArray()
+        for (objectId in scene.bindableObjectIds) {
+            bindableArray.put(objectId)
+        }
+        root.put("bindableObjectIds", bindableArray)
+
         return root.toString(2)
     }
 
@@ -159,6 +165,23 @@ object DeviceSceneSerializer {
             }
         }
 
+        val hasBindableField = root.has("bindableObjectIds")
+        val parsedBindableIds = mutableListOf<String>()
+        if (hasBindableField) {
+            root.optJSONArray("bindableObjectIds")?.let { arr ->
+                for (i in 0 until arr.length()) {
+                    val objId = arr.optString(i, "").trim()
+                    if (objId.isNotEmpty()) parsedBindableIds.add(objId)
+                }
+            }
+        }
+
+        val finalBindableObjectIds = if (!hasBindableField && id == "scene_default") {
+            `fun`.abbas.wps_adb.model.scene.DEFAULT_BINDABLE_OBJECT_IDS
+        } else {
+            parsedBindableIds
+        }
+
         return DeviceScene(
             schemaVersion = schemaVersion,
             id = id,
@@ -167,6 +190,7 @@ object DeviceSceneSerializer {
             camera = camera,
             assets = assets,
             bindings = bindings,
+            bindableObjectIds = finalBindableObjectIds,
             createdAtMillis = createdAtMillis,
             updatedAtMillis = updatedAtMillis,
         )

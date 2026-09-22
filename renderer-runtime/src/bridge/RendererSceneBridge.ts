@@ -57,6 +57,9 @@ export class RendererSceneBridge {
     this.cameraController = new CameraController({
       camera: this.sceneRenderer.getCamera(),
       domElement: this.sceneRenderer.getCanvas(),
+      onCameraChanged: (payload) => {
+        this.runtime.sendCameraChanged(payload);
+      },
     });
 
     // Hook camera damping update into render loop

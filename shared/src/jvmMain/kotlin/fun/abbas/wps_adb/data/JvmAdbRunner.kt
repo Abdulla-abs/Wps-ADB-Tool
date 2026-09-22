@@ -20,7 +20,7 @@ open class JvmAdbRunner(
     private val adbPathProvider: () -> String = { "adb" },
 ) {
     fun isAvailable(): Boolean {
-        val path = resolveAdbPath()
+        val path = resolveAdbPath() ?: return false
         if (path.isBlank()) return false
         return isAvailable(path)
     }
@@ -33,8 +33,9 @@ open class JvmAdbRunner(
     }
 
     fun captureScreenshotBytes(serial: String): ByteArray? {
+        val adb = resolveAdbPath() ?: return null
         val command = buildList {
-            add(resolveAdbPath())
+            add(adb)
             add("-s")
             add(serial)
             addAll(listOf("exec-out", "screencap", "-p"))
@@ -87,9 +88,10 @@ open class JvmAdbRunner(
         supportsNativeLogcatPidFilter(resolveDeviceSdkInt(serial))
 
     fun startLogcat(serial: String, pid: Int): LogcatSession {
+        val adb = resolveAdbPath() ?: error("ADB executable not found. Please configure a valid adb path in Settings or install Android SDK.")
         val useNativePidFilter = supportsNativeLogcatPidFilter(serial)
         val command = buildList {
-            add(resolveAdbPath())
+            add(adb)
             add("-s")
             add(serial)
             add("logcat")
@@ -111,7 +113,8 @@ open class JvmAdbRunner(
     }
 
     fun startGlobalLogcat(serial: String): LogcatSession {
-        val command = globalLogcatCommand(resolveAdbPath(), serial)
+        val adb = resolveAdbPath() ?: error("ADB executable not found. Please configure a valid adb path in Settings or install Android SDK.")
+        val command = globalLogcatCommand(adb, serial)
         val process = ProcessBuilder(command)
             .redirectErrorStream(true)
             .start()
@@ -249,8 +252,9 @@ open class JvmAdbRunner(
         run(pairCommandArgs(endpoint, pairingCode))
 
     fun startBackground(args: List<String>, serial: String? = null): Process? {
+        val adb = resolveAdbPath() ?: return null
         val command = buildList {
-            add(resolveAdbPath())
+            add(adb)
             if (serial != null) {
                 add("-s")
                 add(serial)
@@ -267,8 +271,10 @@ open class JvmAdbRunner(
     }
 
     open fun run(args: List<String>, serial: String? = null): AdbProcessResult {
+        val adb = resolveAdbPath()
+            ?: return AdbProcessResult(-1, "ADB executable not found. Please configure a valid adb path in Settings or install Android SDK.")
         val command = buildList {
-            add(resolveAdbPath())
+            add(adb)
             if (serial != null) {
                 add("-s")
                 add(serial)
@@ -287,8 +293,10 @@ open class JvmAdbRunner(
     }
 
     fun runWithTimeout(args: List<String>, serial: String? = null, timeoutMs: Long): AdbProcessResult {
+        val adb = resolveAdbPath()
+            ?: return AdbProcessResult(-1, "ADB executable not found. Please configure a valid adb path in Settings or install Android SDK.")
         val command = buildList {
-            add(resolveAdbPath())
+            add(adb)
             if (serial != null) {
                 add("-s")
                 add(serial)
@@ -326,8 +334,8 @@ open class JvmAdbRunner(
         }
     }
 
-    private fun resolveAdbPath(): String =
-        ExecutableLocator.resolveAdbPath(adbPathProvider())
+    open fun resolveAdbPath(): String? =
+        ExecutableLocator.resolveRunnableAdbPath(adbPathProvider())
 
     companion object {
         const val MIN_SDK_FOR_LOGCAT_PID_FILTER = 29

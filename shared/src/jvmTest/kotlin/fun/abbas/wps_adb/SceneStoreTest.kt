@@ -476,4 +476,91 @@ class SceneStoreTest {
             rootDir.deleteRecursively()
         }
     }
+
+    @Test
+    fun bindDevice_persistsBindingInStore() {
+        val (store, rootDir) = createTempStore()
+        try {
+            store.createScene(name = "Bind Test", id = "bind_scene")
+            val identity = `fun`.abbas.wps_adb.model.scene.DeviceIdentityRef("SN123456")
+            val updated = store.bindDevice("bind_scene", "Phone_Slot_1", identity)
+
+            assertEquals(1, updated.bindings.size)
+            assertEquals("Phone_Slot_1", updated.bindings[0].objectId)
+            assertEquals(identity, updated.bindings[0].deviceIdentity)
+
+            // Verify persistence by reloading
+            val reloaded = store.loadScene("bind_scene")
+            assertEquals(1, reloaded.bindings.size)
+            assertEquals("Phone_Slot_1", reloaded.bindings[0].objectId)
+            assertEquals(identity, reloaded.bindings[0].deviceIdentity)
+
+            // Rebind with another device
+            val identity2 = `fun`.abbas.wps_adb.model.scene.DeviceIdentityRef("SN789012")
+            store.updateBinding("bind_scene", "Phone_Slot_1", identity2)
+            val reloaded2 = store.loadScene("bind_scene")
+            assertEquals(1, reloaded2.bindings.size)
+            assertEquals(identity2, reloaded2.bindings[0].deviceIdentity)
+
+            // Unbind
+            store.unbindDevice("bind_scene", "Phone_Slot_1")
+            val reloaded3 = store.loadScene("bind_scene")
+            assertTrue(reloaded3.bindings.isEmpty())
+        } finally {
+            rootDir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun saveCamera_persistsCameraInStore() {
+        val (store, rootDir) = createTempStore()
+        try {
+            store.createScene(name = "Cam Save Test", id = "cam_scene")
+            val newCamera = `fun`.abbas.wps_adb.model.scene.SceneCamera(
+                position = `fun`.abbas.wps_adb.model.scene.SceneVector3(10.0, 20.0, 30.0),
+                target = `fun`.abbas.wps_adb.model.scene.SceneVector3(1.0, 2.0, 3.0),
+                fov = 55.0,
+            )
+            store.saveCamera("cam_scene", newCamera)
+
+            val reloaded = store.loadScene("cam_scene")
+            assertEquals(10.0, reloaded.camera.position.x)
+            assertEquals(20.0, reloaded.camera.position.y)
+            assertEquals(30.0, reloaded.camera.position.z)
+            assertEquals(1.0, reloaded.camera.target.x)
+            assertEquals(2.0, reloaded.camera.target.y)
+            assertEquals(3.0, reloaded.camera.target.z)
+            assertEquals(55.0, reloaded.camera.fov)
+        } finally {
+            rootDir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun activeScene_canBeLoadedById() {
+        val (store, rootDir) = createTempStore()
+        try {
+            val scene = store.createScene("Second Scene", "scene_2")
+            val loaded = store.loadScene("scene_2")
+            assertEquals(scene.id, loaded.id)
+            assertEquals("Second Scene", loaded.name)
+        } finally {
+            rootDir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun createAndSaveScene_persistsBindableObjectIds() {
+        val (store, rootDir) = createTempStore()
+        try {
+            val scene = store.createScene("Multi Slot Scene", "multi_slot")
+            val updated = scene.copy(bindableObjectIds = listOf("slot_1", "slot_2", "slot_3"))
+            store.saveScene(updated)
+
+            val reloaded = store.loadScene("multi_slot")
+            assertEquals(listOf("slot_1", "slot_2", "slot_3"), reloaded.bindableObjectIds)
+        } finally {
+            rootDir.deleteRecursively()
+        }
+    }
 }

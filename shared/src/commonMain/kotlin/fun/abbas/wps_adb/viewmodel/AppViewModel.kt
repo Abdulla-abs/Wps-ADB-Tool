@@ -164,6 +164,7 @@ class AppViewModel(
     val selectedSceneObjectId: StateFlow<String?> = sceneRuntimeController.selectedObjectId
 
     fun setScene(scene: DeviceScene?) = sceneRuntimeController.setScene(scene)
+    fun updateScene(scene: DeviceScene) = sceneRuntimeController.updateScene(scene)
     fun selectSceneObject(objectId: String?) = sceneRuntimeController.selectObject(objectId)
 
     fun setActiveTab(tab: NavTab) {
@@ -659,14 +660,18 @@ class AppViewModel(
         return deviceShellService.createTerminalComponent(SidePanelController.shellSessionId(session.deviceId))
     }
 
-    fun openShellDeviceLogcat() {
-        val deviceId = _localState.value.shellSession?.deviceId ?: return
+    fun openDeviceLogcat(deviceId: String) {
         _localState.update {
             it.copy(isLogTrayOpen = true, logTrayMode = LogTrayMode.LOGCAT, logcatDeviceFilter = deviceId)
         }
         if (repository.isAdbActive.value) {
             repository.startGlobalLogcat(deviceId)
         }
+    }
+
+    fun openShellDeviceLogcat() {
+        val deviceId = _localState.value.shellSession?.deviceId ?: return
+        openDeviceLogcat(deviceId)
     }
 
     fun onEasyAction(kind: EasyActionKind) {

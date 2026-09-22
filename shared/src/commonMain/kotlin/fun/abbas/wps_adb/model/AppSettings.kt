@@ -12,4 +12,6 @@ data class AppSettings(
     val autoApproveKey: Boolean = true,
     val diagnosticTelemetry: Boolean = false,
     val dataCacheDir: String = "",
+    val threeDSceneEnabled: Boolean = false,
+    val activeSceneId: String? = null,
 )

@@ -5,6 +5,7 @@ import `fun`.abbas.wps_adb.data.scene.SceneBindingResolver
 import `fun`.abbas.wps_adb.model.Device
 import `fun`.abbas.wps_adb.model.scene.DeviceScene
 import `fun`.abbas.wps_adb.model.scene.ResolvedSceneState
+import `fun`.abbas.wps_adb.model.scene.SceneCamera
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -52,13 +53,25 @@ class DefaultSceneRuntimeController(
     private val _selectedObjectId = MutableStateFlow<String?>(null)
     override val selectedObjectId: StateFlow<String?> = _selectedObjectId.asStateFlow()
 
+    private val _runtimeCamera = MutableStateFlow<SceneCamera?>(null)
+    override val runtimeCamera: StateFlow<SceneCamera?> = _runtimeCamera.asStateFlow()
+
     override fun setScene(scene: DeviceScene?) {
         _activeScene.value = scene
         _selectedObjectId.value = null
+        _runtimeCamera.value = scene?.camera
+    }
+
+    override fun updateScene(scene: DeviceScene) {
+        _activeScene.value = scene
     }
 
     override fun selectObject(objectId: String?) {
         _selectedObjectId.value = objectId
+    }
+
+    override fun updateRuntimeCamera(camera: SceneCamera) {
+        _runtimeCamera.value = camera
     }
 }
 

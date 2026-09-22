@@ -23,6 +23,7 @@ export const WIRE_TYPES = {
 
   // Renderer -> Host (Uplink)
   RENDERER_READY: "RENDERER_READY",
+  CAMERA_CHANGED: "CAMERA_CHANGED",
   OBJECT_CLICKED: "OBJECT_CLICKED",
   OBJECT_HOVERED: "OBJECT_HOVERED",
   OBJECT_TRANSFORM_CHANGED: "OBJECT_TRANSFORM_CHANGED",
@@ -182,6 +183,12 @@ export interface RendererErrorPayload {
   category?: string;
 }
 
+export interface CameraChangedPayload {
+  position: Vector3;
+  target: Vector3;
+  fov: number;
+}
+
 // ==========================================
 // Message Union & Discriminators
 // ==========================================
@@ -200,6 +207,7 @@ export type DownlinkBridgeMessage =
   | CameraCommandMessage;
 
 export type RendererReadyMessage = BridgeEnvelope<RendererReadyPayload> & { type: typeof WIRE_TYPES.RENDERER_READY };
+export type CameraChangedMessage = BridgeEnvelope<CameraChangedPayload> & { type: typeof WIRE_TYPES.CAMERA_CHANGED };
 export type ObjectClickedMessage = BridgeEnvelope<ObjectClickedPayload> & { type: typeof WIRE_TYPES.OBJECT_CLICKED };
 export type ObjectHoveredMessage = BridgeEnvelope<ObjectHoveredPayload> & { type: typeof WIRE_TYPES.OBJECT_HOVERED };
 export type ObjectTransformChangedMessage = BridgeEnvelope<ObjectTransformChangedPayload> & { type: typeof WIRE_TYPES.OBJECT_TRANSFORM_CHANGED };
@@ -207,6 +215,7 @@ export type RendererErrorMessage = BridgeEnvelope<RendererErrorPayload> & { type
 
 export type UplinkBridgeMessage =
   | RendererReadyMessage
+  | CameraChangedMessage
   | ObjectClickedMessage
   | ObjectHoveredMessage
   | ObjectTransformChangedMessage

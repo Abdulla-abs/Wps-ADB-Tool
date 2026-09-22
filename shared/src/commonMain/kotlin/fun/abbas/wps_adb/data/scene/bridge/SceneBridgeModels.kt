@@ -78,5 +78,5 @@ fun DeviceScene.toDescriptor(): SceneDescriptor = SceneDescriptor(
             ),
         )
     },
-    bindableObjectIds = bindings.map { it.objectId },
+    bindableObjectIds = (bindableObjectIds + bindings.map { it.objectId }).distinct(),
 )

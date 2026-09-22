@@ -89,6 +89,17 @@ sealed interface SceneBridgeMessage {
     ) : SceneBridgeMessage
 
     /**
+     * Sent when the renderer camera transforms (OrbitControls end / pan / orbit / zoom).
+     * Wire type: CAMERA_CHANGED
+     */
+    data class CameraChanged(
+        val position: SceneVector3,
+        val target: SceneVector3,
+        val fov: Double,
+        override val timestamp: Long = 0L,
+    ) : SceneBridgeMessage
+
+    /**
      * Sent when a 3D object was clicked / picked by raycasting in the canvas.
      * Wire type: OBJECT_CLICKED
      */

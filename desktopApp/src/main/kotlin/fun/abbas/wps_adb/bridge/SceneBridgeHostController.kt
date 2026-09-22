@@ -8,6 +8,7 @@ import `fun`.abbas.wps_adb.data.scene.bridge.SceneVisualProjector
 import `fun`.abbas.wps_adb.data.scene.bridge.toDescriptor
 import `fun`.abbas.wps_adb.data.scene.runtime.SceneRuntimeController
 import `fun`.abbas.wps_adb.model.scene.ResolvedSceneState
+import `fun`.abbas.wps_adb.model.scene.SceneCamera
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -39,6 +40,7 @@ class SceneBridgeHostController(
     private var latestState: ResolvedSceneState? = null
     private var selectedObjectId: String? = null
     private var lastSentSceneId: String? = null
+    private var boundRuntimeController: SceneRuntimeController? = null
 
     init {
         scope.launch {
@@ -83,11 +85,32 @@ class SceneBridgeHostController(
     }
 
     /**
+     * Sends camera command to reset or reposition the camera.
+     */
+    suspend fun resetCamera(camera: SceneCamera? = null) {
+        stateMutex.withLock {
+            val cam = camera ?: latestState?.scene?.camera ?: SceneCamera()
+            boundRuntimeController?.updateRuntimeCamera(cam)
+            if (channel.state.value == BridgeConnectionState.READY) {
+                channel.send(
+                    SceneBridgeMessage.CameraCommand(
+                        position = cam.position,
+                        target = cam.target,
+                        fov = cam.fov,
+                    )
+                )
+            }
+        }
+    }
+
+    /**
      * Binds this controller to both resolved state and selection synchronization
-     * of a [SceneRuntimeController], listening to inbound [SceneBridgeMessage.ObjectClicked] events.
+     * of a [SceneRuntimeController], listening to inbound [SceneBridgeMessage.ObjectClicked]
+     * and [SceneBridgeMessage.CameraChanged] events.
      */
     fun bind(runtimeController: SceneRuntimeController): Job {
         runtimeBindingJob?.cancel()
+        boundRuntimeController = runtimeController
 
         val bindingJob = SupervisorJob(scope.coroutineContext[Job])
         val bindingScope = CoroutineScope(scope.coroutineContext + bindingJob)
@@ -119,6 +142,15 @@ class SceneBridgeHostController(
                         runtimeController.selectObject(message.objectId)
                         selectObject(message.objectId)
                     }
+                    is SceneBridgeMessage.CameraChanged -> {
+                        runtimeController.updateRuntimeCamera(
+                            SceneCamera(
+                                position = message.position,
+                                target = message.target,
+                                fov = message.fov,
+                            )
+                        )
+                    }
                     else -> {}
                 }
             }
@@ -142,6 +174,7 @@ class SceneBridgeHostController(
     fun dispose() {
         runtimeBindingJob?.cancel()
         runtimeBindingJob = null
+        boundRuntimeController = null
     }
 
 

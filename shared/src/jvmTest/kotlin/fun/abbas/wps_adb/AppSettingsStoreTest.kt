@@ -88,4 +88,15 @@ class AppSettingsStoreTest {
         store.save(AppSettings(dataCacheDir = "D:\\WpsCache"))
         assertEquals("D:\\WpsCache", AppSettingsStore(file).load().dataCacheDir)
     }
+
+    @Test
+    fun saveAndLoad_persistsThreeDSceneSettings() {
+        val file = File.createTempFile("wps-adb-settings-3d", ".properties")
+        file.deleteOnExit()
+        val store = AppSettingsStore(file)
+        store.save(AppSettings(threeDSceneEnabled = true, activeSceneId = "scene_lab_01"))
+        val loaded = store.load()
+        assertTrue(loaded.threeDSceneEnabled)
+        assertEquals("scene_lab_01", loaded.activeSceneId)
+    }
 }

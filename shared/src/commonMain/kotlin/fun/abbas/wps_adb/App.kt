@@ -12,14 +12,21 @@ import `fun`.abbas.wps_adb.theme.CarbonTheme
 import `fun`.abbas.wps_adb.ui.layout.AppShell
 import `fun`.abbas.wps_adb.viewmodel.AppViewModel
 
+import androidx.compose.runtime.LaunchedEffect
+import `fun`.abbas.wps_adb.model.NavTab
+
 @Composable
-fun App() {
+fun App(
+    viewModel: AppViewModel? = null,
+    initialNavTab: NavTab? = null,
+    sceneContent: (@Composable (AppViewModel) -> Unit)? = null,
+) {
     TrackAppWindowFocus()
     setSingletonImageLoaderFactory { context ->
         ImageLoader.Builder(context).build()
     }
     CarbonTheme {
-        val appViewModel = viewModel {
+        val appViewModel = viewModel ?: viewModel {
             val repository = createAdbRepository()
             AppViewModel(
                 repository = repository,
@@ -32,6 +39,17 @@ fun App() {
                 ),
             )
         }
-        AppShell(appViewModel)
+        LaunchedEffect(initialNavTab) {
+            if (initialNavTab != null) {
+                if (initialNavTab == NavTab.SCENE && !appViewModel.settings.value.threeDSceneEnabled) {
+                    appViewModel.saveSettings(appViewModel.settings.value.copy(threeDSceneEnabled = true))
+                }
+                appViewModel.setActiveTab(initialNavTab)
+            }
+        }
+        AppShell(
+            viewModel = appViewModel,
+            sceneContent = sceneContent?.let { content -> { content(appViewModel) } },
+        )
     }
 }

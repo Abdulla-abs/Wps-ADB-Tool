@@ -14,8 +14,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import org.jetbrains.compose.resources.stringResource
 import wpsadbtool.shared.generated.resources.Res
+import wpsadbtool.shared.generated.resources.settings_3d_scene_not_supported
 import wpsadbtool.shared.generated.resources.app_name
 import wpsadbtool.shared.generated.resources.apk_debug_skip_install_toast
 import wpsadbtool.shared.generated.resources.apk_install_toast_failure
@@ -63,7 +65,10 @@ import `fun`.abbas.wps_adb.ui.sidepanel.sidePanelContentInsetEnd
 import `fun`.abbas.wps_adb.viewmodel.AppViewModel
 
 @Composable
-fun AppShell(viewModel: AppViewModel) {
+fun AppShell(
+    viewModel: AppViewModel,
+    sceneContent: (@Composable () -> Unit)? = null,
+) {
     val uiState by viewModel.uiState.collectAsState()
     val devices by viewModel.devices.collectAsState()
     val logs by viewModel.logs.collectAsState()
@@ -89,6 +94,7 @@ fun AppShell(viewModel: AppViewModel) {
                 onTabChange = viewModel::setActiveTab,
                 onlineCount = onlineCount,
                 onApkInstall = viewModel::installApk,
+                threeDSceneEnabled = settings.threeDSceneEnabled,
                 modifier = Modifier.width(240.dp).fillMaxHeight(),
             )
 
@@ -145,6 +151,22 @@ fun AppShell(viewModel: AppViewModel) {
                                 terminalHiddenMessage = terminalHiddenMessage,
                                 modifier = Modifier.fillMaxSize(),
                             )
+                            NavTab.SCENE -> {
+                                if (sceneContent != null) {
+                                    sceneContent()
+                                } else {
+                                    Box(
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Text(
+                                            text = stringResource(Res.string.settings_3d_scene_not_supported),
+                                            color = CarbonColors.Outline,
+                                            fontSize = 14.sp,
+                                        )
+                                    }
+                                }
+                            }
                             NavTab.GROUPS -> GroupManagementScreen(
                                 devices = devices,
                                 onBatchAction = viewModel::runBatchAction,

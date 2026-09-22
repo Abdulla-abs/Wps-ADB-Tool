@@ -208,6 +208,30 @@ describe("RendererRuntime Skeleton Integration Tests", () => {
     assert.strictEqual(sent.payload.isShiftPressed, false);
   });
 
+  test("sendCameraChanged: emits CAMERA_CHANGED frame to bridge", () => {
+    const bridge = new MockCefBridge();
+    const runtime = new RendererRuntime({ bridge });
+    runtime.start();
+    bridge.clear();
+
+    runtime.sendCameraChanged({
+      position: { x: 5, y: 10, z: 15 },
+      target: { x: 1, y: 2, z: 3 },
+      fov: 60,
+    });
+
+    assert.strictEqual(bridge.sentMessages.length, 1);
+    const sent = bridge.getLastSentPayload<{ type: string; payload: { position: { x: number; y: number; z: number }; target: { x: number; y: number; z: number }; fov: number } }>();
+    assert.strictEqual(sent.type, WIRE_TYPES.CAMERA_CHANGED);
+    assert.strictEqual(sent.payload.position.x, 5);
+    assert.strictEqual(sent.payload.position.y, 10);
+    assert.strictEqual(sent.payload.position.z, 15);
+    assert.strictEqual(sent.payload.target.x, 1);
+    assert.strictEqual(sent.payload.target.y, 2);
+    assert.strictEqual(sent.payload.target.z, 3);
+    assert.strictEqual(sent.payload.fov, 60);
+  });
+
   test("isolation: invalid payload does not mutate store and reports RENDERER_ERROR", () => {
     const bridge = new MockCefBridge();
     const runtime = new RendererRuntime({ bridge });

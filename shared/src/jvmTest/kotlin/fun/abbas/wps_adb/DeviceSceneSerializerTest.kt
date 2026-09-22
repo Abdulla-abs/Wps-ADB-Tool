@@ -160,4 +160,46 @@ class DeviceSceneSerializerTest {
             DeviceSceneSerializer.deserialize(json)
         }
     }
+
+    @Test
+    fun roundTrip_includesBindableObjectIds() {
+        val original = DeviceScene(
+            schemaVersion = CURRENT_SCENE_SCHEMA_VERSION,
+            id = "custom_scene",
+            name = "Custom Scene",
+            bindableObjectIds = listOf("slot_a", "slot_b"),
+        )
+        val json = DeviceSceneSerializer.serialize(original)
+        val parsed = DeviceSceneSerializer.deserialize(json)
+        assertEquals(listOf("slot_a", "slot_b"), parsed.bindableObjectIds)
+    }
+
+    @Test
+    fun deserialize_legacyDefaultSceneWithoutBindableField_migratesDefaultSlots() {
+        val json = """
+            {
+              "schemaVersion": 1,
+              "id": "scene_default",
+              "name": "Default 3D Scene"
+            }
+        """.trimIndent()
+        val parsed = DeviceSceneSerializer.deserialize(json)
+        assertEquals(
+            `fun`.abbas.wps_adb.model.scene.DEFAULT_BINDABLE_OBJECT_IDS,
+            parsed.bindableObjectIds,
+        )
+    }
+
+    @Test
+    fun deserialize_customSceneWithoutBindableField_defaultsEmptyList() {
+        val json = """
+            {
+              "schemaVersion": 1,
+              "id": "other_scene",
+              "name": "Other Scene"
+            }
+        """.trimIndent()
+        val parsed = DeviceSceneSerializer.deserialize(json)
+        assertEquals(emptyList(), parsed.bindableObjectIds)
+    }
 }

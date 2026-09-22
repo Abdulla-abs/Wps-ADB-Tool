@@ -40,6 +40,8 @@ class AppSettingsStore(
                 autoApproveKey = props.getProperty(KEY_AUTO_APPROVE_KEY, "true").toBooleanStrictOrNull() ?: true,
                 diagnosticTelemetry = props.getProperty(KEY_DIAGNOSTIC_TELEMETRY, "false").toBooleanStrictOrNull() ?: false,
                 dataCacheDir = props.getProperty(KEY_DATA_CACHE_DIR, ""),
+                threeDSceneEnabled = props.getProperty(KEY_THREE_D_SCENE_ENABLED, "false").toBooleanStrictOrNull() ?: false,
+                activeSceneId = props.getProperty(KEY_ACTIVE_SCENE_ID)?.takeIf { it.isNotBlank() },
             )
         }
         return settings
@@ -66,6 +68,12 @@ class AppSettingsStore(
             setProperty(KEY_AUTO_APPROVE_KEY, settings.autoApproveKey.toString())
             setProperty(KEY_DIAGNOSTIC_TELEMETRY, settings.diagnosticTelemetry.toString())
             setProperty(KEY_DATA_CACHE_DIR, settings.dataCacheDir)
+            setProperty(KEY_THREE_D_SCENE_ENABLED, settings.threeDSceneEnabled.toString())
+            if (settings.activeSceneId != null) {
+                setProperty(KEY_ACTIVE_SCENE_ID, settings.activeSceneId)
+            } else {
+                remove(KEY_ACTIVE_SCENE_ID)
+            }
         }
         storeFile.parentFile?.mkdirs()
         storeFile.outputStream().buffered().use { props.store(it, "WpsAdbTool settings") }
@@ -96,6 +104,8 @@ class AppSettingsStore(
         private const val KEY_AUTO_APPROVE_KEY = "autoApproveKey"
         private const val KEY_DIAGNOSTIC_TELEMETRY = "diagnosticTelemetry"
         private const val KEY_DATA_CACHE_DIR = "dataCacheDir"
+        private const val KEY_THREE_D_SCENE_ENABLED = "threeDSceneEnabled"
+        private const val KEY_ACTIVE_SCENE_ID = "activeSceneId"
 
         fun defaultStoreFile(): File {
             val dir = File(System.getProperty("user.home"), ".wps-adb-tool")

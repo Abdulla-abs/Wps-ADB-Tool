@@ -6,6 +6,15 @@ object ExecutableLocator {
     fun resolveAdbPath(configured: String): String =
         resolveConfiguredExecutable(configured, ADB_DEFAULT_NAME)
 
+    fun resolveRunnableAdbPath(configured: String): String? {
+        val trimmed = configured.trim()
+        if (isAdbConfigured(trimmed)) {
+            val file = File(trimmed)
+            if (file.isFile) return file.absolutePath
+        }
+        return discoverAdbPath()
+    }
+
     fun resolveScrcpyPath(configured: String): String =
         resolveConfiguredExecutable(configured, SCRCPY_DEFAULT_NAME)
 

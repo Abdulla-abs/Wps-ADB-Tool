@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import type {
+  CameraChangedPayload,
   CameraCommandPayload,
   SceneCameraDescriptor,
 } from "../../../renderer-contract/scene-bridge-contract.ts";
@@ -9,6 +10,7 @@ export interface CameraControllerOptions {
   camera: THREE.PerspectiveCamera;
   domElement: HTMLElement;
   initialTarget?: { x: number; y: number; z: number };
+  onCameraChanged?: (payload: CameraChangedPayload) => void;
 }
 
 /**
@@ -35,6 +37,17 @@ export class CameraController {
     const target = options.initialTarget ?? { x: 0, y: 1, z: 0 };
     this.controls.target.set(target.x, target.y, target.z);
     this.controls.update();
+
+    if (options.onCameraChanged) {
+      this.controls.addEventListener("end", () => {
+        if (this.isDisposed) return;
+        options.onCameraChanged?.({
+          position: { x: this.camera.position.x, y: this.camera.position.y, z: this.camera.position.z },
+          target: { x: this.controls.target.x, y: this.controls.target.y, z: this.controls.target.z },
+          fov: this.camera.fov,
+        });
+      });
+    }
   }
 
   /**

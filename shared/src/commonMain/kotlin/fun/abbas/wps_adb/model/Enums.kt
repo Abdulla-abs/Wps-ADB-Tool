@@ -14,6 +14,6 @@ enum class FilterTab { ALL, PHYSICAL, EMULATORS }
 
 enum class SortParam { NAME, SERIAL, BATTERY, CUSTOM }
 
-enum class NavTab { WALL, GROUPS, DECOMPILE, SETTINGS }
+enum class NavTab { WALL, SCENE, GROUPS, DECOMPILE, SETTINGS }
 
 enum class DeviceAction { DEBUG, DISCONNECT }

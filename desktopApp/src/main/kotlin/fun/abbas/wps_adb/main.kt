@@ -19,6 +19,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+
 /**
  * Application-level container holding the [SceneRuntimeHost] across Composable lifecycles.
  * Prevents Composable Recomposition from creating or destroying the JCEF browser.
@@ -32,6 +35,8 @@ object SceneRuntimeContainer {
     fun getOrCreate(
         runtimeController: `fun`.abbas.wps_adb.data.scene.runtime.SceneRuntimeController? = null,
         repository: `fun`.abbas.wps_adb.data.scene.DeviceSceneRepository? = null,
+        initialActiveSceneId: String? = null,
+        onActiveSceneIdChanged: ((String) -> Unit)? = null,
     ): SceneRuntimeHost {
         val existing = instance
         if (existing != null) return existing
@@ -41,6 +46,8 @@ object SceneRuntimeContainer {
             parentScope = scope,
             sceneRuntimeController = runtimeController,
             sceneRepository = repository,
+            initialActiveSceneId = initialActiveSceneId,
+            onActiveSceneIdChanged = onActiveSceneIdChanged,
         )
         instance = host
         return host
@@ -68,8 +75,15 @@ object SceneRuntimeContainer {
 fun rememberSceneRuntime(
     runtimeController: `fun`.abbas.wps_adb.data.scene.runtime.SceneRuntimeController? = null,
     repository: `fun`.abbas.wps_adb.data.scene.DeviceSceneRepository? = null,
+    initialActiveSceneId: String? = null,
+    onActiveSceneIdChanged: ((String) -> Unit)? = null,
 ): SceneRuntimeHost {
-    return SceneRuntimeContainer.getOrCreate(runtimeController, repository)
+    return SceneRuntimeContainer.getOrCreate(
+        runtimeController = runtimeController,
+        repository = repository,
+        initialActiveSceneId = initialActiveSceneId,
+        onActiveSceneIdChanged = onActiveSceneIdChanged,
+    )
 }
 
 fun main(args: Array<String>) {
@@ -80,40 +94,38 @@ fun main(args: Array<String>) {
             System.getProperty("wpsadb.scene") == "true"
 
     application {
-        // Only initialize SceneRuntimeHost when Scene view is requested
-        val sceneRuntimeHost = if (isSceneRequested) {
-            val repository = createAdbRepository()
-            val appViewModel = AppViewModel(
-                repository = repository,
-                scrcpyMirrorService = createScrcpyMirrorService(
-                    scrcpyPathProvider = { repository.settings.value.scrcpyPath },
-                    adbPathProvider = { repository.settings.value.adbPath },
-                ),
-                deviceShellService = createDeviceShellService(
-                    adbPathProvider = { repository.settings.value.adbPath },
-                ),
-            )
-            val sceneStore = SceneStore()
-            rememberSceneRuntime(
-                runtimeController = appViewModel.sceneRuntimeController,
-                repository = sceneStore,
-            )
-        } else null
-
         Window(
             onCloseRequest = {
                 SceneRuntimeContainer.dispose()
                 exitApplication()
             },
-            title = if (isSceneRequested) "WpsAdbTool — 3D Scene" else if (isSpikeRequested) "WpsAdbTool — 3D Renderer Spike" else "WpsAdbTool",
+            title = if (isSpikeRequested) "WpsAdbTool — 3D Renderer Spike" else "WpsAdbTool",
             state = rememberWindowState(width = 1280.dp, height = 800.dp),
         ) {
-            if (isSceneRequested && sceneRuntimeHost != null) {
-                SceneView(host = sceneRuntimeHost)
-            } else if (isSpikeRequested) {
+            if (isSpikeRequested) {
                 RendererSpikeView(onClose = ::exitApplication)
             } else {
-                App()
+                App(
+                    initialNavTab = if (isSceneRequested) `fun`.abbas.wps_adb.model.NavTab.SCENE else null,
+                    sceneContent = { vm ->
+                        val settings by vm.settings.collectAsState()
+                        val sceneStore = androidx.compose.runtime.remember { SceneStore() }
+                        val host = rememberSceneRuntime(
+                            runtimeController = vm.sceneRuntimeController,
+                            repository = sceneStore,
+                            initialActiveSceneId = settings.activeSceneId,
+                            onActiveSceneIdChanged = { newId ->
+                                if (settings.activeSceneId != newId) {
+                                    vm.saveSettings(settings.copy(activeSceneId = newId))
+                                }
+                            },
+                        )
+                        `fun`.abbas.wps_adb.scene.ui.DeviceSceneScreen(
+                            runtimeHost = host,
+                            viewModel = vm,
+                        )
+                    },
+                )
             }
         }
     }
