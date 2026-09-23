@@ -66,6 +66,7 @@ describe("RendererRuntime Skeleton Integration Tests", () => {
           ],
           bindableObjectIds: ["slot_phone_01"],
         },
+        epoch: 7,
       },
     });
 
@@ -75,6 +76,7 @@ describe("RendererRuntime Skeleton Integration Tests", () => {
     assert.ok(state.activeScene);
     assert.strictEqual(state.activeScene!.id, "lab_01");
     assert.strictEqual(state.activeScene!.name, "My Device Lab");
+    assert.strictEqual(state.activeEpoch, 7);
     assert.strictEqual(state.devices.length, 0);
   });
 

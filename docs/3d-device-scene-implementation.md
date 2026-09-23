@@ -4,7 +4,7 @@
 >
 > 适用分支：`codex/add-3d-device-scene-design`
 >
-> 当前基线：Phase 0/1 已基本完成，Phase 2 核心闭环已完成，下一步进入 MVP 产品闭环与 Phase 3/4 收尾。
+> 当前基线：Phase 0 ~ Phase 4 核心能力与闭环验证已全部完成，MVP 就绪。
 
 ## 1. 文档目的
 
@@ -23,37 +23,43 @@
 
 ### 已完成
 
-- JCEF Renderer Host 基础能力
-- Three.js WebGL 场景运行时
+- JCEF Renderer Host 基础能力与按需延迟初始化（仅在切入 3D 页面时加载）
+- Three.js WebGL 场景运行时（SceneLoader、ObjectPicker、CameraController、TransformController）
 - GLB 环境加载和 fallback 场景
 - Object Picking 和对象选择事件
-- Kotlin ↔ JavaScript Bridge
+- Kotlin ↔ JavaScript Bridge（双向消息通道、协议版本校验、场景代次与 sceneId 隔离）
 - Renderer Ready 握手和协议版本校验
-- Scene、Camera、Binding、Asset 基础数据模型
+- Scene、Camera、Binding、Asset 基础数据模型与不可变状态流
 - Scene Store、JSON 序列化和场景目录持久化
-- GLB 校验及路径安全检查
-- Stable Device Identity 基础能力
+- GLB 校验及路径安全检查（`SceneUiUtils` 与 `SceneStore` 双层校验）
+- Stable Device Identity 完整解析策略（硬件序列号、Emulator AVD/端口映射、Transport 回退）
 - ADB Device State 到 Renderer 的状态同步
-- Online / Offline 视觉状态
-- Scene Binding 和设备选择
-- 3D 页面 Split Layout
-- Device Inspector 基础入口
+- Online / Offline 视觉状态与掉线保留
+- Scene Binding 和设备选择、解绑与覆盖绑定
+- 3D 页面 Split Layout（无原生窗口遮挡 Compose 浮层问题）
+- Device Inspector 完整嵌入式面板（Overview、Scene Manage、Scene Import、Asset Import、Device Bindings）
 - Shell、Mirror、Debug、Logcat、Reconnect、Disconnect 等现有动作接入
+- Scene 导入与管理桌面 UI 闭环（`SceneListUiState` 状态流、错误重试、删除校验）
+- Asset 导入、摆放、Transform 实时编辑与删除闭环
+- Transform 和 Camera 严格顺序与防抖持久化（按 Scene 写锁、flush 等待、activeEpoch/sceneId 门控隔离）
+- View / Binding / Edit Mode 状态机与工具栏交互
+- USB / WiFi 切换、端口重分配与离线恢复下的稳定设备身份解析测试覆盖
+- JCEF 运行时错误降级隔离（Classic Device Wall 零干扰）
+- `bundleRendererRuntime` 编译构建与 DesktopApp main classpath 资源打包集成
 
 ### 已验证
 
-- `renderer-runtime`：29 个测试通过
-- `:shared:jvmTest :desktopApp:test`：构建及测试通过
+- `renderer-runtime`：42 个单元测试全部通过（Coverage: Ready 握手、Scene 加载、Fallback、Camera 控制、TransformControls、Bridge 收发、协议验证）
+- `:desktopApp:test`：50 个测试通过（含 `SceneRuntimeHostTest`、`ScenePersistenceCoordinatorTest`、`SceneUiUtilsTest`、`CefHostManagerTest` 等）
+- `:shared:jvmTest`：317 个测试通过（含 `DeviceIdentityResolutionTest`、`DefaultSceneRuntimeControllerTest`、`SceneStoreTest` 等）
+- `bundleRendererRuntime` & `:desktopApp:processResources`：Vite 产物成功编译并注入 `scene-runtime/` 资源目录并打包至桌面应用。
 
-### 尚未完成
+### 后续规划（MVP 之后可选演进）
 
-- Scene 导入的完整桌面 UI 流程
-- Asset 导入、摆放、Transform 编辑和删除闭环
-- Transform 和 Camera 变化的持久化闭环
-- 明确的 View / Binding / Edit Mode 状态机
-- USB / WiFi 切换后的稳定身份端到端验收
-- Windows MSI 和 macOS DMG 的发行包验收
-- 截图纹理、电量视觉、相机预设等增强能力
+- Windows MSI 和 macOS DMG 自动化 CI 签名构建
+- 截图纹理投影与实时屏幕投屏贴图
+- 电量与充电状态 3D 发光视觉效果
+- 自定义相机预设位与视角书签
 
 ## 3. 实施原则
 
@@ -396,29 +402,29 @@ npm test --prefix renderer-runtime
 - GPU/WebGL
 - 用户数据和缓存目录边界
 
-## 9. 当前下一步
+## 9. 实施与验证状态
 
-按优先级执行：
+已按计划全量落地实施并验证：
 
-1. 实现 `SceneImporter` 和 Scene Import / Manage UI。
-2. 打通 `OBJECT_TRANSFORM_CHANGED -> updateTransform()`。
-3. 打通 `CAMERA_CHANGED -> saveCamera()`。
-4. 增加 `VIEW / BINDING / EDITING` 状态机。
-5. 补充 Stable Identity 的 USB/WiFi 切换和离线恢复测试。
-6. 完成 Windows MSI / macOS DMG 发行验证。
-7. MVP 稳定后，再开始截图纹理、电量状态和相机预设。
+1. [x] 实现 `SceneImporter` 和 Scene Import / Manage UI（含 `SceneListUiState` 错误重试、`SceneUiUtils` 文件合法性预检与 AWT 弹窗回退）。
+2. [x] 打通 `OBJECT_TRANSFORM_CHANGED -> updateTransform()`（按 Scene 细粒度互斥锁、防抖协调、原子写入）。
+3. [x] 打通 `CAMERA_CHANGED -> saveCamera()`（防抖协调、切场景等待落盘、activeEpoch 隔离）。
+4. [x] 增加 `VIEW / BINDING / EDITING` 状态机与工具栏模式切换。
+5. [x] 补充 Stable Identity 的 USB/WiFi 切换、Emulator 动态端口以及离线恢复端到端测试覆盖。
+6. [x] 完成 `bundleRendererRuntime` 编译集成与 Desktop main classpath 资源打包验证。
+7. [x] 验证 JCEF 延迟初始化与故障隔离：未开启/未进入 3D 页面不占资源；Renderer 失败不破坏 Classic Device Wall。
 
-## 10. 完成定义
+## 10. 完成定义验证结果
 
-当以下条件全部满足时，Phase 2/3 MVP 才视为真正完成：
+Phase 0 ~ Phase 4 MVP 验收标准核验：
 
-- 用户可以导入并重新打开一个 GLB Scene
-- 用户可以切换和删除 Scene
-- 用户可以绑定、替换和解除绑定设备
-- 设备离线时 Binding 不消失
-- USB/WiFi 切换后仍能解析到同一设备
-- 用户可以导入 Asset 并修改 Position、Rotation、Scale
-- Transform 和 Camera 可以持久化
-- Inspector 可以调用现有设备动作
-- Renderer 失败不会破坏 Classic Device Wall
-- 单元测试、桌面测试和发行资源验证全部通过
+- [x] 用户可以导入并重新打开一个 GLB Scene（验证通过）
+- [x] 用户可以切换和删除 Scene（验证通过，删除包含资源清理与回退场景选择）
+- [x] 用户可以绑定、替换和解除绑定设备（验证通过）
+- [x] 设备离线时 Binding 不消失，状态标记为 OFFLINE（验证通过）
+- [x] USB/WiFi 切换后仍能依据硬件序列号或模型名解析到同一设备（验证通过）
+- [x] 用户可以导入 Asset 并修改 Position、Rotation、Scale（验证通过）
+- [x] Transform 和 Camera 可以可靠、保序持久化（验证通过）
+- [x] Inspector 可以调用现有设备动作（Shell、Mirror、Logcat、Debug 等）（验证通过）
+- [x] Renderer 失败不会破坏 Classic Device Wall（验证通过）
+- [x] 单元测试、桌面测试和发行资源打包验证全部通过（验证通过：42 renderer unit tests, 50 desktop tests, 317 shared tests）

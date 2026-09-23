@@ -61,7 +61,13 @@ export class RendererSceneBridge {
       camera: this.sceneRenderer.getCamera(),
       domElement: this.sceneRenderer.getCanvas(),
       onCameraChanged: (payload) => {
-        this.runtime.sendCameraChanged(payload);
+        const state = this.runtime.getStore().getState();
+        const activeSceneId = state.activeScene?.id;
+        this.runtime.sendCameraChanged({
+          ...payload,
+          sceneId: activeSceneId,
+          epoch: state.activeEpoch,
+        });
       },
     });
 
@@ -98,7 +104,13 @@ export class RendererSceneBridge {
       scene: this.sceneRenderer.getScene(),
       orbitControls: this.cameraController.getControls(),
       onTransformChanged: (payload) => {
-        this.runtime.sendObjectTransformChanged(payload);
+        const state = this.runtime.getStore().getState();
+        const activeSceneId = state.activeScene?.id;
+        this.runtime.sendObjectTransformChanged({
+          ...payload,
+          sceneId: activeSceneId,
+          epoch: state.activeEpoch,
+        });
       },
     });
 

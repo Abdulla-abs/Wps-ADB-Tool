@@ -30,6 +30,7 @@ export function isSceneInitPayload(payload: unknown): payload is InitScenePayloa
   if (!isObject(payload)) return false;
   const desc = payload.sceneDescriptor;
   if (!isObject(desc)) return false;
+  if ("epoch" in payload && typeof payload.epoch !== "number") return false;
   return (
     typeof desc.id === "string" &&
     typeof desc.name === "string" &&

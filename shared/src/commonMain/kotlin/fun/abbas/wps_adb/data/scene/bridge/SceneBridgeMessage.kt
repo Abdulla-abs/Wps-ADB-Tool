@@ -32,6 +32,7 @@ sealed interface SceneBridgeMessage {
      */
     data class InitScene(
         val sceneDescriptor: SceneDescriptor,
+        val epoch: Long = 0L,
         override val timestamp: Long = 0L,
     ) : SceneBridgeMessage
 
@@ -118,6 +119,8 @@ sealed interface SceneBridgeMessage {
         val position: SceneVector3,
         val target: SceneVector3,
         val fov: Double,
+        val sceneId: String? = null,
+        val epoch: Long? = null,
         override val timestamp: Long = 0L,
     ) : SceneBridgeMessage
 
@@ -152,6 +155,8 @@ sealed interface SceneBridgeMessage {
         val position: SceneVector3,
         val rotation: SceneVector3,
         val scale: SceneVector3,
+        val sceneId: String? = null,
+        val epoch: Long? = null,
         override val timestamp: Long = 0L,
     ) : SceneBridgeMessage
 

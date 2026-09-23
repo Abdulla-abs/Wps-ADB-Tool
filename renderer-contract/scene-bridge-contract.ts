@@ -99,6 +99,7 @@ export interface SceneDescriptor {
 
 export interface InitScenePayload {
   sceneDescriptor: SceneDescriptor;
+  epoch?: number;
 }
 
 export const VISUAL_STATUSES = {
@@ -186,6 +187,8 @@ export interface ObjectHoveredPayload {
 }
 
 export interface ObjectTransformChangedPayload {
+  sceneId?: string;
+  epoch?: number;
   objectId: string;
   position: Vector3;
   rotation: Vector3;
@@ -199,6 +202,8 @@ export interface RendererErrorPayload {
 }
 
 export interface CameraChangedPayload {
+  sceneId?: string;
+  epoch?: number;
   position: Vector3;
   target: Vector3;
   fov: number;

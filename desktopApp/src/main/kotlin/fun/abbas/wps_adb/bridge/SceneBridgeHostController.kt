@@ -38,14 +38,17 @@ class SceneBridgeHostController(
     private val channel: SceneBridgeChannel,
     private val projector: SceneVisualProjector = DefaultSceneVisualProjector(),
     private val scope: CoroutineScope,
-    private val onTransformChanged: suspend (String, SceneTransform) -> Unit = { _, _ -> },
-    private val onCameraChanged: suspend (SceneCamera) -> Unit = {},
+    private val eventValidator: (sceneId: String?, epoch: Long?) -> Boolean = { _, _ -> true },
+    private val epochProvider: () -> Long = { 0L },
+    private val onTransformChanged: suspend (sceneId: String?, epoch: Long?, objectId: String, transform: SceneTransform) -> Unit = { _, _, _, _ -> },
+    private val onCameraChanged: suspend (sceneId: String?, epoch: Long?, camera: SceneCamera) -> Unit = { _, _, _ -> },
 ) {
 
     private val stateMutex = Mutex()
     private var latestState: ResolvedSceneState? = null
     private var selectedObjectId: String? = null
     private var lastSentSceneId: String? = null
+    private var lastSentEpoch: Long? = null
     private var lastSentSceneContentKey: SceneContentKey? = null
     private var boundRuntimeController: SceneRuntimeController? = null
     private var currentMode: SceneInteractionMode = SceneInteractionMode.VIEW
@@ -151,26 +154,36 @@ class SceneBridgeHostController(
                         selectObject(message.objectId)
                     }
                     is SceneBridgeMessage.CameraChanged -> {
+                        val activeSceneId = runtimeController.activeScene.value?.id
+                        if (message.sceneId != null && activeSceneId != null && message.sceneId != activeSceneId) {
+                            return@collect
+                        }
+                        if (!eventValidator(message.sceneId, message.epoch)) {
+                            return@collect
+                        }
                         val cam = SceneCamera(
                             position = message.position,
                             target = message.target,
                             fov = message.fov,
                         )
                         runtimeController.updateRuntimeCamera(cam)
-                        scope.launch {
-                            onCameraChanged(cam)
-                        }
+                        onCameraChanged(message.sceneId, message.epoch, cam)
                     }
                     is SceneBridgeMessage.ObjectTransformChanged -> {
+                        val activeSceneId = runtimeController.activeScene.value?.id
+                        if (message.sceneId != null && activeSceneId != null && message.sceneId != activeSceneId) {
+                            return@collect
+                        }
+                        if (!eventValidator(message.sceneId, message.epoch)) {
+                            return@collect
+                        }
                         val transform = SceneTransform(
                             position = message.position,
                             rotation = message.rotation,
                             scale = message.scale,
                         )
                         runtimeController.updateRuntimeTransform(message.objectId, transform)
-                        scope.launch {
-                            onTransformChanged(message.objectId, transform)
-                        }
+                        onTransformChanged(message.sceneId, message.epoch, message.objectId, transform)
                     }
                     else -> {}
                 }
@@ -247,13 +260,16 @@ class SceneBridgeHostController(
                 ),
             )
         }
+        val currentEpoch = epochProvider()
         channel.send(
             SceneBridgeMessage.InitScene(
                 sceneDescriptor = descriptor,
+                epoch = currentEpoch,
             )
         )
-        println("[SceneBridgeHostController] InitScene sent for scene: ${state.scene.id}")
+        println("[SceneBridgeHostController] InitScene sent for scene: ${state.scene.id} (epoch=$currentEpoch)")
         lastSentSceneId = state.scene.id
+        lastSentEpoch = currentEpoch
         lastSentSceneContentKey = SceneContentKey.from(state.scene)
 
         val snapshot = projector.project(state, selectedObjectId)
@@ -270,7 +286,8 @@ class SceneBridgeHostController(
 
     private suspend fun syncSceneState(state: ResolvedSceneState) {
         val contentKey = SceneContentKey.from(state.scene)
-        if (state.scene.id != lastSentSceneId) {
+        val currentEpoch = epochProvider()
+        if (state.scene.id != lastSentSceneId || currentEpoch != lastSentEpoch) {
             syncInitialScene(state)
             return
         }

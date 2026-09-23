@@ -20,6 +20,7 @@ export interface RuntimeErrorRecord {
 export interface RendererRuntimeState {
   connectionState: BridgeLifecycleState;
   activeScene: SceneDescriptor | null;
+  activeEpoch: number;
   selectedObjectId: string | null;
   interactionMode: InteractionMode;
   devices: DeviceVisualDescriptor[];
@@ -35,6 +36,7 @@ export type StateListener = (state: RendererRuntimeState) => void;
 export class RendererStateStore {
   private connectionState: BridgeLifecycleState = "DISCONNECTED";
   private activeScene: SceneDescriptor | null = null;
+  private activeEpoch: number = 0;
   private selectedObjectId: string | null = null;
   private interactionMode: InteractionMode = "VIEW";
   private deviceMap = new Map<string, DeviceVisualDescriptor>();
@@ -49,6 +51,7 @@ export class RendererStateStore {
     return {
       connectionState: this.connectionState,
       activeScene: this.activeScene,
+      activeEpoch: this.activeEpoch,
       selectedObjectId: this.selectedObjectId,
       interactionMode: this.interactionMode,
       devices: Array.from(this.deviceMap.values()),
@@ -87,8 +90,9 @@ export class RendererStateStore {
     this.notify();
   }
 
-  initScene(descriptor: SceneDescriptor): void {
+  initScene(descriptor: SceneDescriptor, epoch = 0): void {
     this.activeScene = descriptor;
+    this.activeEpoch = epoch;
     // Clearing previous bindings and selection upon scene initialization
     this.deviceMap.clear();
     this.selectedObjectId = null;

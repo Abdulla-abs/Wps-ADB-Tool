@@ -37,7 +37,10 @@ class ScenePersistenceCoordinatorTest {
         override fun updateBinding(sceneId: String, objectId: String, deviceIdentity: DeviceIdentityRef?): DeviceScene =
             DeviceScene(id = sceneId, name = sceneId)
 
+        var failOnSaveCamera: Boolean = false
+
         override fun saveCamera(sceneId: String, camera: SceneCamera): DeviceScene {
+            if (failOnSaveCamera) throw java.io.IOException("Disk write failure")
             savedCameras.add(sceneId to camera)
             return DeviceScene(id = sceneId, name = sceneId, camera = camera)
         }
@@ -184,6 +187,62 @@ class ScenePersistenceCoordinatorTest {
         assertEquals("scene_B", fakeRepo.savedCameras[1].first)
         assertEquals(camB, fakeRepo.savedCameras[1].second)
 
+        coordinator.close()
+    }
+
+    @Test
+    fun discardScene_cancelsPendingSavesAndPreventsWrites() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        val fakeRepo = FakeSceneRepository()
+        val coordinator = ScenePersistenceCoordinator(
+            repository = fakeRepo,
+            parentScope = this,
+            debounceMillis = 500L,
+            ioDispatcher = testDispatcher,
+        )
+
+        val cam = SceneCamera(position = SceneVector3(7.0, 7.0, 7.0))
+        val transform = SceneTransform(position = SceneVector3(3.0, 0.0, 0.0))
+
+        coordinator.scheduleCameraSave("scene_to_delete", cam)
+        coordinator.scheduleTransformSave("scene_to_delete", "asset_1", transform)
+
+        advanceTimeBy(100L)
+        assertTrue(fakeRepo.savedCameras.isEmpty())
+        assertTrue(fakeRepo.savedTransforms.isEmpty())
+
+        // Scene is deleted: discard pending saves
+        coordinator.discardScene("scene_to_delete")
+
+        advanceTimeBy(1000L)
+        assertTrue(fakeRepo.savedCameras.isEmpty(), "Discarded camera save must not write to repository")
+        assertTrue(fakeRepo.savedTransforms.isEmpty(), "Discarded transform save must not write to repository")
+
+        coordinator.close()
+    }
+
+    @Test
+    fun flushScene_propagatesExceptions_whenRepositoryFails() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        val fakeRepo = FakeSceneRepository()
+        fakeRepo.failOnSaveCamera = true
+        val coordinator = ScenePersistenceCoordinator(
+            repository = fakeRepo,
+            parentScope = this,
+            debounceMillis = 500L,
+            ioDispatcher = testDispatcher,
+        )
+
+        val cam = SceneCamera(position = SceneVector3(5.0, 5.0, 5.0))
+        coordinator.scheduleCameraSave("scene_1", cam)
+
+        var thrown = false
+        try {
+            coordinator.flushScene("scene_1")
+        } catch (_: java.io.IOException) {
+            thrown = true
+        }
+        assertTrue(thrown, "flushScene must propagate repository write failure")
         coordinator.close()
     }
 }

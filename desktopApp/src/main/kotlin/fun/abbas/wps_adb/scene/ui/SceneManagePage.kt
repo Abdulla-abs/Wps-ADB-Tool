@@ -14,9 +14,19 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import `fun`.abbas.wps_adb.model.scene.DeviceScene
+import `fun`.abbas.wps_adb.scene.SceneDeleteResult
 import `fun`.abbas.wps_adb.scene.SceneRuntimeHost
 import `fun`.abbas.wps_adb.theme.CarbonColors
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+sealed interface SceneListUiState {
+    data object Loading : SceneListUiState
+    data class Success(val scenes: List<DeviceScene>) : SceneListUiState
+    data class Error(val message: String) : SceneListUiState
+}
 
 @Composable
 fun SceneManagePage(
@@ -29,26 +39,31 @@ fun SceneManagePage(
     val repo = runtimeHost.sceneRepository
     val hostState by runtimeHost.state.collectAsState()
 
-    var scenes by remember {
-        mutableStateOf(
-            try {
-                repo?.listScenes() ?: emptyList()
-            } catch (_: Throwable) {
-                emptyList()
-            }
-        )
-    }
-
+    var uiState by remember { mutableStateOf<SceneListUiState>(SceneListUiState.Loading) }
     var sceneIdPendingDelete by remember { mutableStateOf<String?>(null) }
     var deleteErrorMessage by remember { mutableStateOf<String?>(null) }
 
-    fun reloadScenes() {
-        scenes = try {
-            repo?.listScenes() ?: emptyList()
-        } catch (_: Throwable) {
-            emptyList()
+    fun reloadScenes(clearErrors: Boolean = true) {
+        uiState = SceneListUiState.Loading
+        if (clearErrors) {
+            deleteErrorMessage = null
         }
-        runtimeHost.refreshScenes()
+        scope.launch(Dispatchers.IO) {
+            val nextState = try {
+                val list = repo?.listScenes() ?: emptyList()
+                SceneListUiState.Success(list)
+            } catch (t: Throwable) {
+                SceneListUiState.Error(t.message ?: "Failed to read scenes from disk")
+            }
+            withContext(Dispatchers.Main) {
+                uiState = nextState
+                runtimeHost.refreshScenes()
+            }
+        }
+    }
+
+    LaunchedEffect(repo) {
+        reloadScenes()
     }
 
     Column(
@@ -61,11 +76,29 @@ fun SceneManagePage(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = "${scenes.size} Scenes Available",
-                fontSize = 12.sp,
-                color = CarbonColors.Outline,
-            )
+            when (val state = uiState) {
+                is SceneListUiState.Success -> {
+                    Text(
+                        text = "${state.scenes.size} Scenes Available",
+                        fontSize = 12.sp,
+                        color = CarbonColors.Outline,
+                    )
+                }
+                is SceneListUiState.Loading -> {
+                    Text(
+                        text = "Loading scenes...",
+                        fontSize = 12.sp,
+                        color = CarbonColors.Outline,
+                    )
+                }
+                is SceneListUiState.Error -> {
+                    Text(
+                        text = "Failed to load scenes",
+                        fontSize = 12.sp,
+                        color = CarbonColors.Error,
+                    )
+                }
+            }
 
             Button(
                 onClick = onNavigateToImport,
@@ -80,40 +113,110 @@ fun SceneManagePage(
                 colors = CardDefaults.cardColors(containerColor = CarbonColors.Error.copy(alpha = 0.15f)),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(
-                    text = deleteErrorMessage!!,
-                    color = CarbonColors.Error,
-                    fontSize = 11.sp,
-                    modifier = Modifier.padding(8.dp),
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = deleteErrorMessage!!,
+                        color = CarbonColors.Error,
+                        fontSize = 11.sp,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(
+                        onClick = { deleteErrorMessage = null },
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
+                    ) {
+                        Text("Dismiss", color = CarbonColors.Error, fontSize = 10.sp)
+                    }
+                }
             }
         }
 
-        if (scenes.isEmpty()) {
-            Card(
-                shape = RoundedCornerShape(10.dp),
-                colors = CardDefaults.cardColors(containerColor = CarbonColors.SurfaceContainer),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(24.dp),
-                    contentAlignment = Alignment.Center,
+        when (val state = uiState) {
+            is SceneListUiState.Loading -> {
+                Card(
+                    shape = RoundedCornerShape(10.dp),
+                    colors = CardDefaults.cardColors(containerColor = CarbonColors.SurfaceContainer),
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(
-                        text = "No scenes found",
-                        color = CarbonColors.Outline,
-                        fontSize = 13.sp,
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = CarbonColors.Primary,
+                        )
+                        Text(
+                            text = "Loading scenes...",
+                            color = CarbonColors.Outline,
+                            fontSize = 13.sp,
+                        )
+                    }
                 }
             }
-        } else {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                scenes.forEach { scene ->
+            is SceneListUiState.Error -> {
+                Card(
+                    shape = RoundedCornerShape(10.dp),
+                    colors = CardDefaults.cardColors(containerColor = CarbonColors.Error.copy(alpha = 0.12f)),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(
+                            text = "Failed to load scenes: ${state.message}",
+                            color = CarbonColors.Error,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                        )
+                        OutlinedButton(
+                            onClick = { reloadScenes() },
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                        ) {
+                            Text("Retry", fontSize = 11.sp)
+                        }
+                    }
+                }
+            }
+            is SceneListUiState.Success -> {
+                if (state.scenes.isEmpty()) {
+                    Card(
+                        shape = RoundedCornerShape(10.dp),
+                        colors = CardDefaults.cardColors(containerColor = CarbonColors.SurfaceContainer),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = "No scenes found",
+                                color = CarbonColors.Outline,
+                                fontSize = 13.sp,
+                            )
+                        }
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        state.scenes.forEach { scene ->
                     val isActive = scene.id == hostState.activeSceneId
                     val isPendingDelete = sceneIdPendingDelete == scene.id
 
@@ -226,13 +329,21 @@ fun SceneManagePage(
                                             onClick = {
                                                 val toDeleteId = scene.id
                                                 sceneIdPendingDelete = null
-                                                deleteErrorMessage = null
                                                 scope.launch {
-                                                    val success = runtimeHost.deleteScene(toDeleteId)
-                                                    if (!success) {
-                                                        deleteErrorMessage = "Failed to delete scene '$toDeleteId'"
+                                                    when (val result = runtimeHost.deleteScene(toDeleteId)) {
+                                                        is SceneDeleteResult.Success -> {
+                                                            deleteErrorMessage = null
+                                                            reloadScenes(clearErrors = true)
+                                                        }
+                                                        is SceneDeleteResult.NotDeleted -> {
+                                                            deleteErrorMessage = "Failed to delete scene '$toDeleteId'${result.reason?.let { ": $it" } ?: ""}"
+                                                            reloadScenes(clearErrors = false)
+                                                        }
+                                                        is SceneDeleteResult.DeletedFallbackFailed -> {
+                                                            deleteErrorMessage = "Scene '$toDeleteId' was deleted from disk, but activating fallback scene failed: ${result.error}"
+                                                            reloadScenes(clearErrors = false)
+                                                        }
                                                     }
-                                                    reloadScenes()
                                                 }
                                             },
                                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
@@ -251,8 +362,12 @@ fun SceneManagePage(
                                     if (!isActive) {
                                         FilledTonalButton(
                                             onClick = {
+                                                deleteErrorMessage = null
                                                 scope.launch {
-                                                    runtimeHost.selectScene(scene.id)
+                                                    val success = runtimeHost.selectScene(scene.id)
+                                                    if (!success) {
+                                                        deleteErrorMessage = "Failed to activate scene '${scene.name}'"
+                                                    }
                                                 }
                                             },
                                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
@@ -278,6 +393,8 @@ fun SceneManagePage(
                 }
             }
         }
+    }
+}
 
         // Back to Overview Button
         OutlinedButton(

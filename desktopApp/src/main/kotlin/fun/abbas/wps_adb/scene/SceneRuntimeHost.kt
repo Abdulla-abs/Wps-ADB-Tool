@@ -33,10 +33,28 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import org.json.JSONObject
 import java.awt.Component
 import java.util.concurrent.atomic.AtomicBoolean
+
+sealed interface SceneDeleteResult {
+    val isDeleted: Boolean
+
+    data object Success : SceneDeleteResult {
+        override val isDeleted: Boolean = true
+    }
+
+    data class NotDeleted(val reason: String? = null) : SceneDeleteResult {
+        override val isDeleted: Boolean = false
+    }
+
+    data class DeletedFallbackFailed(val error: String) : SceneDeleteResult {
+        override val isDeleted: Boolean = true
+    }
+}
 
 /**
  * Orchestrates JCEF browser lifecycle, [CefBridgeTransport] wiring, and the single [SceneBridgeHostController].
@@ -86,24 +104,59 @@ class SceneRuntimeHost(
         _availableScenes.value = list
     }
 
-    fun selectScene(sceneId: String): Boolean {
+    private val sceneLifecycleMutex = Mutex()
+    private var activeEpoch: Long = 0L
+    private var isSwitchingScene: Boolean = false
+
+    suspend fun selectScene(sceneId: String): Boolean = sceneLifecycleMutex.withLock {
+        internalSelectSceneLocked(sceneId)
+    }
+
+    private suspend fun internalSelectSceneLocked(sceneId: String): Boolean {
         val repository = sceneRepository ?: return false
         val currentId = _state.value.activeSceneId
-        if (currentId != null && currentId != sceneId) {
-            hostScope.launch(ioDispatcher) {
+        if (currentId == sceneId) return true
+
+        val previousEpoch = synchronized(this) { activeEpoch }
+        // 1. Gate incoming events from old scene
+        synchronized(this) {
+            isSwitchingScene = true
+            activeEpoch++
+        }
+
+        var committed = false
+        try {
+            // 2. Wait for pending writes of old scene to flush to disk
+            if (currentId != null) {
                 persistenceCoordinator?.flushScene(currentId)
-                persistenceCoordinator?.cancelScene(currentId)
+            }
+
+            // 3. Load target scene from repository
+            val scene = withContext(ioDispatcher) {
+                repository.loadScene(sceneId)
+            }
+
+            // 4. Update controller and UI state
+            sceneRuntimeController?.setScene(scene)
+            _state.update { it.copy(activeSceneId = scene.id) }
+            synchronized(this) { isSwitchingScene = false }
+            onActiveSceneIdChanged?.invoke(scene.id)
+            committed = true
+            return true
+        } catch (t: Throwable) {
+            if (t is CancellationException) throw t
+            System.err.println("[SceneRuntimeHost] Failed to switch to scene '$sceneId': ${t.message}")
+            return false
+        } finally {
+            if (!committed) {
+                withContext(NonCancellable) {
+                    synchronized(this@SceneRuntimeHost) {
+                        isSwitchingScene = false
+                        activeEpoch = previousEpoch
+                    }
+                }
             }
         }
-        val scene = try {
-            repository.loadScene(sceneId)
-        } catch (_: Throwable) {
-            return false
-        }
-        sceneRuntimeController?.setScene(scene)
-        _state.update { it.copy(activeSceneId = scene.id) }
-        onActiveSceneIdChanged?.invoke(scene.id)
-        return true
     }
 
     fun setInteractionMode(mode: `fun`.abbas.wps_adb.model.scene.SceneInteractionMode) {
@@ -113,67 +166,152 @@ class SceneRuntimeHost(
         }
     }
 
-    fun importScene(sourceFile: java.io.File, sceneName: String? = null): SceneImportResult {
+    suspend fun importScene(sourceFile: java.io.File, sceneName: String? = null): SceneImportResult = sceneLifecycleMutex.withLock {
         val importer = sceneImporter
-            ?: return SceneImportResult.Failure(
+            ?: return@withLock SceneImportResult.Failure(
                 error = SceneValidationError.StorageFailure("SceneImporter is not available"),
                 message = "Scene repository does not support importing",
             )
-        val result = importer.importEnvironment(sourceFile, sceneName)
+        val result = withContext(ioDispatcher) {
+            importer.importEnvironment(sourceFile, sceneName)
+        }
         if (result is SceneImportResult.Success) {
             refreshScenes()
-            selectScene(result.scene.id)
+            internalSelectSceneLocked(result.scene.id)
         }
-        return result
+        return@withLock result
     }
 
-    fun deleteScene(sceneId: String): Boolean {
-        val repo = sceneRepository ?: return false
+    suspend fun deleteScene(sceneId: String): SceneDeleteResult = sceneLifecycleMutex.withLock {
+        val repo = sceneRepository ?: return@withLock SceneDeleteResult.NotDeleted("Scene repository is not available")
         val isActive = _state.value.activeSceneId == sceneId
 
-        val fallbackScene = if (isActive) {
-            val remaining = repo.listScenes().filterNot { it.id == sceneId }
-            remaining.firstOrNull() ?: try {
-                val def = createDefaultScene()
-                repo.saveScene(def)
-                def
-            } catch (_: Throwable) {
+        val previousEpoch = synchronized(this) { activeEpoch }
+        // If deleting active scene, gate events
+        if (isActive) {
+            synchronized(this) {
+                isSwitchingScene = true
+                activeEpoch++
+            }
+        }
+
+        var committed = false
+        try {
+            val fallbackScene = if (isActive) {
+                val remaining = withContext(ioDispatcher) {
+                    repo.listScenes().filterNot { it.id == sceneId }
+                }
+                if (remaining.isNotEmpty()) {
+                    remaining.first()
+                } else {
+                    val def = createDefaultScene()
+                    try {
+                        withContext(ioDispatcher) { repo.saveScene(def) }
+                        def
+                    } catch (t: Throwable) {
+                        if (t is CancellationException) throw t
+                        System.err.println("[SceneRuntimeHost] Failed to save default fallback scene: ${t.message}")
+                        null
+                    }
+                }
+            } else {
                 null
             }
-        } else {
-            null
-        }
 
-        val deleted = repo.deleteScene(sceneId)
-        if (deleted) {
-            refreshScenes()
-            if (isActive && fallbackScene != null) {
-                selectScene(fallbackScene.id)
+            if (isActive && fallbackScene == null) {
+                System.err.println("[SceneRuntimeHost] Aborting deletion of active scene '$sceneId': unable to prepare fallback scene")
+                return@withLock SceneDeleteResult.NotDeleted("Unable to prepare fallback scene")
+            }
+
+            // Once fallback is resolved, perform disk deletion and fallback activation
+            // as an atomic lifecycle commit under NonCancellable.
+            val result = withContext(NonCancellable) {
+                val res = withContext(ioDispatcher) {
+                    repo.deleteScene(sceneId)
+                }
+                if (!res) {
+                    return@withContext SceneDeleteResult.NotDeleted("Repository failed to delete scene '$sceneId'")
+                }
+
+                persistenceCoordinator?.discardScene(sceneId)
+                refreshScenes()
+                if (isActive) {
+                    val targetFallback = requireNotNull(fallbackScene)
+                    val activated = try {
+                        internalSelectSceneLocked(targetFallback.id)
+                    } catch (t: Throwable) {
+                        System.err.println("[SceneRuntimeHost] Failed to activate fallback scene '${targetFallback.id}': ${t.message}")
+                        false
+                    }
+                    if (!activated) {
+                        val emergencyActivated = try {
+                            val def = createDefaultScene()
+                            withContext(ioDispatcher) { repo.saveScene(def) }
+                            internalSelectSceneLocked(def.id)
+                        } catch (t: Throwable) {
+                            System.err.println("[SceneRuntimeHost] Failed to create emergency default scene: ${t.message}")
+                            false
+                        }
+                        if (!emergencyActivated) {
+                            val errorMessage = "Active scene '$sceneId' was deleted, but failed to activate fallback scene '${targetFallback.id}'"
+                            sceneRuntimeController?.setScene(null)
+                            _state.update {
+                                it.copy(
+                                    activeSceneId = null,
+                                    initError = errorMessage,
+                                )
+                            }
+                            synchronized(this@SceneRuntimeHost) { isSwitchingScene = false }
+                            committed = true
+                            return@withContext SceneDeleteResult.DeletedFallbackFailed(errorMessage)
+                        }
+                    }
+                }
+                committed = true
+                SceneDeleteResult.Success
+            }
+            return@withLock result
+        } catch (t: Throwable) {
+            if (t is CancellationException) throw t
+            System.err.println("[SceneRuntimeHost] Failed to delete scene '$sceneId': ${t.message}")
+            return@withLock SceneDeleteResult.NotDeleted(t.message)
+        } finally {
+            if (isActive && !committed) {
+                withContext(NonCancellable) {
+                    synchronized(this@SceneRuntimeHost) {
+                        isSwitchingScene = false
+                        activeEpoch = previousEpoch
+                    }
+                }
             }
         }
-        return deleted
     }
 
-    fun importAsset(sceneId: String, sourceFile: java.io.File, assetName: String? = null): SceneImportResult {
+    suspend fun importAsset(sceneId: String, sourceFile: java.io.File, assetName: String? = null): SceneImportResult = sceneLifecycleMutex.withLock {
         val importer = sceneImporter
-            ?: return SceneImportResult.Failure(
+            ?: return@withLock SceneImportResult.Failure(
                 error = SceneValidationError.StorageFailure("SceneImporter is not available"),
                 message = "Scene repository does not support importing",
             )
-        val result = importer.importAsset(sceneId, sourceFile, assetName)
+        val result = withContext(ioDispatcher) {
+            importer.importAsset(sceneId, sourceFile, assetName)
+        }
         if (result is SceneImportResult.Success) {
             if (_state.value.activeSceneId == sceneId) {
                 sceneRuntimeController?.updateScene(result.scene)
             }
             refreshScenes()
         }
-        return result
+        return@withLock result
     }
 
-    fun deleteAsset(sceneId: String, assetId: String): Boolean {
-        val repo = sceneRepository ?: return false
-        return try {
-            val updated = repo.deleteAsset(sceneId, assetId)
+    suspend fun deleteAsset(sceneId: String, assetId: String): Boolean = sceneLifecycleMutex.withLock {
+        val repo = sceneRepository ?: return@withLock false
+        persistenceCoordinator?.cancelTransformSave(sceneId, assetId)
+        return@withLock try {
+            val updated = withContext(ioDispatcher) {
+                repo.deleteAsset(sceneId, assetId)
+            }
             if (_state.value.activeSceneId == sceneId) {
                 sceneRuntimeController?.updateScene(updated)
             }
@@ -219,16 +357,44 @@ class SceneRuntimeHost(
         hostController = SceneBridgeHostController(
             channel = channel,
             scope = hostScope,
-            onTransformChanged = { objectId, transform ->
-                val currentSceneId = _state.value.activeSceneId
-                if (currentSceneId != null) {
-                    persistenceCoordinator?.scheduleTransformSave(currentSceneId, objectId, transform)
+            eventValidator = { eventSceneId, eventEpoch ->
+                synchronized(this) {
+                    if (isSwitchingScene) return@synchronized false
+                    val currentSceneId = _state.value.activeSceneId ?: return@synchronized false
+                    if (eventSceneId == null || eventSceneId != currentSceneId) {
+                        return@synchronized false
+                    }
+                    if (eventEpoch == null || eventEpoch != activeEpoch) {
+                        return@synchronized false
+                    }
+                    true
                 }
             },
-            onCameraChanged = { camera ->
-                val currentSceneId = _state.value.activeSceneId
-                if (currentSceneId != null) {
-                    persistenceCoordinator?.scheduleCameraSave(currentSceneId, camera)
+            epochProvider = {
+                synchronized(this) { activeEpoch }
+            },
+            onTransformChanged = { eventSceneId, eventEpoch, objectId, transform ->
+                val targetSceneId = synchronized(this) {
+                    if (isSwitchingScene) return@synchronized null
+                    val currentSceneId = _state.value.activeSceneId ?: return@synchronized null
+                    if (eventSceneId == null || eventSceneId != currentSceneId) return@synchronized null
+                    if (eventEpoch == null || eventEpoch != activeEpoch) return@synchronized null
+                    currentSceneId
+                }
+                if (targetSceneId != null) {
+                    persistenceCoordinator?.scheduleTransformSave(targetSceneId, objectId, transform)
+                }
+            },
+            onCameraChanged = { eventSceneId, eventEpoch, camera ->
+                val targetSceneId = synchronized(this) {
+                    if (isSwitchingScene) return@synchronized null
+                    val currentSceneId = _state.value.activeSceneId ?: return@synchronized null
+                    if (eventSceneId == null || eventSceneId != currentSceneId) return@synchronized null
+                    if (eventEpoch == null || eventEpoch != activeEpoch) return@synchronized null
+                    currentSceneId
+                }
+                if (targetSceneId != null) {
+                    persistenceCoordinator?.scheduleCameraSave(targetSceneId, camera)
                 }
             },
         )
@@ -376,28 +542,34 @@ class SceneRuntimeHost(
             return
         }
         withContext(NonCancellable) {
-            println("[SceneRuntimeHost] Disposing SceneRuntimeHost (graceful close)...")
-            hostController.dispose()
-            try {
-                persistenceCoordinator?.close()
-            } catch (_: Throwable) {
-            }
+            sceneLifecycleMutex.withLock {
+                println("[SceneRuntimeHost] Disposing SceneRuntimeHost (graceful close)...")
+                synchronized(this@SceneRuntimeHost) {
+                    isSwitchingScene = true
+                    activeEpoch++
+                }
+                hostController.dispose()
+                try {
+                    persistenceCoordinator?.close()
+                } catch (_: Throwable) {
+                }
 
-            try {
-                channel.disconnect()
-            } catch (_: Throwable) {
-            }
+                try {
+                    channel.disconnect()
+                } catch (_: Throwable) {
+                }
 
-            try {
-                cefHostManager?.dispose()
-                cefHostManager = null
-            } catch (t: Throwable) {
-                t.printStackTrace()
-            }
+                try {
+                    cefHostManager?.dispose()
+                    cefHostManager = null
+                } catch (t: Throwable) {
+                    t.printStackTrace()
+                }
 
-            browserComponent = null
-            bridgeAdapter = null
-            hostJob.cancel()
+                browserComponent = null
+                bridgeAdapter = null
+                hostJob.cancel()
+            }
         }
     }
 

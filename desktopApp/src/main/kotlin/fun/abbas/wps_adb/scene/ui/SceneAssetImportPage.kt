@@ -16,11 +16,7 @@ import `fun`.abbas.wps_adb.theme.CarbonColors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.awt.FileDialog
-import java.awt.Frame
-import java.awt.KeyboardFocusManager
 import java.io.File
-import java.io.FilenameFilter
 
 @Composable
 fun SceneAssetImportPage(
@@ -84,18 +80,12 @@ fun SceneAssetImportPage(
                 ) {
                     OutlinedButton(
                         onClick = {
-                            val activeFrame = KeyboardFocusManager.getCurrentKeyboardFocusManager().activeWindow as? Frame
-                            val dialog = FileDialog(activeFrame, "Select Asset GLB File", FileDialog.LOAD)
-                            dialog.filenameFilter = FilenameFilter { _, name -> name.endsWith(".glb", ignoreCase = true) }
-                            dialog.isVisible = true
-                            val file = dialog.file
-                            val dir = dialog.directory
-                            if (file != null && dir != null) {
-                                val fullFile = File(dir, file)
-                                filePath = fullFile.absolutePath
+                            val selected = SceneUiUtils.showGlbFileDialog("Select Asset GLB File")
+                            if (selected != null) {
+                                filePath = selected.absolutePath
                                 errorMessage = null
                                 if (assetName.isBlank()) {
-                                    assetName = fullFile.nameWithoutExtension
+                                    assetName = selected.nameWithoutExtension
                                 }
                             }
                         },
@@ -147,12 +137,9 @@ fun SceneAssetImportPage(
                 Button(
                     onClick = {
                         val file = File(filePath.trim())
-                        if (!file.exists() || !file.isFile) {
-                            errorMessage = "Please select a valid existing file"
-                            return@Button
-                        }
-                        if (!file.name.endsWith(".glb", ignoreCase = true)) {
-                            errorMessage = "Only .glb format is supported"
+                        val validationError = SceneUiUtils.validateGlbFile(file, maxSizeBytes = 100 * 1024 * 1024)
+                        if (validationError != null) {
+                            errorMessage = validationError
                             return@Button
                         }
 

@@ -240,6 +240,92 @@ class SceneBridgeHostControllerTest {
         assertEquals(targetCam.fov, cmd.fov)
     }
 
+    @Test
+    fun eventValidator_whenFalse_preventsRuntimeControllerMutation() = runTest(UnconfinedTestDispatcher()) {
+        val channel = FakeSceneBridgeChannel(BridgeConnectionState.READY)
+        var validatorCalled = false
+        val controller = SceneBridgeHostController(
+            channel = channel,
+            scope = backgroundScope,
+            eventValidator = { _, _ ->
+                validatorCalled = true
+                false // Reject all incoming camera/transform events
+            },
+        )
+
+        val devicesFlow = MutableStateFlow<List<Device>>(emptyList())
+        val runtimeController = `fun`.abbas.wps_adb.data.scene.runtime.DefaultSceneRuntimeController(
+            devicesFlow = devicesFlow,
+            scope = backgroundScope,
+        )
+        controller.bind(runtimeController)
+
+        val initialAsset = SceneAssetInstance(
+            id = "asset_1",
+            fileName = "phone.glb",
+            name = "Phone",
+            transform = SceneTransform(SceneVector3.ZERO, SceneVector3.ZERO, SceneVector3(1.0, 1.0, 1.0)),
+        )
+        val initialScene = DeviceScene(
+            id = "scene_1",
+            name = "Scene 1",
+            camera = SceneCamera(),
+            assets = listOf(initialAsset),
+        )
+        runtimeController.setScene(initialScene)
+
+        val camMsg = SceneBridgeMessage.CameraChanged(
+            position = SceneVector3(55.0, 66.0, 77.0),
+            target = SceneVector3(1.0, 2.0, 3.0),
+            fov = 60.0,
+        )
+        channel.emitIncoming(camMsg)
+
+        assertTrue(validatorCalled)
+        // Camera in runtimeController must remain untouched at initialScene.camera
+        assertEquals(initialScene.camera, runtimeController.runtimeCamera.value)
+
+        // Test ObjectTransformChanged rejection
+        val transformMsg = SceneBridgeMessage.ObjectTransformChanged(
+            objectId = "asset_1",
+            position = SceneVector3(10.0, 20.0, 30.0),
+            rotation = SceneVector3.ZERO,
+            scale = SceneVector3(1.0, 1.0, 1.0),
+        )
+        channel.emitIncoming(transformMsg)
+
+        val assetAfter = runtimeController.activeScene.value?.assets?.find { it.id == "asset_1" }
+        assertEquals(SceneVector3.ZERO, assetAfter?.transform?.position)
+    }
+
+    @Test
+    fun syncInitialScene_attachesEpochFromEpochProvider() = runTest(UnconfinedTestDispatcher()) {
+        val channel = FakeSceneBridgeChannel(BridgeConnectionState.READY)
+        var currentEpoch = 42L
+        val controller = SceneBridgeHostController(
+            channel = channel,
+            scope = backgroundScope,
+            epochProvider = { currentEpoch },
+        )
+
+        val state = createResolvedState("scene_test", "Pixel 7")
+        controller.onSceneStateChanged(state)
+
+        assertEquals(2, channel.sentMessages.size)
+        assertIs<SceneBridgeMessage.InitScene>(channel.sentMessages[0])
+        val initMsg = channel.sentMessages[0] as SceneBridgeMessage.InitScene
+        assertEquals("scene_test", initMsg.sceneDescriptor.id)
+        assertEquals(42L, initMsg.epoch)
+
+        // If epoch changes, onSceneStateChanged resends InitScene with the new epoch
+        currentEpoch = 43L
+        controller.onSceneStateChanged(state)
+        assertEquals(4, channel.sentMessages.size)
+        assertIs<SceneBridgeMessage.InitScene>(channel.sentMessages[2])
+        val nextInitMsg = channel.sentMessages[2] as SceneBridgeMessage.InitScene
+        assertEquals(43L, nextInitMsg.epoch)
+    }
+
     private fun createResolvedState(sceneId: String, deviceName: String): ResolvedSceneState {
         val scene = DeviceScene(
             id = sceneId,

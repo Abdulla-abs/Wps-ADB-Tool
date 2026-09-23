@@ -69,7 +69,7 @@ export class MessageDispatcher {
             this.errorBoundary.handleInvalidPayload(type, "Missing or invalid sceneDescriptor");
             return;
           }
-          this.store.initScene(payload.sceneDescriptor);
+          this.store.initScene(payload.sceneDescriptor, payload.epoch ?? 0);
           break;
         }
 

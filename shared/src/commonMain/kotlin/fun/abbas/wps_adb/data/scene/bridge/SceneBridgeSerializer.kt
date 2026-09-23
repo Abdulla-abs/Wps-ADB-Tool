@@ -74,6 +74,8 @@ class DefaultSceneBridgeSerializer : SceneBridgeSerializer {
                     position = parseVector3(p["position"] as? MiniJson.Obj),
                     rotation = parseVector3(p["rotation"] as? MiniJson.Obj),
                     scale = parseVector3(p["scale"] as? MiniJson.Obj, defaultVal = 1.0),
+                    sceneId = (p["sceneId"] as? MiniJson.Str)?.value,
+                    epoch = (p["epoch"] as? MiniJson.Num)?.value?.toLong(),
                     timestamp = timestamp,
                 )
                 TYPE_RENDERER_ERROR -> SceneBridgeMessage.RendererError(
@@ -84,8 +86,10 @@ class DefaultSceneBridgeSerializer : SceneBridgeSerializer {
                 )
                 TYPE_SCENE_INIT -> {
                     val descObj = p["sceneDescriptor"] as? MiniJson.Obj ?: return null
+                    val epoch = (p["epoch"] as? MiniJson.Num)?.value?.toLong() ?: 0L
                     SceneBridgeMessage.InitScene(
                         sceneDescriptor = parseSceneDescriptor(descObj),
+                        epoch = epoch,
                         timestamp = timestamp,
                     )
                 }
@@ -134,6 +138,8 @@ class DefaultSceneBridgeSerializer : SceneBridgeSerializer {
                     position = parseVector3(p["position"] as? MiniJson.Obj),
                     target = parseVector3(p["target"] as? MiniJson.Obj),
                     fov = (p["fov"] as? MiniJson.Num)?.value ?: 45.0,
+                    sceneId = (p["sceneId"] as? MiniJson.Str)?.value,
+                    epoch = (p["epoch"] as? MiniJson.Num)?.value?.toLong(),
                     timestamp = timestamp,
                 )
                 else -> SceneBridgeMessage.Unknown(
@@ -196,7 +202,7 @@ class DefaultSceneBridgeSerializer : SceneBridgeSerializer {
             if (i > 0) append(",")
             append(quote(id))
         }
-        append("]}}")
+        append("]},\"epoch\":").append(msg.epoch).append("}")
     }
 
     private fun serializeSyncState(msg: SceneBridgeMessage.SyncState): String = buildString {
@@ -246,6 +252,8 @@ class DefaultSceneBridgeSerializer : SceneBridgeSerializer {
         append("{\"position\":").append(serializeVector3(msg.position))
         append(",\"target\":").append(serializeVector3(msg.target))
         append(",\"fov\":").append(msg.fov)
+        if (msg.sceneId != null) append(",\"sceneId\":").append(quote(msg.sceneId))
+        if (msg.epoch != null) append(",\"epoch\":").append(msg.epoch)
         append("}")
     }
 
@@ -275,6 +283,8 @@ class DefaultSceneBridgeSerializer : SceneBridgeSerializer {
         append(",\"position\":").append(serializeVector3(msg.position))
         append(",\"rotation\":").append(serializeVector3(msg.rotation))
         append(",\"scale\":").append(serializeVector3(msg.scale))
+        if (msg.sceneId != null) append(",\"sceneId\":").append(quote(msg.sceneId))
+        if (msg.epoch != null) append(",\"epoch\":").append(msg.epoch)
         append("}")
     }
 
