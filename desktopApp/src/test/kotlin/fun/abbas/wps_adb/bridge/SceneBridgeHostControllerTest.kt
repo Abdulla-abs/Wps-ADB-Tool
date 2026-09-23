@@ -17,6 +17,8 @@ import `fun`.abbas.wps_adb.model.scene.ResolvedBinding
 import `fun`.abbas.wps_adb.model.scene.ResolvedSceneState
 import `fun`.abbas.wps_adb.model.scene.SceneBinding
 import `fun`.abbas.wps_adb.model.scene.SceneCamera
+import `fun`.abbas.wps_adb.model.scene.SceneAssetInstance
+import `fun`.abbas.wps_adb.model.scene.SceneTransform
 import `fun`.abbas.wps_adb.model.scene.SceneVector3
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -128,6 +130,37 @@ class SceneBridgeHostControllerTest {
         assertEquals(3, channel.sentMessages.size)
         assertIs<SceneBridgeMessage.SyncState>(channel.sentMessages[2])
         assertEquals("Galaxy S24", (channel.sentMessages[2] as SceneBridgeMessage.SyncState).snapshot.devices.first().displayName)
+    }
+
+    @Test
+    fun assetContentChange_reinitializesRenderer_butTransformOnlyChangeDoesNot() = runTest(UnconfinedTestDispatcher()) {
+        val channel = FakeSceneBridgeChannel(BridgeConnectionState.READY)
+        val controller = SceneBridgeHostController(channel = channel, scope = backgroundScope)
+
+        val initial = createResolvedState(sceneId = "scene_1", deviceName = "Pixel 8")
+        controller.onSceneStateChanged(initial)
+        assertEquals(2, channel.sentMessages.size)
+
+        val importedAsset = SceneAssetInstance(
+            id = "asset_phone",
+            fileName = "assets/asset_phone-demo.glb",
+            name = "Demo Phone",
+        )
+        val withAsset = initial.copy(scene = initial.scene.copy(assets = listOf(importedAsset)))
+        controller.onSceneStateChanged(withAsset)
+
+        assertEquals(4, channel.sentMessages.size)
+        val initMessage = channel.sentMessages[2] as SceneBridgeMessage.InitScene
+        assertEquals("asset_phone", initMessage.sceneDescriptor.assets.single().id)
+        assertIs<SceneBridgeMessage.SyncState>(channel.sentMessages[3])
+
+        val movedAsset = importedAsset.copy(
+            transform = SceneTransform(position = SceneVector3(1.0, 0.0, 0.0)),
+        )
+        controller.onSceneStateChanged(withAsset.copy(scene = withAsset.scene.copy(assets = listOf(movedAsset))))
+
+        assertEquals(5, channel.sentMessages.size)
+        assertIs<SceneBridgeMessage.SyncState>(channel.sentMessages[4])
     }
 
     @Test

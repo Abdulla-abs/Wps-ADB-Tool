@@ -6,6 +6,7 @@ import `fun`.abbas.wps_adb.model.Device
 import `fun`.abbas.wps_adb.model.scene.DeviceScene
 import `fun`.abbas.wps_adb.model.scene.ResolvedSceneState
 import `fun`.abbas.wps_adb.model.scene.SceneCamera
+import `fun`.abbas.wps_adb.model.scene.SceneTransform
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -72,6 +73,15 @@ class DefaultSceneRuntimeController(
 
     override fun updateRuntimeCamera(camera: SceneCamera) {
         _runtimeCamera.value = camera
+    }
+
+    override fun updateRuntimeTransform(objectId: String, transform: SceneTransform) {
+        val current = _activeScene.value ?: return
+        if (current.assets.none { it.id == objectId }) return
+        val updatedAssets = current.assets.map {
+            if (it.id == objectId) it.copy(transform = transform) else it
+        }
+        _activeScene.value = current.copy(assets = updatedAssets)
     }
 }
 

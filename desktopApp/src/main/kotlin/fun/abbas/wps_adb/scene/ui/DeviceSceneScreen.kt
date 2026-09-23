@@ -4,13 +4,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import `fun`.abbas.wps_adb.scene.SceneOption
 import `fun`.abbas.wps_adb.scene.SceneRuntimeHost
 import `fun`.abbas.wps_adb.scene.SceneView
 import `fun`.abbas.wps_adb.theme.CarbonColors
@@ -21,12 +22,16 @@ import `fun`.abbas.wps_adb.viewmodel.AppViewModel
  * - Top: Scene Switcher Toolbar ([SceneToolbar])
  * - Left: 3D Scene Viewport ([SceneView])
  * - Right: Scene and Device Inspector ([DeviceSceneInspector])
+ *
+ * Inspector navigation state ([InspectorPage]) is hoisted here to ensure
+ * all scene import, management, asset import, and device binding controls
+ * are embedded cleanly in the right-side inspector without Compose popups
+ * occluded by the JCEF airspace.
  */
 @Composable
 fun DeviceSceneScreen(
     runtimeHost: SceneRuntimeHost,
     viewModel: AppViewModel,
-    scenes: List<SceneOption>? = null,
     actions: SceneDeviceActions? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -35,22 +40,17 @@ fun DeviceSceneScreen(
         DefaultSceneDeviceActions(viewModel, scope)
     }
 
-    val hostState by runtimeHost.state.collectAsState()
-    val hostScenes by runtimeHost.availableScenes.collectAsState()
-    val resolvedScenes = scenes ?: hostScenes
+    var inspectorPage by remember { mutableStateOf<InspectorPage>(InspectorPage.Overview) }
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(CarbonColors.Background),
     ) {
-        if (resolvedScenes.isNotEmpty()) {
-            SceneToolbar(
-                scenes = resolvedScenes,
-                selectedSceneId = hostState.activeSceneId,
-                onSceneSelected = runtimeHost::selectScene,
-            )
-        }
+        SceneToolbar(
+            runtimeHost = runtimeHost,
+            onNavigate = { inspectorPage = it },
+        )
 
         Row(
             modifier = Modifier
@@ -76,6 +76,8 @@ fun DeviceSceneScreen(
                 runtimeHost = runtimeHost,
                 viewModel = viewModel,
                 actions = resolvedActions,
+                currentPage = inspectorPage,
+                onNavigate = { inspectorPage = it },
                 modifier = Modifier
                     .width(360.dp)
                     .fillMaxHeight(),

@@ -105,4 +105,24 @@ describe("DeviceVisualState Unit Tests", () => {
     visualState.updateSelection(null, objectsById, scene);
     assert.strictEqual(scene.children.length, 0); // BoxHelper removed
   });
+
+  test("updates the selection helper bounds after its object moves", () => {
+    const visualState = new DeviceVisualState();
+    const scene = new THREE.Scene();
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial());
+    scene.add(mesh);
+    const objectsById = new Map<string, THREE.Object3D>([["asset_a", mesh]]);
+
+    visualState.updateSelection("asset_a", objectsById, scene);
+    const helper = scene.children.find((child) => child instanceof THREE.BoxHelper) as THREE.BoxHelper;
+    const before = helper.geometry.getAttribute("position").getX(0);
+    mesh.position.x = 4;
+    mesh.updateMatrixWorld(true);
+
+    visualState.updateSelectionHighlights();
+
+    const after = helper.geometry.getAttribute("position").getX(0);
+    assert.strictEqual(after, before + 4);
+    visualState.clear(scene);
+  });
 });

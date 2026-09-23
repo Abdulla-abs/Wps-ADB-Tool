@@ -2,13 +2,19 @@ import {
   CURRENT_BRIDGE_PROTOCOL_VERSION,
   WIRE_TYPES,
 } from "../../../renderer-contract/scene-bridge-contract.ts";
-import type { BridgeEnvelope, CameraCommandPayload } from "../../../renderer-contract/scene-bridge-contract.ts";
+import type {
+  BridgeEnvelope,
+  CameraCommandPayload,
+  SetObjectTransformPayload,
+} from "../../../renderer-contract/scene-bridge-contract.ts";
 import {
   isBridgeEnvelope,
   isCameraCommandPayload,
   isRendererErrorPayload,
   isSceneInitPayload,
   isSelectionChangePayload,
+  isSetInteractionModePayload,
+  isSetObjectTransformPayload,
   isSyncStatePayload,
 } from "../protocol/validators.ts";
 import { RendererStateStore } from "../store/RendererStateStore.ts";
@@ -18,6 +24,7 @@ export interface DispatcherHooks {
   onUnknownMessage?: (envelope: BridgeEnvelope<unknown>) => void;
   onReservedMessage?: (envelope: BridgeEnvelope<unknown>) => void;
   onCameraCommand?: (payload: CameraCommandPayload) => void;
+  onSetObjectTransform?: (payload: SetObjectTransformPayload) => void;
 }
 
 /**
@@ -89,6 +96,28 @@ export class MessageDispatcher {
             this.store.recordError(payload.code, payload.message);
           } else {
             this.store.recordError("UNKNOWN_ERROR", "Received malformed error message");
+          }
+          break;
+        }
+
+        case WIRE_TYPES.SET_INTERACTION_MODE: {
+          if (!isSetInteractionModePayload(payload)) {
+            this.errorBoundary.handleInvalidPayload(type, "Missing or invalid interaction mode");
+            return;
+          }
+          this.store.setInteractionMode(payload.mode);
+          break;
+        }
+
+        case WIRE_TYPES.SET_OBJECT_TRANSFORM: {
+          if (!isSetObjectTransformPayload(payload)) {
+            this.errorBoundary.handleInvalidPayload(type, "Missing or invalid object transform parameters");
+            return;
+          }
+          if (this.hooks.onSetObjectTransform) {
+            this.hooks.onSetObjectTransform(payload);
+          } else {
+            this.hooks.onReservedMessage?.(raw);
           }
           break;
         }

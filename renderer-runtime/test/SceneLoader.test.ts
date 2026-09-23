@@ -90,4 +90,59 @@ describe("SceneLoader Unit Tests", () => {
     assert.strictEqual(result.objectsById.has("device_slot_2"), true);
     assert.strictEqual(result.pickableObjects.length, 2);
   });
+
+  test("keeps every missing built-in slot when assets are present", async () => {
+    const contentGroup = new THREE.Group();
+    const loader = new SceneLoader({ contentGroup });
+    const loadAsset = (loader as any).loadAsset.bind(loader);
+    (loader as any).loadAsset = async () => {
+      const asset = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial());
+      asset.name = "phone_asset";
+      loader.registerObject("phone_asset", asset, "asset", "phone_asset");
+      contentGroup.add(asset);
+    };
+
+    const result = await loader.loadScene({
+      id: "scene_with_asset",
+      name: "Scene with asset",
+      camera: { position: { x: 0, y: 0, z: 0 }, target: { x: 0, y: 0, z: 0 }, fov: 45 },
+      assets: [{
+        id: "phone_asset",
+        fileName: "assets/phone.glb",
+        name: "Phone",
+        transform: {
+          position: { x: 0, y: 0, z: 0 },
+          rotation: { x: 0, y: 0, z: 0 },
+          scale: { x: 1, y: 1, z: 1 },
+        },
+      }],
+      bindableObjectIds: ["device_slot_1", "device_slot_2", "device_slot_3", "device_slot_4"],
+    });
+
+    assert.strictEqual(result.objectsById.has("phone_asset"), true);
+    assert.strictEqual(result.objectsById.has("device_slot_1"), true);
+    assert.strictEqual(result.objectsById.has("device_slot_2"), true);
+    assert.strictEqual(result.objectsById.has("device_slot_3"), true);
+    assert.strictEqual(result.objectsById.has("device_slot_4"), true);
+    assert.strictEqual(contentGroup.children.length, 5);
+  });
+
+  test("keeps the asset ID mapped to the full GLTF root, not its last child mesh", () => {
+    const contentGroup = new THREE.Group();
+    const loader = new SceneLoader({ contentGroup });
+    const assetRoot = new THREE.Group();
+    const firstMesh = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial());
+    const lastMesh = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial());
+    firstMesh.name = "Phone Frame";
+    lastMesh.name = "Volume Button";
+    assetRoot.add(firstMesh, lastMesh);
+
+    // Match loadAsset ordering: index authored child metadata, then register root.
+    (loader as any).indexSceneNodes(assetRoot, [], "asset", "phone_asset");
+    loader.registerObject("phone_asset", assetRoot, "asset", "phone_asset");
+
+    assert.strictEqual(loader.getObjectsById().get("phone_asset"), assetRoot);
+    assert.strictEqual(firstMesh.userData.objectId, "phone_asset");
+    assert.strictEqual(lastMesh.userData.objectId, "phone_asset");
+  });
 });

@@ -25,4 +25,6 @@ interface DeviceSceneRepository {
     fun unbindDevice(sceneId: String, objectId: String): DeviceScene
     fun updateBinding(sceneId: String, objectId: String, deviceIdentity: DeviceIdentityRef?): DeviceScene
     fun saveCamera(sceneId: String, camera: SceneCamera): DeviceScene
+    fun deleteAsset(sceneId: String, assetId: String): DeviceScene
+    fun updateTransform(sceneId: String, objectId: String, transform: SceneTransform): DeviceScene
 }

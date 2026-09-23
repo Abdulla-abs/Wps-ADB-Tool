@@ -1,5 +1,6 @@
 package `fun`.abbas.wps_adb.data.scene.bridge
 
+import `fun`.abbas.wps_adb.model.scene.SceneInteractionMode
 import `fun`.abbas.wps_adb.model.scene.SceneVector3
 
 const val CURRENT_BRIDGE_PROTOCOL_VERSION: Int = 1
@@ -70,6 +71,27 @@ sealed interface SceneBridgeMessage {
         val position: SceneVector3,
         val target: SceneVector3,
         val fov: Double? = null,
+        override val timestamp: Long = 0L,
+    ) : SceneBridgeMessage
+
+    /**
+     * Sets active interaction mode (VIEW, BINDING, EDITING) in the renderer.
+     * Wire type: SET_INTERACTION_MODE
+     */
+    data class SetInteractionMode(
+        val mode: SceneInteractionMode,
+        override val timestamp: Long = 0L,
+    ) : SceneBridgeMessage
+
+    /**
+     * Sets object transform (position, rotation, scale) in the renderer from host UI.
+     * Wire type: SET_OBJECT_TRANSFORM
+     */
+    data class SetObjectTransform(
+        val objectId: String,
+        val position: SceneVector3,
+        val rotation: SceneVector3,
+        val scale: SceneVector3,
         override val timestamp: Long = 0L,
     ) : SceneBridgeMessage
 

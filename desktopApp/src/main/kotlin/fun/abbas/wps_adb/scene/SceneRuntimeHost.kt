@@ -8,8 +8,12 @@ import `fun`.abbas.wps_adb.data.scene.bridge.BridgeTransport
 import `fun`.abbas.wps_adb.data.scene.bridge.CURRENT_BRIDGE_PROTOCOL_VERSION
 import `fun`.abbas.wps_adb.data.scene.bridge.DefaultSceneBridgeChannel
 import `fun`.abbas.wps_adb.data.scene.bridge.SceneBridgeChannel
+import `fun`.abbas.wps_adb.data.scene.DefaultSceneImporter
 import `fun`.abbas.wps_adb.data.scene.DeviceSceneRepository
+import `fun`.abbas.wps_adb.data.scene.SceneImporter
+import `fun`.abbas.wps_adb.data.scene.SceneImportResult
 import `fun`.abbas.wps_adb.data.scene.SceneStore
+import `fun`.abbas.wps_adb.data.scene.SceneValidationError
 import `fun`.abbas.wps_adb.data.scene.runtime.SceneRuntimeController
 import `fun`.abbas.wps_adb.model.scene.DeviceScene
 import `fun`.abbas.wps_adb.model.scene.ResolvedSceneState
@@ -70,6 +74,8 @@ class SceneRuntimeHost(
     private val _availableScenes = MutableStateFlow<List<SceneOption>>(emptyList())
     val availableScenes: StateFlow<List<SceneOption>> = _availableScenes.asStateFlow()
 
+    val sceneImporter: SceneImporter? = (sceneRepository as? SceneStore)?.let { DefaultSceneImporter(it) }
+
     fun refreshScenes() {
         val repo = sceneRepository ?: return
         val list = try {
@@ -82,6 +88,13 @@ class SceneRuntimeHost(
 
     fun selectScene(sceneId: String): Boolean {
         val repository = sceneRepository ?: return false
+        val currentId = _state.value.activeSceneId
+        if (currentId != null && currentId != sceneId) {
+            hostScope.launch(ioDispatcher) {
+                persistenceCoordinator?.flushScene(currentId)
+                persistenceCoordinator?.cancelScene(currentId)
+            }
+        }
         val scene = try {
             repository.loadScene(sceneId)
         } catch (_: Throwable) {
@@ -93,11 +106,97 @@ class SceneRuntimeHost(
         return true
     }
 
+    fun setInteractionMode(mode: `fun`.abbas.wps_adb.model.scene.SceneInteractionMode) {
+        _state.update { it.copy(interactionMode = mode) }
+        hostScope.launch {
+            hostController.setInteractionMode(mode)
+        }
+    }
+
+    fun importScene(sourceFile: java.io.File, sceneName: String? = null): SceneImportResult {
+        val importer = sceneImporter
+            ?: return SceneImportResult.Failure(
+                error = SceneValidationError.StorageFailure("SceneImporter is not available"),
+                message = "Scene repository does not support importing",
+            )
+        val result = importer.importEnvironment(sourceFile, sceneName)
+        if (result is SceneImportResult.Success) {
+            refreshScenes()
+            selectScene(result.scene.id)
+        }
+        return result
+    }
+
+    fun deleteScene(sceneId: String): Boolean {
+        val repo = sceneRepository ?: return false
+        val isActive = _state.value.activeSceneId == sceneId
+
+        val fallbackScene = if (isActive) {
+            val remaining = repo.listScenes().filterNot { it.id == sceneId }
+            remaining.firstOrNull() ?: try {
+                val def = createDefaultScene()
+                repo.saveScene(def)
+                def
+            } catch (_: Throwable) {
+                null
+            }
+        } else {
+            null
+        }
+
+        val deleted = repo.deleteScene(sceneId)
+        if (deleted) {
+            refreshScenes()
+            if (isActive && fallbackScene != null) {
+                selectScene(fallbackScene.id)
+            }
+        }
+        return deleted
+    }
+
+    fun importAsset(sceneId: String, sourceFile: java.io.File, assetName: String? = null): SceneImportResult {
+        val importer = sceneImporter
+            ?: return SceneImportResult.Failure(
+                error = SceneValidationError.StorageFailure("SceneImporter is not available"),
+                message = "Scene repository does not support importing",
+            )
+        val result = importer.importAsset(sceneId, sourceFile, assetName)
+        if (result is SceneImportResult.Success) {
+            if (_state.value.activeSceneId == sceneId) {
+                sceneRuntimeController?.updateScene(result.scene)
+            }
+            refreshScenes()
+        }
+        return result
+    }
+
+    fun deleteAsset(sceneId: String, assetId: String): Boolean {
+        val repo = sceneRepository ?: return false
+        return try {
+            val updated = repo.deleteAsset(sceneId, assetId)
+            if (_state.value.activeSceneId == sceneId) {
+                sceneRuntimeController?.updateScene(updated)
+            }
+            refreshScenes()
+            true
+        } catch (_: Throwable) {
+            false
+        }
+    }
+
     var browserComponent: Component? = null
         private set
 
     private var cefHostManager: CefHostManager? = null
     private var bridgeAdapter: CefHostManagerBridgeAdapter? = null
+
+    val persistenceCoordinator: ScenePersistenceCoordinator? = sceneRepository?.let {
+        ScenePersistenceCoordinator(
+            repository = it,
+            parentScope = hostScope,
+            ioDispatcher = ioDispatcher,
+        )
+    }
 
     val channel: SceneBridgeChannel
     val hostController: SceneBridgeHostController
@@ -120,6 +219,18 @@ class SceneRuntimeHost(
         hostController = SceneBridgeHostController(
             channel = channel,
             scope = hostScope,
+            onTransformChanged = { objectId, transform ->
+                val currentSceneId = _state.value.activeSceneId
+                if (currentSceneId != null) {
+                    persistenceCoordinator?.scheduleTransformSave(currentSceneId, objectId, transform)
+                }
+            },
+            onCameraChanged = { camera ->
+                val currentSceneId = _state.value.activeSceneId
+                if (currentSceneId != null) {
+                    persistenceCoordinator?.scheduleCameraSave(currentSceneId, camera)
+                }
+            },
         )
 
         // Observe connection state changes
@@ -267,6 +378,11 @@ class SceneRuntimeHost(
         withContext(NonCancellable) {
             println("[SceneRuntimeHost] Disposing SceneRuntimeHost (graceful close)...")
             hostController.dispose()
+            try {
+                persistenceCoordinator?.close()
+            } catch (_: Throwable) {
+            }
+
             try {
                 channel.disconnect()
             } catch (_: Throwable) {

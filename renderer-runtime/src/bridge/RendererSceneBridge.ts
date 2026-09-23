@@ -1,15 +1,17 @@
-import * as THREE from "three";
 import type {
   CameraCommandPayload,
   DeviceVisualDescriptor,
   InitScenePayload,
+  InteractionMode,
   SelectionChangePayload,
+  SetObjectTransformPayload,
   SyncStatePayload,
 } from "../../../renderer-contract/scene-bridge-contract.ts";
 import { CameraController } from "../scene/CameraController.ts";
 import { DeviceSceneRenderer } from "../scene/DeviceSceneRenderer.ts";
 import { SceneLoader } from "../scene/SceneLoader.ts";
 import { ObjectPicker } from "../interaction/ObjectPicker.ts";
+import { TransformController } from "../interaction/TransformController.ts";
 import { DeviceVisualState } from "../visual/DeviceVisualState.ts";
 import type { RendererRuntime } from "../RendererRuntime.ts";
 
@@ -32,6 +34,7 @@ export class RendererSceneBridge {
   private readonly cameraController: CameraController;
   private readonly objectPicker: ObjectPicker;
   private readonly visualState: DeviceVisualState;
+  private readonly transformController: TransformController;
 
   private isDisposed = false;
   private sceneLoadSequence = 0;
@@ -65,6 +68,7 @@ export class RendererSceneBridge {
     // Hook camera damping update into render loop
     this.sceneRenderer.addOnBeforeRender(() => {
       this.cameraController.update();
+      this.visualState.updateSelectionHighlights();
     });
 
     // 3. Initialize Visual State
@@ -87,20 +91,32 @@ export class RendererSceneBridge {
       },
     });
 
-    // 5. Connect store subscriptions for reactive state mirrors
+    // 5. Initialize TransformController
+    this.transformController = new TransformController({
+      camera: this.sceneRenderer.getCamera(),
+      domElement: this.sceneRenderer.getCanvas(),
+      scene: this.sceneRenderer.getScene(),
+      orbitControls: this.cameraController.getControls(),
+      onTransformChanged: (payload) => {
+        this.runtime.sendObjectTransformChanged(payload);
+      },
+    });
+
+    // 6. Connect store subscriptions for reactive state mirrors
     this.bindStoreListeners();
   }
 
   private bindStoreListeners(): void {
-    let lastSceneId: string | null = null;
+    let lastSceneDescriptor: InitScenePayload["sceneDescriptor"] | null = null;
     let lastSelectionId: string | null = null;
+    let lastInteractionMode: InteractionMode = "VIEW";
 
     this.runtime.getStore().subscribe(async (state) => {
       if (this.isDisposed) return;
 
       // React to scene initialization
-      if (state.activeScene && state.activeScene.id !== lastSceneId) {
-        lastSceneId = state.activeScene.id;
+      if (state.activeScene && state.activeScene !== lastSceneDescriptor) {
+        lastSceneDescriptor = state.activeScene;
         await this.handleSceneInit({ sceneDescriptor: state.activeScene });
       }
 
@@ -112,7 +128,13 @@ export class RendererSceneBridge {
         );
       }
 
-      // React to selection change
+      // React to interaction mode change
+      if (state.interactionMode !== lastInteractionMode) {
+        lastInteractionMode = state.interactionMode;
+        this.transformController.setInteractionMode(state.interactionMode);
+      }
+
+      // React to selection change or mode change
       if (state.selectedObjectId !== lastSelectionId) {
         lastSelectionId = state.selectedObjectId;
         this.handleSelectionChange({
@@ -120,6 +142,11 @@ export class RendererSceneBridge {
           focusCamera: false,
         });
       }
+
+      const targetObj = state.selectedObjectId
+        ? this.sceneLoader.getObjectsById().get(state.selectedObjectId) ?? null
+        : null;
+      this.transformController.updateSelection(state.selectedObjectId, targetObj);
     });
   }
 
@@ -159,6 +186,12 @@ export class RendererSceneBridge {
         this.sceneRenderer.getScene(),
       );
     }
+
+    this.transformController.setInteractionMode(currentState.interactionMode);
+    const targetObj = currentState.selectedObjectId
+      ? this.sceneLoader.getObjectsById().get(currentState.selectedObjectId) ?? null
+      : null;
+    this.transformController.updateSelection(currentState.selectedObjectId, targetObj);
   }
 
   /**
@@ -211,6 +244,23 @@ export class RendererSceneBridge {
     this.cameraController.applyDescriptor(payload);
   }
 
+  /**
+   * Handles SET_OBJECT_TRANSFORM downlink message.
+   */
+  handleSetObjectTransform(payload: SetObjectTransformPayload): void {
+    if (this.isDisposed) return;
+    const targetObj = this.sceneLoader.getObjectsById().get(payload.objectId);
+    if (targetObj && targetObj.userData?.objectType === "asset") {
+      this.transformController.applyTransform(
+        payload.objectId,
+        targetObj,
+        payload.position,
+        payload.rotation,
+        payload.scale,
+      );
+    }
+  }
+
   getSceneLoader(): SceneLoader {
     return this.sceneLoader;
   }
@@ -227,10 +277,15 @@ export class RendererSceneBridge {
     return this.visualState;
   }
 
+  getTransformController(): TransformController {
+    return this.transformController;
+  }
+
   dispose(): void {
     if (this.isDisposed) return;
     this.isDisposed = true;
 
+    this.transformController.dispose();
     this.objectPicker.dispose();
     this.cameraController.dispose();
     this.visualState.clear(this.sceneRenderer.getScene());

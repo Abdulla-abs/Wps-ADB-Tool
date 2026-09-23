@@ -1,5 +1,6 @@
 package `fun`.abbas.wps_adb.data.scene.bridge
 
+import `fun`.abbas.wps_adb.model.scene.SceneInteractionMode
 import `fun`.abbas.wps_adb.model.scene.SceneVector3
 
 /**
@@ -27,6 +28,8 @@ class DefaultSceneBridgeSerializer : SceneBridgeSerializer {
             is SceneBridgeMessage.UpdateBinding -> append(serializeDeviceVisual(message.device))
             is SceneBridgeMessage.SelectionChange -> append(serializeSelection(message))
             is SceneBridgeMessage.CameraCommand -> append(serializeCameraCommand(message))
+            is SceneBridgeMessage.SetInteractionMode -> append("{\"mode\":").append(quote(message.mode.name)).append("}")
+            is SceneBridgeMessage.SetObjectTransform -> append(serializeSetObjectTransform(message))
             is SceneBridgeMessage.CameraChanged -> append(serializeCameraChanged(message))
             is SceneBridgeMessage.RendererReady -> append(serializeRendererReady(message))
             is SceneBridgeMessage.ObjectClicked -> append(serializeObjectClicked(message))
@@ -111,6 +114,22 @@ class DefaultSceneBridgeSerializer : SceneBridgeSerializer {
                     fov = (p["fov"] as? MiniJson.Num)?.value,
                     timestamp = timestamp,
                 )
+                TYPE_SET_INTERACTION_MODE -> {
+                    val modeStr = (p["mode"] as? MiniJson.Str)?.value ?: "VIEW"
+                    val mode = try {
+                        SceneInteractionMode.valueOf(modeStr)
+                    } catch (_: Throwable) {
+                        SceneInteractionMode.VIEW
+                    }
+                    SceneBridgeMessage.SetInteractionMode(mode = mode, timestamp = timestamp)
+                }
+                TYPE_SET_OBJECT_TRANSFORM -> SceneBridgeMessage.SetObjectTransform(
+                    objectId = (p["objectId"] as? MiniJson.Str)?.value.orEmpty(),
+                    position = parseVector3(p["position"] as? MiniJson.Obj),
+                    rotation = parseVector3(p["rotation"] as? MiniJson.Obj),
+                    scale = parseVector3(p["scale"] as? MiniJson.Obj, defaultVal = 1.0),
+                    timestamp = timestamp,
+                )
                 TYPE_CAMERA_CHANGED -> SceneBridgeMessage.CameraChanged(
                     position = parseVector3(p["position"] as? MiniJson.Obj),
                     target = parseVector3(p["target"] as? MiniJson.Obj),
@@ -135,6 +154,8 @@ class DefaultSceneBridgeSerializer : SceneBridgeSerializer {
         is SceneBridgeMessage.UpdateBinding -> TYPE_BINDING_UPDATE
         is SceneBridgeMessage.SelectionChange -> TYPE_SELECTION_CHANGE
         is SceneBridgeMessage.CameraCommand -> TYPE_CAMERA_COMMAND
+        is SceneBridgeMessage.SetInteractionMode -> TYPE_SET_INTERACTION_MODE
+        is SceneBridgeMessage.SetObjectTransform -> TYPE_SET_OBJECT_TRANSFORM
         is SceneBridgeMessage.CameraChanged -> TYPE_CAMERA_CHANGED
         is SceneBridgeMessage.RendererReady -> TYPE_RENDERER_READY
         is SceneBridgeMessage.ObjectClicked -> TYPE_OBJECT_CLICKED
@@ -250,6 +271,14 @@ class DefaultSceneBridgeSerializer : SceneBridgeSerializer {
     }
 
     private fun serializeObjectTransform(msg: SceneBridgeMessage.ObjectTransformChanged): String = buildString {
+        append("{\"objectId\":").append(quote(msg.objectId))
+        append(",\"position\":").append(serializeVector3(msg.position))
+        append(",\"rotation\":").append(serializeVector3(msg.rotation))
+        append(",\"scale\":").append(serializeVector3(msg.scale))
+        append("}")
+    }
+
+    private fun serializeSetObjectTransform(msg: SceneBridgeMessage.SetObjectTransform): String = buildString {
         append("{\"objectId\":").append(quote(msg.objectId))
         append(",\"position\":").append(serializeVector3(msg.position))
         append(",\"rotation\":").append(serializeVector3(msg.rotation))
@@ -378,6 +407,8 @@ class DefaultSceneBridgeSerializer : SceneBridgeSerializer {
         const val TYPE_BINDING_UPDATE = "BINDING_UPDATE"
         const val TYPE_SELECTION_CHANGE = "SELECTION_CHANGE"
         const val TYPE_CAMERA_COMMAND = "CAMERA_COMMAND"
+        const val TYPE_SET_INTERACTION_MODE = "SET_INTERACTION_MODE"
+        const val TYPE_SET_OBJECT_TRANSFORM = "SET_OBJECT_TRANSFORM"
         const val TYPE_CAMERA_CHANGED = "CAMERA_CHANGED"
         const val TYPE_RENDERER_READY = "RENDERER_READY"
         const val TYPE_OBJECT_CLICKED = "OBJECT_CLICKED"

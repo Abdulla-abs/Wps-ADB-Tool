@@ -4,11 +4,15 @@ import `fun`.abbas.wps_adb.data.scene.bridge.BridgeConnectionState
 import `fun`.abbas.wps_adb.data.scene.bridge.DefaultSceneVisualProjector
 import `fun`.abbas.wps_adb.data.scene.bridge.SceneBridgeChannel
 import `fun`.abbas.wps_adb.data.scene.bridge.SceneBridgeMessage
+import `fun`.abbas.wps_adb.data.scene.bridge.SceneCameraDescriptor
 import `fun`.abbas.wps_adb.data.scene.bridge.SceneVisualProjector
 import `fun`.abbas.wps_adb.data.scene.bridge.toDescriptor
 import `fun`.abbas.wps_adb.data.scene.runtime.SceneRuntimeController
 import `fun`.abbas.wps_adb.model.scene.ResolvedSceneState
 import `fun`.abbas.wps_adb.model.scene.SceneCamera
+import `fun`.abbas.wps_adb.model.scene.DeviceScene
+import `fun`.abbas.wps_adb.model.scene.SceneInteractionMode
+import `fun`.abbas.wps_adb.model.scene.SceneTransform
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -34,13 +38,17 @@ class SceneBridgeHostController(
     private val channel: SceneBridgeChannel,
     private val projector: SceneVisualProjector = DefaultSceneVisualProjector(),
     private val scope: CoroutineScope,
+    private val onTransformChanged: suspend (String, SceneTransform) -> Unit = { _, _ -> },
+    private val onCameraChanged: suspend (SceneCamera) -> Unit = {},
 ) {
 
     private val stateMutex = Mutex()
     private var latestState: ResolvedSceneState? = null
     private var selectedObjectId: String? = null
     private var lastSentSceneId: String? = null
+    private var lastSentSceneContentKey: SceneContentKey? = null
     private var boundRuntimeController: SceneRuntimeController? = null
+    private var currentMode: SceneInteractionMode = SceneInteractionMode.VIEW
 
     init {
         scope.launch {
@@ -143,13 +151,26 @@ class SceneBridgeHostController(
                         selectObject(message.objectId)
                     }
                     is SceneBridgeMessage.CameraChanged -> {
-                        runtimeController.updateRuntimeCamera(
-                            SceneCamera(
-                                position = message.position,
-                                target = message.target,
-                                fov = message.fov,
-                            )
+                        val cam = SceneCamera(
+                            position = message.position,
+                            target = message.target,
+                            fov = message.fov,
                         )
+                        runtimeController.updateRuntimeCamera(cam)
+                        scope.launch {
+                            onCameraChanged(cam)
+                        }
+                    }
+                    is SceneBridgeMessage.ObjectTransformChanged -> {
+                        val transform = SceneTransform(
+                            position = message.position,
+                            rotation = message.rotation,
+                            scale = message.scale,
+                        )
+                        runtimeController.updateRuntimeTransform(message.objectId, transform)
+                        scope.launch {
+                            onTransformChanged(message.objectId, transform)
+                        }
                     }
                     else -> {}
                 }
@@ -158,6 +179,30 @@ class SceneBridgeHostController(
 
         runtimeBindingJob = bindingJob
         return bindingJob
+    }
+
+    suspend fun setInteractionMode(mode: SceneInteractionMode) {
+        stateMutex.withLock {
+            currentMode = mode
+            if (channel.state.value == BridgeConnectionState.READY) {
+                channel.send(SceneBridgeMessage.SetInteractionMode(mode = mode))
+            }
+        }
+    }
+
+    suspend fun setObjectTransform(objectId: String, transform: SceneTransform) {
+        stateMutex.withLock {
+            if (channel.state.value == BridgeConnectionState.READY) {
+                channel.send(
+                    SceneBridgeMessage.SetObjectTransform(
+                        objectId = objectId,
+                        position = transform.position,
+                        rotation = transform.rotation,
+                        scale = transform.scale,
+                    )
+                )
+            }
+        }
     }
 
     /**
@@ -187,14 +232,29 @@ class SceneBridgeHostController(
         }
     }
 
-    private suspend fun syncInitialScene(state: ResolvedSceneState) {
+    private suspend fun syncInitialScene(
+        state: ResolvedSceneState,
+        preserveRuntimeCamera: Boolean = false,
+    ) {
+        var descriptor = state.scene.toDescriptor()
+        val runtimeCamera = boundRuntimeController?.runtimeCamera?.value
+        if (preserveRuntimeCamera && runtimeCamera != null) {
+            descriptor = descriptor.copy(
+                camera = SceneCameraDescriptor(
+                    position = runtimeCamera.position,
+                    target = runtimeCamera.target,
+                    fov = runtimeCamera.fov,
+                ),
+            )
+        }
         channel.send(
             SceneBridgeMessage.InitScene(
-                sceneDescriptor = state.scene.toDescriptor(),
+                sceneDescriptor = descriptor,
             )
         )
         println("[SceneBridgeHostController] InitScene sent for scene: ${state.scene.id}")
         lastSentSceneId = state.scene.id
+        lastSentSceneContentKey = SceneContentKey.from(state.scene)
 
         val snapshot = projector.project(state, selectedObjectId)
         channel.send(
@@ -202,11 +262,22 @@ class SceneBridgeHostController(
                 snapshot = snapshot,
             )
         )
+
+        if (currentMode != SceneInteractionMode.VIEW) {
+            channel.send(SceneBridgeMessage.SetInteractionMode(mode = currentMode))
+        }
     }
 
     private suspend fun syncSceneState(state: ResolvedSceneState) {
+        val contentKey = SceneContentKey.from(state.scene)
         if (state.scene.id != lastSentSceneId) {
             syncInitialScene(state)
+            return
+        }
+        if (contentKey != lastSentSceneContentKey) {
+            // Rebuild renderer content when environment/assets change, while preserving
+            // the live camera. Transform-only updates use SET_OBJECT_TRANSFORM instead.
+            syncInitialScene(state, preserveRuntimeCamera = true)
             return
         }
 
@@ -217,4 +288,28 @@ class SceneBridgeHostController(
             )
         )
     }
+
+    private data class SceneContentKey(
+        val sceneId: String,
+        val name: String,
+        val environmentFileName: String?,
+        val assets: List<AssetContentKey>,
+        val bindableObjectIds: List<String>,
+    ) {
+        companion object {
+            fun from(scene: DeviceScene) = SceneContentKey(
+                sceneId = scene.id,
+                name = scene.name,
+                environmentFileName = scene.environment?.fileName,
+                assets = scene.assets.map { AssetContentKey(it.id, it.fileName, it.name) },
+                bindableObjectIds = scene.bindableObjectIds,
+            )
+        }
+    }
+
+    private data class AssetContentKey(
+        val id: String,
+        val fileName: String,
+        val name: String,
+    )
 }

@@ -9,6 +9,9 @@ import type {
   CameraChangedMessage,
   CameraChangedPayload,
   CameraCommandPayload,
+  ObjectTransformChangedMessage,
+  ObjectTransformChangedPayload,
+  SetObjectTransformPayload,
 } from "../../renderer-contract/scene-bridge-contract.ts";
 import { CefBridgeReceiver } from "./bridge/CefBridgeReceiver.ts";
 import { CefBridgeSender } from "./bridge/CefBridgeSender.ts";
@@ -54,6 +57,10 @@ export class RendererRuntime {
         options.hooks?.onCameraCommand?.(payload);
         this.pendingCameraCommand = payload;
         this.sceneBridge?.handleCameraCommand(payload);
+      },
+      onSetObjectTransform: (payload) => {
+        options.hooks?.onSetObjectTransform?.(payload);
+        this.sceneBridge?.handleSetObjectTransform(payload);
       },
       onReservedMessage: (message) => {
         options.hooks?.onReservedMessage?.(message);
@@ -152,6 +159,16 @@ export class RendererRuntime {
   sendCameraChanged(payload: CameraChangedPayload): void {
     const message: CameraChangedMessage = {
       type: WIRE_TYPES.CAMERA_CHANGED,
+      version: CURRENT_BRIDGE_PROTOCOL_VERSION,
+      timestamp: Date.now(),
+      payload,
+    };
+    this.sender.send(message);
+  }
+
+  sendObjectTransformChanged(payload: ObjectTransformChangedPayload): void {
+    const message: ObjectTransformChangedMessage = {
+      type: WIRE_TYPES.OBJECT_TRANSFORM_CHANGED,
       version: CURRENT_BRIDGE_PROTOCOL_VERSION,
       timestamp: Date.now(),
       payload,

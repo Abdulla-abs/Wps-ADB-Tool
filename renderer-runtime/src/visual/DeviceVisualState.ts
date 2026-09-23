@@ -139,6 +139,13 @@ export class DeviceVisualState {
     }
   }
 
+  /** Refreshes world-space selection bounds after an object transform. */
+  updateSelectionHighlights(): void {
+    for (const helper of this.selectionHighlights.values()) {
+      helper.update();
+    }
+  }
+
   clear(scene: THREE.Scene): void {
     for (const helper of this.selectionHighlights.values()) {
       scene.remove(helper);

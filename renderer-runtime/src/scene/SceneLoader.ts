@@ -59,7 +59,8 @@ export class SceneLoader {
         const envRoot = gltf.scene || gltf.scenes[0];
         if (envRoot) {
           envRoot.name = "__environment_model__";
-          this.indexSceneNodes(envRoot, descriptor.bindableObjectIds);
+          envRoot.userData.objectType = "environment";
+          this.indexSceneNodes(envRoot, descriptor.bindableObjectIds, "environment");
           this.contentGroup.add(envRoot);
           hasEnvironmentModel = true;
           console.log(`[SceneLoader] Environment GLB successfully loaded: ${descriptor.environmentFileName}`);
@@ -78,13 +79,14 @@ export class SceneLoader {
       }
     }
 
-    // 3. Fallback: if no bindable objects were indexed from GLBs, generate default slot placeholders
-    if (
-      this.objectsById.size === 0 &&
-      descriptor.bindableObjectIds &&
-      descriptor.bindableObjectIds.length > 0
-    ) {
-      this.createFallbackObjects(descriptor.bindableObjectIds);
+    // Built-in bindable slots are part of the scene even when an environment GLB
+    // or imported assets are present. Add placeholders only for IDs that were not
+    // supplied by either GLB, so importing an asset never removes the original slots.
+    const missingBindableIds = (descriptor.bindableObjectIds ?? []).filter(
+      (objectId) => !this.objectsById.has(objectId),
+    );
+    if (missingBindableIds.length > 0) {
+      this.createFallbackObjects(missingBindableIds);
     }
 
     return {
@@ -113,7 +115,7 @@ export class SceneLoader {
         Math.floor(index / 4) * 1.5,
       );
 
-      this.registerObject(objectId, object);
+      this.registerObject(objectId, object, "slot");
       this.contentGroup.add(object);
     });
   }
@@ -129,15 +131,21 @@ export class SceneLoader {
       const assetRoot = gltf.scene || gltf.scenes[0];
       if (assetRoot) {
         assetRoot.name = asset.id;
+        assetRoot.userData.assetId = asset.id;
+        assetRoot.userData.objectType = "asset";
         assetRoot.position.set(asset.transform.position.x, asset.transform.position.y, asset.transform.position.z);
         assetRoot.rotation.set(asset.transform.rotation.x, asset.transform.rotation.y, asset.transform.rotation.z);
         assetRoot.scale.set(asset.transform.scale.x, asset.transform.scale.y, asset.transform.scale.z);
 
-        // Register the asset itself as a bindable / pickable object
-        this.registerObject(asset.id, assetRoot);
+        // Index explicitly bindable child nodes before registering the asset root.
+        // registerObject tags otherwise-unidentified descendants for picking; doing
+        // that first would make this traversal mistake every child for the asset root
+        // and overwrite the asset ID lookup with the last mesh in the GLB.
+        this.indexSceneNodes(assetRoot, bindableObjectIds, "asset", asset.id);
 
-        // Index any tagged child nodes
-        this.indexSceneNodes(assetRoot, bindableObjectIds);
+        // The asset ID must resolve to the complete GLTF scene root so gizmo edits
+        // transform the whole model rather than a single child mesh.
+        this.registerObject(asset.id, assetRoot, "asset", asset.id);
         this.contentGroup.add(assetRoot);
         console.log(`[SceneLoader] Asset GLB loaded: ${asset.fileName} (id: ${asset.id})`);
       }
@@ -152,13 +160,25 @@ export class SceneLoader {
    * Traverses a 3D subtree, enabling shadows and indexing bindable/pickable objects.
    * Supports exact name matching, Blender duplicate suffixes (.001), and glTF extras (userData.objectId).
    */
-  private indexSceneNodes(root: THREE.Object3D, bindableObjectIds: string[]): void {
+  private indexSceneNodes(
+    root: THREE.Object3D,
+    bindableObjectIds: string[],
+    objectType = "environment",
+    assetId?: string,
+  ): void {
     const bindableSet = new Set(bindableObjectIds);
 
     root.traverse((node: THREE.Object3D) => {
       if ((node as THREE.Mesh).isMesh) {
         node.castShadow = true;
         node.receiveShadow = true;
+      }
+
+      if (!node.userData.objectType) {
+        node.userData.objectType = objectType;
+      }
+      if (assetId && !node.userData.assetId) {
+        node.userData.assetId = assetId;
       }
 
       // Priority 1: glTF extras / explicit userData.objectId
@@ -179,9 +199,9 @@ export class SceneLoader {
       }
 
       if (matchedId) {
-        this.registerObject(matchedId, node);
+        this.registerObject(matchedId, node, objectType, assetId);
       } else if (node.userData?.isBindable && node.name) {
-        this.registerObject(node.name, node);
+        this.registerObject(node.name, node, objectType, assetId);
       }
     });
   }
@@ -189,14 +209,33 @@ export class SceneLoader {
   /**
    * Registers an object into the lookup map and pickable list.
    */
-  registerObject(objectId: string, object: THREE.Object3D): void {
+  registerObject(
+    objectId: string,
+    object: THREE.Object3D,
+    objectType = "environment",
+    assetId?: string,
+  ): void {
     object.userData.objectId = objectId;
+    object.userData.objectType = objectType;
+    if (assetId) {
+      object.userData.assetId = assetId;
+    }
     this.objectsById.set(objectId, object);
 
     // Collect all descendant meshes (or object itself) for Raycaster picking
     object.traverse((child) => {
-      if ((child as THREE.Mesh).isMesh) {
+      // Keep IDs declared by GLTF extras or registered child objects intact.
+      // Unidentified descendants inherit the parent ID for picking fallback.
+      if (!child.userData.objectId) {
         child.userData.objectId = objectId;
+      }
+      if (!child.userData.objectType) {
+        child.userData.objectType = objectType;
+      }
+      if (assetId && !child.userData.assetId) {
+        child.userData.assetId = assetId;
+      }
+      if ((child as THREE.Mesh).isMesh) {
         if (!this.pickableObjects.includes(child)) {
           this.pickableObjects.push(child);
         }

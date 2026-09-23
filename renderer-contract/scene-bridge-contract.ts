@@ -20,6 +20,8 @@ export const WIRE_TYPES = {
   BINDING_UPDATE: "BINDING_UPDATE",
   SELECTION_CHANGE: "SELECTION_CHANGE",
   CAMERA_COMMAND: "CAMERA_COMMAND",
+  SET_INTERACTION_MODE: "SET_INTERACTION_MODE",
+  SET_OBJECT_TRANSFORM: "SET_OBJECT_TRANSFORM",
 
   // Renderer -> Host (Uplink)
   RENDERER_READY: "RENDERER_READY",
@@ -149,6 +151,19 @@ export interface CameraCommandPayload {
   fov?: number;
 }
 
+export type InteractionMode = "VIEW" | "BINDING" | "EDITING";
+
+export interface SetInteractionModePayload {
+  mode: InteractionMode;
+}
+
+export interface SetObjectTransformPayload {
+  objectId: string;
+  position: Vector3;
+  rotation: Vector3;
+  scale: Vector3;
+}
+
 // ==========================================
 // 2. Renderer -> Host (Uplink Contracts)
 // ==========================================
@@ -198,13 +213,17 @@ export type SyncStateMessage = BridgeEnvelope<SyncStatePayload> & { type: typeof
 export type UpdateBindingMessage = BridgeEnvelope<UpdateBindingPayload> & { type: typeof WIRE_TYPES.BINDING_UPDATE };
 export type SelectionChangeMessage = BridgeEnvelope<SelectionChangePayload> & { type: typeof WIRE_TYPES.SELECTION_CHANGE };
 export type CameraCommandMessage = BridgeEnvelope<CameraCommandPayload> & { type: typeof WIRE_TYPES.CAMERA_COMMAND };
+export type SetInteractionModeMessage = BridgeEnvelope<SetInteractionModePayload> & { type: typeof WIRE_TYPES.SET_INTERACTION_MODE };
+export type SetObjectTransformMessage = BridgeEnvelope<SetObjectTransformPayload> & { type: typeof WIRE_TYPES.SET_OBJECT_TRANSFORM };
 
 export type DownlinkBridgeMessage =
   | InitSceneMessage
   | SyncStateMessage
   | UpdateBindingMessage
   | SelectionChangeMessage
-  | CameraCommandMessage;
+  | CameraCommandMessage
+  | SetInteractionModeMessage
+  | SetObjectTransformMessage;
 
 export type RendererReadyMessage = BridgeEnvelope<RendererReadyPayload> & { type: typeof WIRE_TYPES.RENDERER_READY };
 export type CameraChangedMessage = BridgeEnvelope<CameraChangedPayload> & { type: typeof WIRE_TYPES.CAMERA_CHANGED };

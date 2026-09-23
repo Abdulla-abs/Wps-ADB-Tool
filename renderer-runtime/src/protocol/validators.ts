@@ -6,6 +6,8 @@ import type {
   RendererReadyPayload,
   RendererErrorPayload,
   CameraCommandPayload,
+  SetInteractionModePayload,
+  SetObjectTransformPayload,
   Vector3,
 } from "../../../renderer-contract/scene-bridge-contract.ts";
 
@@ -75,5 +77,21 @@ export function isCameraCommandPayload(payload: unknown): payload is CameraComma
     isVector3(payload.position) &&
     isVector3(payload.target) &&
     (payload.fov === undefined || typeof payload.fov === "number")
+  );
+}
+
+export function isSetInteractionModePayload(payload: unknown): payload is SetInteractionModePayload {
+  if (!isObject(payload)) return false;
+  return payload.mode === "VIEW" || payload.mode === "BINDING" || payload.mode === "EDITING";
+}
+
+export function isSetObjectTransformPayload(payload: unknown): payload is SetObjectTransformPayload {
+  if (!isObject(payload)) return false;
+  return (
+    typeof payload.objectId === "string" &&
+    payload.objectId.trim().length > 0 &&
+    isVector3(payload.position) &&
+    isVector3(payload.rotation) &&
+    isVector3(payload.scale)
   );
 }

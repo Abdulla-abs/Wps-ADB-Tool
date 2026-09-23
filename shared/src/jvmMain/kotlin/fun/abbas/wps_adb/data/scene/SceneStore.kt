@@ -8,6 +8,7 @@ import `fun`.abbas.wps_adb.model.scene.SceneBinding
 import `fun`.abbas.wps_adb.model.scene.SceneCamera
 import `fun`.abbas.wps_adb.model.scene.SceneEnvironment
 import `fun`.abbas.wps_adb.model.scene.SceneTransform
+import `fun`.abbas.wps_adb.model.scene.SceneVector3
 import java.io.File
 import java.io.FileOutputStream
 import java.nio.file.AtomicMoveNotSupportedException
@@ -311,6 +312,83 @@ class SceneStore(
             updatedAtMillis = System.currentTimeMillis(),
         )
         return saveScene(updatedScene)
+    }
+
+    override fun deleteAsset(sceneId: String, assetId: String): DeviceScene {
+        validateSceneId(sceneId)
+        validateSceneId(assetId)
+        val scene = loadSceneOrExisting(sceneId)
+        val assetToDelete = scene.assets.find { it.id == assetId }
+            ?: throw SceneValidationException("Asset with ID '$assetId' not found in scene '$sceneId'")
+
+        val updatedAssets = scene.assets.filterNot { it.id == assetId }
+        val updatedBindings = scene.bindings.filterNot { it.objectId == assetId }
+        val updatedScene = scene.copy(
+            assets = updatedAssets,
+            bindings = updatedBindings,
+            updatedAtMillis = System.currentTimeMillis(),
+        )
+
+        // Manifest-first: save manifest first to preserve consistency
+        val saved = saveScene(updatedScene)
+
+        // Then delete underlying file; orphan file on deletion failure does not break manifest
+        val sceneDir = resolveSceneDir(sceneId)
+        val assetFile = File(sceneDir, assetToDelete.fileName)
+        if (assetFile.exists() && assetFile.isFile) {
+            try {
+                assetFile.delete()
+            } catch (_: Exception) {
+                // Non-fatal
+            }
+        }
+
+        return saved
+    }
+
+    override fun updateTransform(
+        sceneId: String,
+        objectId: String,
+        transform: SceneTransform,
+    ): DeviceScene {
+        validateSceneId(sceneId)
+        validateSceneId(objectId)
+        validateTransform(transform)
+
+        val scene = loadSceneOrExisting(sceneId)
+        val asset = scene.assets.find { it.id == objectId }
+            ?: throw SceneValidationException(
+                "Only imported assets can be transformed. Environment object '$objectId' cannot be modified."
+            )
+
+        val updatedAssets = scene.assets.map {
+            if (it.id == objectId) it.copy(transform = transform) else it
+        }
+        val updatedScene = scene.copy(
+            assets = updatedAssets,
+            updatedAtMillis = System.currentTimeMillis(),
+        )
+        return saveScene(updatedScene)
+    }
+
+    private fun validateTransform(transform: SceneTransform) {
+        validateVector3(transform.position, "position")
+        validateVector3(transform.rotation, "rotation")
+        validateVector3(transform.scale, "scale", isScale = true)
+    }
+
+    private fun validateVector3(v: SceneVector3, componentName: String, isScale: Boolean = false) {
+        if (v.x.isNaN() || v.x.isInfinite() || v.y.isNaN() || v.y.isInfinite() || v.z.isNaN() || v.z.isInfinite()) {
+            throw SceneValidationException("Transform $componentName contains NaN or Infinite values: ($v.x, $v.y, $v.z)")
+        }
+        if (isScale) {
+            if (v.x <= 0.0 || v.y <= 0.0 || v.z <= 0.0) {
+                throw SceneValidationException("Scale component must be positive, found: ($v.x, $v.y, $v.z)")
+            }
+            if (v.x > 1000.0 || v.y > 1000.0 || v.z > 1000.0) {
+                throw SceneValidationException("Scale component exceeds maximum limit of 1000.0, found: ($v.x, $v.y, $v.z)")
+            }
+        }
     }
 
     private fun loadSceneOrExisting(sceneId: String): DeviceScene {

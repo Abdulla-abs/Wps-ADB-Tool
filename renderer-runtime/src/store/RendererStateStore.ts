@@ -1,5 +1,6 @@
 import type {
   DeviceVisualDescriptor,
+  InteractionMode,
   SceneDescriptor,
   SceneVisualSnapshot,
 } from "../../../renderer-contract/scene-bridge-contract.ts";
@@ -20,6 +21,7 @@ export interface RendererRuntimeState {
   connectionState: BridgeLifecycleState;
   activeScene: SceneDescriptor | null;
   selectedObjectId: string | null;
+  interactionMode: InteractionMode;
   devices: DeviceVisualDescriptor[];
   lastError: RuntimeErrorRecord | null;
 }
@@ -34,6 +36,7 @@ export class RendererStateStore {
   private connectionState: BridgeLifecycleState = "DISCONNECTED";
   private activeScene: SceneDescriptor | null = null;
   private selectedObjectId: string | null = null;
+  private interactionMode: InteractionMode = "VIEW";
   private deviceMap = new Map<string, DeviceVisualDescriptor>();
   private lastError: RuntimeErrorRecord | null = null;
 
@@ -47,6 +50,7 @@ export class RendererStateStore {
       connectionState: this.connectionState,
       activeScene: this.activeScene,
       selectedObjectId: this.selectedObjectId,
+      interactionMode: this.interactionMode,
       devices: Array.from(this.deviceMap.values()),
       lastError: this.lastError,
     };
@@ -106,6 +110,12 @@ export class RendererStateStore {
     this.notify();
   }
 
+  setInteractionMode(mode: InteractionMode): void {
+    if (this.interactionMode === mode) return;
+    this.interactionMode = mode;
+    this.notify();
+  }
+
   recordError(code: string, message: string): void {
     this.lastError = {
       code,
@@ -119,6 +129,7 @@ export class RendererStateStore {
     this.connectionState = "DISCONNECTED";
     this.activeScene = null;
     this.selectedObjectId = null;
+    this.interactionMode = "VIEW";
     this.deviceMap.clear();
     this.lastError = null;
     this.notify();
