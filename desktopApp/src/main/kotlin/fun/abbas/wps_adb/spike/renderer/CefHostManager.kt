@@ -15,6 +15,7 @@ import org.cef.browser.CefMessageRouter.CefMessageRouterConfig
 import org.cef.callback.CefQueryCallback
 import org.cef.handler.CefMessageRouterHandlerAdapter
 import java.awt.Component
+import javax.swing.SwingUtilities
 import java.io.File
 import java.io.IOException
 import java.net.InetSocketAddress
@@ -27,6 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class CefHostManager(
     val resourceRoot: String = "spike-renderer",
     val scenesRoot: File? = null,
+    onPageLoadError: ((String) -> Unit)? = null,
     private val onJsMessage: (String) -> Unit
 ) {
     private var httpServer: HttpServer? = null
@@ -35,9 +37,14 @@ class CefHostManager(
     private var cefClient: CefClient? = null
     private var cefBrowser: CefBrowser? = null
     private val isDisposed = AtomicBoolean(false)
+    @Volatile private var pageLoadErrorListener: ((String) -> Unit)? = onPageLoadError
 
     val serverUrl: String
         get() = "http://127.0.0.1:$serverPort/index.html"
+
+    fun setPageLoadErrorListener(listener: ((String) -> Unit)?) {
+        pageLoadErrorListener = listener
+    }
 
     init {
         startLocalServer()
@@ -305,6 +312,9 @@ class CefHostManager(
      */
     @Synchronized
     fun createBrowserOnEdt(): Component {
+        check(SwingUtilities.isEventDispatchThread()) {
+            "createBrowserOnEdt() must be called on the AWT Event Dispatch Thread"
+        }
         check(!isDisposed.get()) { "CefHostManager has already been disposed" }
         check(cefApp != null) { "ensureCefAppInitialized() must be called first" }
 
@@ -360,7 +370,10 @@ class CefHostManager(
                     errorText: String?,
                     failedUrl: String?
                 ) {
-                    System.err.println("[CefHostManager] Page load error: $errorText ($errorCode) on $failedUrl")
+                    val code = errorCode?.name ?: "UNKNOWN"
+                    if (code != "ERR_ABORTED") {
+                        pageLoadErrorListener?.invoke(code)
+                    }
                 }
             })
 
@@ -387,26 +400,39 @@ class CefHostManager(
      * [createBrowserOnEdt] runs on the EDT (e.g. via SwingUtilities.invokeLater
      * or Dispatchers.Main in coroutines).
      */
-    @Synchronized
     fun initializeBrowser(): Component {
+        check(!SwingUtilities.isEventDispatchThread()) {
+            "initializeBrowser() must run off the EDT; only Browser component creation is dispatched to the EDT"
+        }
         ensureCefAppInitialized()
-        return createBrowserOnEdt()
+        return callOnEdtAndWait { createBrowserOnEdt() }
     }
 
     /**
      * Recreates the CefBrowser without re-initializing CefApp,
      * verifying dispose/recreate stability.
      */
-    @Synchronized
     fun recreateBrowser(): Component {
-        println("[CefHostManager] Recreating CefBrowser...")
-        cefBrowser?.let {
-            it.close(true)
-            cefBrowser = null
+        return callOnEdtAndWait {
+            synchronized(this) {
+                println("[CefHostManager] Recreating CefBrowser...")
+                cefBrowser?.let {
+                    it.close(true)
+                    cefBrowser = null
+                }
+                val browser = requireNotNull(cefClient) { "CefClient has not been initialized" }
+                    .createBrowser(serverUrl, false, false)
+                cefBrowser = browser
+                browser.uiComponent
+            }
         }
-        val browser = cefClient!!.createBrowser(serverUrl, false, false)
-        cefBrowser = browser
-        return browser.uiComponent
+    }
+
+    private fun <T> callOnEdtAndWait(block: () -> T): T {
+        if (SwingUtilities.isEventDispatchThread()) return block()
+        var result: Result<T>? = null
+        SwingUtilities.invokeAndWait { result = runCatching(block) }
+        return requireNotNull(result).getOrThrow()
     }
 
     /**

@@ -42,6 +42,7 @@ class SceneBridgeHostController(
     private val epochProvider: () -> Long = { 0L },
     private val onTransformChanged: suspend (sceneId: String?, epoch: Long?, objectId: String, transform: SceneTransform) -> Unit = { _, _, _, _ -> },
     private val onCameraChanged: suspend (sceneId: String?, epoch: Long?, camera: SceneCamera) -> Unit = { _, _, _ -> },
+    private val onSceneSynchronized: suspend (sceneId: String) -> Unit = {},
 ) {
 
     private val stateMutex = Mutex()
@@ -282,6 +283,7 @@ class SceneBridgeHostController(
         if (currentMode != SceneInteractionMode.VIEW) {
             channel.send(SceneBridgeMessage.SetInteractionMode(mode = currentMode))
         }
+        onSceneSynchronized(state.scene.id)
     }
 
     private suspend fun syncSceneState(state: ResolvedSceneState) {

@@ -5,10 +5,12 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.SwingPanel
@@ -17,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import `fun`.abbas.wps_adb.data.scene.bridge.BridgeConnectionState
+import kotlinx.coroutines.launch
 import java.awt.BorderLayout
 import javax.swing.JPanel
 
@@ -31,6 +34,7 @@ fun SceneView(
     modifier: Modifier = Modifier,
 ) {
     val state by host.state.collectAsState()
+    val scope = rememberCoroutineScope()
 
     Box(
         modifier = modifier
@@ -42,12 +46,21 @@ fun SceneView(
                 modifier = Modifier.fillMaxSize(),
                 factory = {
                     JPanel(BorderLayout()).apply {
-                        host.browserComponent?.let { add(it, BorderLayout.CENTER) }
+                        host.browserComponent?.let {
+                            add(it, BorderLayout.CENTER)
+                            putClientProperty(RENDERER_COMPONENT_PROPERTY, it)
+                        }
                     }
                 },
                 update = { panel ->
-                    if (panel.componentCount == 0 && host.browserComponent != null) {
-                        panel.add(host.browserComponent, BorderLayout.CENTER)
+                    val currentComponent = panel.getClientProperty(RENDERER_COMPONENT_PROPERTY) as? java.awt.Component
+                    val requestedComponent = host.browserComponent
+                    if (currentComponent !== requestedComponent) {
+                        panel.removeAll()
+                        if (requestedComponent != null) {
+                            panel.add(requestedComponent, BorderLayout.CENTER)
+                        }
+                        panel.putClientProperty(RENDERER_COMPONENT_PROPERTY, requestedComponent)
                         panel.revalidate()
                         panel.repaint()
                     }
@@ -71,7 +84,13 @@ fun SceneView(
                         modifier = Modifier.size(44.dp),
                     )
                     Text(
-                        text = "Initializing 3D Scene Runtime...",
+                        text = when (state.phase) {
+                            SceneRuntimePhase.INITIALIZING_CEF -> "正在初始化 Chromium 运行时…"
+                            SceneRuntimePhase.CREATING_BROWSER -> "正在创建 3D 浏览器…"
+                            SceneRuntimePhase.WAITING_BRIDGE -> "正在连接 3D 渲染器…"
+                            SceneRuntimePhase.LOADING_SCENE -> "正在加载场景…"
+                            else -> "正在启动 3D 场景…"
+                        },
                         color = Color.White,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,
@@ -80,7 +99,7 @@ fun SceneView(
             }
         }
 
-        state.initError?.let { errorMsg ->
+        state.failure?.let { failure ->
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -97,16 +116,24 @@ fun SceneView(
                         .padding(24.dp),
                 ) {
                     Text(
-                        text = "Scene Runtime Initialization Failed",
+                        text = "3D 场景运行时启动失败",
                         color = Color(0xFFEF4444),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                     )
                     Text(
-                        text = errorMsg,
+                        text = failure.userMessage,
                         color = Color(0xFFCBD5E1),
                         fontSize = 12.sp,
                     )
+                    Text(
+                        text = "阶段：${failure.stage} · 诊断编号：${failure.diagnosticId.take(8)}",
+                        color = Color(0xFF94A3B8),
+                        fontSize = 11.sp,
+                    )
+                    Button(onClick = { scope.launch { host.retryRenderer() } }) {
+                        Text("重试")
+                    }
                 }
             }
         }
@@ -156,3 +183,5 @@ fun SceneView(
         }
     }
 }
+
+private const val RENDERER_COMPONENT_PROPERTY = "wpsAdb.scene.rendererComponent"

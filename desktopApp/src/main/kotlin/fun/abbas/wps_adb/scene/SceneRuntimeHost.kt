@@ -33,11 +33,19 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeout
 import org.json.JSONObject
 import java.awt.Component
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
+import java.util.UUID
+
+private const val RENDERER_READY_TIMEOUT_MS = 45_000L
 
 sealed interface SceneDeleteResult {
     val isDeleted: Boolean
@@ -82,8 +90,13 @@ class SceneRuntimeHost(
 ) {
     private val hostJob = SupervisorJob(parentScope.coroutineContext[kotlinx.coroutines.Job])
     val hostScope = CoroutineScope(parentScope.coroutineContext + hostJob)
+    private val cleanupJob = SupervisorJob()
+    private val cleanupScope = CoroutineScope(cleanupJob + ioDispatcher)
 
     private val isDisposed = AtomicBoolean(false)
+    private val rendererAttempt = AtomicLong(0L)
+    private val rendererControlMutex = Mutex()
+    @Volatile private var rendererInitJob: Job? = null
 
     private val _state = MutableStateFlow(SceneRuntimeState())
     val state: StateFlow<SceneRuntimeState> = _state.asStateFlow()
@@ -257,7 +270,13 @@ class SceneRuntimeHost(
                             _state.update {
                                 it.copy(
                                     activeSceneId = null,
-                                    initError = errorMessage,
+                                    phase = SceneRuntimePhase.FAILED,
+                                    failure = SceneRuntimeFailure(
+                                        stage = SceneRuntimePhase.LOADING_SCENE,
+                                        category = SceneRuntimeFailureCategory.SCENE_LOAD,
+                                        userMessage = errorMessage,
+                                        diagnosticId = UUID.randomUUID().toString(),
+                                    ),
                                 )
                             }
                             synchronized(this@SceneRuntimeHost) { isSwitchingScene = false }
@@ -398,12 +417,46 @@ class SceneRuntimeHost(
                     persistenceCoordinator?.scheduleCameraSave(targetSceneId, camera)
                 }
             },
+            onSceneSynchronized = { _ ->
+                if (!isDisposed.get() && channel.state.value == BridgeConnectionState.READY) {
+                    setRuntimePhase(SceneRuntimePhase.READY, rendererAttempt.get())
+                }
+            },
         )
 
         // Observe connection state changes
         hostScope.launch {
             channel.state.collect { connState ->
-                _state.update { it.copy(connectionState = connState) }
+                var reportedFailure: SceneRuntimeFailure? = null
+                _state.update { current ->
+                    val failure = if (
+                        connState == BridgeConnectionState.ERROR &&
+                        !isDisposed.get() &&
+                        current.phase !in setOf(SceneRuntimePhase.DISPOSING, SceneRuntimePhase.DISPOSED)
+                    ) {
+                        current.failure ?: SceneRuntimeFailure(
+                            stage = current.phase,
+                            category = SceneRuntimeFailureCategory.BRIDGE_HANDSHAKE,
+                            userMessage = "3D 渲染器连接中断。请重试，或返回设备墙。",
+                            diagnosticId = UUID.randomUUID().toString(),
+                        ).also { reportedFailure = it }
+                    } else {
+                        current.failure
+                    }
+                    val phase = when {
+                        isDisposed.get() -> current.phase
+                        connState == BridgeConnectionState.READY && current.phase in setOf(
+                            SceneRuntimePhase.WAITING_BRIDGE,
+                            SceneRuntimePhase.READY,
+                        ) -> SceneRuntimePhase.LOADING_SCENE
+                        connState == BridgeConnectionState.ERROR && current.phase !in setOf(SceneRuntimePhase.DISPOSING, SceneRuntimePhase.DISPOSED) -> SceneRuntimePhase.FAILED
+                        else -> current.phase
+                    }
+                    current.copy(connectionState = connState, phase = phase, failure = failure)
+                }
+                reportedFailure?.let {
+                    SceneRuntimeLog.failure(it, IllegalStateException("Bridge entered ERROR state"))
+                }
             }
         }
 
@@ -481,53 +534,171 @@ class SceneRuntimeHost(
         if (customTransport == null) {
             initializeJcefBrowser()
         } else {
-            _state.update { it.copy(isInitializing = false) }
+            _state.update { it.copy(phase = SceneRuntimePhase.WAITING_BRIDGE) }
         }
     }
 
     private fun initializeJcefBrowser() {
-        hostScope.launch(ioDispatcher) {
-            try {
-                val resolvedScenesRoot = scenesRoot
+        val attempt = rendererAttempt.incrementAndGet()
+        rendererInitJob = hostScope.launch { runRendererAttempt(attempt, reconnectChannel = false) }
+    }
+
+    private suspend fun runRendererAttempt(
+        attempt: Long,
+        reconnectChannel: Boolean,
+        managerToReuse: CefHostManager? = null,
+    ) {
+        var stage = SceneRuntimePhase.INITIALIZING_CEF
+        var manager: CefHostManager? = null
+        try {
+            setRuntimePhase(stage, attempt, clearFailure = true)
+            val resolvedScenesRoot = withContext(ioDispatcher) {
+                scenesRoot
                     ?: (sceneRepository as? SceneStore)?.getScenesRoot()
                     ?: `fun`.abbas.wps_adb.data.AppDataPaths.defaultScenesRoot()
-
-                val mgr = cefHostManagerProvider?.invoke() ?: CefHostManager(
+            }
+            val activeManager = managerToReuse ?: withContext(ioDispatcher) {
+                cefHostManagerProvider?.invoke() ?: CefHostManager(
                     resourceRoot = resourceRoot,
                     scenesRoot = resolvedScenesRoot,
-                ) { rawMessage ->
-                    bridgeAdapter?.handleIncomingJsMessage(rawMessage)
-                }
+                    onPageLoadError = { code -> reportPageLoadFailure(attempt, code) },
+                ) { rawMessage -> bridgeAdapter?.handleIncomingJsMessage(rawMessage) }
+            }
+            if (!isAttemptActive(attempt)) {
+                withContext(ioDispatcher) { activeManager.dispose() }
+                return
+            }
 
-                cefHostManager = mgr
-                bridgeAdapter?.bind(mgr)
+            manager = activeManager
+            cefHostManager = activeManager
+            activeManager.setPageLoadErrorListener { code -> reportPageLoadFailure(attempt, code) }
+            bridgeAdapter?.bind(activeManager)
+            if (reconnectChannel) channel.connect()
 
-                // Phase 1: Heavy CEF initialization (may download/extract binaries) on IO
-                mgr.ensureCefAppInitialized()
+            stage = SceneRuntimePhase.INITIALIZING_CEF
+            withContext(ioDispatcher) { activeManager.ensureCefAppInitialized() }
+            checkAttemptActive(attempt)
 
-                // Phase 2: Browser creation MUST run on EDT — JCEF heavyweight AWT
-                // components created off the EDT produce a native HWND with broken
-                // parenting/z-order, which steals all input from the Compose canvas.
-                val comp = withContext(mainDispatcher) {
-                    mgr.createBrowserOnEdt()
+            stage = SceneRuntimePhase.CREATING_BROWSER
+            setRuntimePhase(stage, attempt)
+            val comp = withContext(mainDispatcher) {
+                val component = activeManager.createBrowserOnEdt()
+                browserComponent = component
+                setRuntimePhase(SceneRuntimePhase.WAITING_BRIDGE, attempt)
+                component
+            }
+            if (!isAttemptActive(attempt)) {
+                withContext(ioDispatcher) { manager.dispose() }
+                return
+            }
+            stage = SceneRuntimePhase.WAITING_BRIDGE
+            val completedState = withTimeout(RENDERER_READY_TIMEOUT_MS) {
+                state.first {
+                    it.phase == SceneRuntimePhase.READY ||
+                        it.phase == SceneRuntimePhase.FAILED ||
+                        !isAttemptActive(attempt)
                 }
+            }
+            checkAttemptActive(attempt)
+            check(completedState.phase == SceneRuntimePhase.READY) {
+                "Renderer bridge entered ${completedState.connectionState} before scene synchronization"
+            }
+        } catch (t: Throwable) {
+            if (t is CancellationException) throw t
+            if (!isAttemptActive(attempt)) return
+            val category = when (stage) {
+                SceneRuntimePhase.INITIALIZING_CEF -> SceneRuntimeFailureCategory.CEF_INITIALIZATION
+                SceneRuntimePhase.CREATING_BROWSER -> SceneRuntimeFailureCategory.BROWSER_CREATION
+                SceneRuntimePhase.WAITING_BRIDGE -> SceneRuntimeFailureCategory.BRIDGE_HANDSHAKE
+                SceneRuntimePhase.LOADING_SCENE -> SceneRuntimeFailureCategory.SCENE_LOAD
+                else -> SceneRuntimeFailureCategory.UNKNOWN
+            }
+            val failure = _state.value.failure ?: SceneRuntimeFailure(
+                stage = stage,
+                category = category,
+                userMessage = when (category) {
+                    SceneRuntimeFailureCategory.CEF_INITIALIZATION -> "3D 渲染器初始化失败。请重试，或返回设备墙。"
+                    SceneRuntimeFailureCategory.BROWSER_CREATION -> "3D 浏览器创建失败。请重试，或返回设备墙。"
+                    SceneRuntimeFailureCategory.BRIDGE_HANDSHAKE -> "3D 渲染器连接超时或失败。请重试，或返回设备墙。"
+                    SceneRuntimeFailureCategory.SCENE_LOAD -> "场景加载失败。场景数据已保留，请重试或切换场景。"
+                    else -> "3D 运行时启动失败。请重试，或返回设备墙。"
+                },
+                diagnosticId = UUID.randomUUID().toString(),
+            )
+            if (_state.value.failure == null) SceneRuntimeLog.failure(failure, t)
+            withContext(mainDispatcher) {
+                if (isAttemptActive(attempt)) {
+                    browserComponent = null
+                    _state.update { it.copy(phase = SceneRuntimePhase.FAILED, failure = failure) }
+                }
+            }
+        }
+    }
 
-                withContext(mainDispatcher) {
-                    browserComponent = comp
-                    _state.update { it.copy(isInitializing = false) }
-                    println("[SceneRuntimeHost] JCEF Chromium browser initialized successfully")
-                }
-            } catch (t: Throwable) {
-                if (t is CancellationException) throw t
-                t.printStackTrace()
-                withContext(mainDispatcher) {
-                    _state.update {
-                        it.copy(
-                            isInitializing = false,
-                            initError = t.message ?: t.toString()
-                        )
-                    }
-                }
+    suspend fun retryRenderer(): Boolean = rendererControlMutex.withLock {
+        if (customTransport != null || isDisposed.get()) return@withLock false
+        rendererInitJob?.cancelAndJoin()
+        if (isDisposed.get()) return@withLock false
+
+        val reusableManager = cefHostManager
+        try {
+            channel.disconnect()
+        } catch (t: Throwable) {
+            SceneRuntimeLog.cleanupFailure("bridge-channel", t)
+        }
+        withContext(mainDispatcher) { browserComponent = null }
+
+        val attempt = rendererAttempt.incrementAndGet()
+        _state.update { current ->
+            if (isDisposed.get()) current else current.copy(phase = SceneRuntimePhase.INITIALIZING_CEF, failure = null)
+        }
+        rendererInitJob = hostScope.launch {
+            runRendererAttempt(attempt, reconnectChannel = true, managerToReuse = reusableManager)
+        }
+        true
+    }
+
+    private fun isAttemptActive(attempt: Long): Boolean =
+        !isDisposed.get() && rendererAttempt.get() == attempt
+
+    private fun checkAttemptActive(attempt: Long) {
+        if (!isAttemptActive(attempt)) throw CancellationException("Scene renderer attempt is no longer active")
+    }
+
+    private fun setRuntimePhase(
+        phase: SceneRuntimePhase,
+        attempt: Long,
+        clearFailure: Boolean = false,
+    ) {
+        if (!isAttemptActive(attempt)) return
+        val previous = _state.value.phase
+        _state.update { current ->
+            if (!isAttemptActive(attempt)) current
+            else current.copy(phase = phase, failure = if (clearFailure) null else current.failure)
+        }
+        if (previous != phase) SceneRuntimeLog.transition(previous, phase, attempt)
+    }
+
+    private fun reportPageLoadFailure(attempt: Long, errorCode: String) {
+        if (!isAttemptActive(attempt)) return
+        hostScope.launch(mainDispatcher) {
+            if (!isAttemptActive(attempt) || _state.value.phase !in setOf(
+                    SceneRuntimePhase.CREATING_BROWSER,
+                    SceneRuntimePhase.WAITING_BRIDGE,
+                )
+            ) return@launch
+            val failure = SceneRuntimeFailure(
+                stage = _state.value.phase,
+                category = SceneRuntimeFailureCategory.PAGE_LOAD,
+                userMessage = "3D 渲染页面加载失败。请重试，或返回设备墙。",
+                diagnosticId = UUID.randomUUID().toString(),
+            )
+            SceneRuntimeLog.failure(failure, IllegalStateException("CEF page load error $errorCode"))
+            _state.update { current ->
+                if (!isAttemptActive(attempt)) current else current.copy(
+                    phase = SceneRuntimePhase.FAILED,
+                    failure = failure,
+                )
             }
         }
     }
@@ -555,34 +726,43 @@ class SceneRuntimeHost(
         if (!isDisposed.compareAndSet(false, true)) {
             return
         }
+        rendererAttempt.incrementAndGet()
+        rendererInitJob?.cancel()
+        _state.update { it.copy(phase = SceneRuntimePhase.DISPOSING) }
         withContext(NonCancellable) {
             sceneLifecycleMutex.withLock {
-                println("[SceneRuntimeHost] Disposing SceneRuntimeHost (graceful close)...")
+                SceneRuntimeLog.transition(SceneRuntimePhase.DISPOSING, SceneRuntimePhase.DISPOSED, rendererAttempt.get())
                 synchronized(this@SceneRuntimeHost) {
                     isSwitchingScene = true
                     activeEpoch++
                 }
-                hostController.dispose()
+                try {
+                    hostController.dispose()
+                } catch (t: Throwable) {
+                    SceneRuntimeLog.cleanupFailure("bridge-controller", t)
+                }
                 try {
                     persistenceCoordinator?.close()
-                } catch (_: Throwable) {
+                } catch (t: Throwable) {
+                    SceneRuntimeLog.cleanupFailure("persistence-coordinator", t)
                 }
-
                 try {
                     channel.disconnect()
-                } catch (_: Throwable) {
+                } catch (t: Throwable) {
+                    SceneRuntimeLog.cleanupFailure("bridge-channel", t)
                 }
-
                 try {
                     cefHostManager?.dispose()
-                    cefHostManager = null
                 } catch (t: Throwable) {
-                    t.printStackTrace()
+                    SceneRuntimeLog.cleanupFailure("cef-manager", t)
+                } finally {
+                    cefHostManager = null
+                    bridgeAdapter = null
+                    browserComponent = null
+                    _state.update { it.copy(phase = SceneRuntimePhase.DISPOSED) }
+                    hostJob.cancel()
+                    cleanupJob.cancel()
                 }
-
-                browserComponent = null
-                bridgeAdapter = null
-                hostJob.cancel()
             }
         }
     }
@@ -594,9 +774,8 @@ class SceneRuntimeHost(
      */
     fun dispose() {
         if (isDisposed.get()) return
-        // Fire-and-forget: close() uses NonCancellable internally so cleanup
-        // completes even after hostScope is cancelled by the caller.
-        hostScope.launch(ioDispatcher) { close() }
+        // Cleanup must remain schedulable even if the UI parent scope is already cancelled.
+        cleanupScope.launch { close() }
     }
 
     /**
@@ -606,7 +785,7 @@ class SceneRuntimeHost(
         private var receiveListener: ((String) -> Unit)? = null
         private var hostManager: CefHostManager? = null
 
-        fun bind(manager: CefHostManager) {
+        fun bind(manager: CefHostManager?) {
             this.hostManager = manager
         }
 

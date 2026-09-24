@@ -4,7 +4,7 @@
 >
 > 适用分支：`codex/add-3d-device-scene-design`
 >
-> 当前基线：Phase 0 ~ Phase 4 核心能力与闭环验证已全部完成，MVP 就绪。
+> 当前基线：Phase 0 ~ Phase 4 核心能力、桌面发行包真机验收和问题修复已完成，MVP 就绪；下一轮进入可观测性与体验增强阶段。
 
 ## 1. 文档目的
 
@@ -53,13 +53,15 @@
 - `:desktopApp:test`：50 个测试通过（含 `SceneRuntimeHostTest`、`ScenePersistenceCoordinatorTest`、`SceneUiUtilsTest`、`CefHostManagerTest` 等）
 - `:shared:jvmTest`：317 个测试通过（含 `DeviceIdentityResolutionTest`、`DefaultSceneRuntimeControllerTest`、`SceneStoreTest` 等）
 - `bundleRendererRuntime` & `:desktopApp:processResources`：Vite 产物成功编译并注入 `scene-runtime/` 资源目录并打包至桌面应用。
+- 桌面发行包真机测试：用户已完成真机测试，并在上一提交修复测试中发现的问题；MSI/DMG 与 JCEF 的安装后运行验证不再作为当前阻塞项。具体 OS、设备型号和测试用例结果尚未记录在仓库。
 
 ### 后续规划（MVP 之后可选演进）
 
-- Windows MSI 和 macOS DMG 自动化 CI 签名构建
+- Scene/Renderer 生命周期可观测性与故障诊断（下一轮建议优先）
 - 截图纹理投影与实时屏幕投屏贴图
-- 电量与充电状态 3D 发光视觉效果
+- 电量与充电状态 3D 视觉效果
 - 自定义相机预设位与视角书签
+- Windows MSI 和 macOS DMG 自动化 CI 签名构建（按发布需求排期）
 
 ## 3. 实施原则
 
@@ -441,14 +443,59 @@ Phase 0 ~ Phase 4 MVP 验收标准核验：
 - [x] Renderer 失败不会破坏 Classic Device Wall（验证通过）
 - [x] 单元测试、桌面测试和发行资源打包验证全部通过（验证通过：42 renderer unit tests, 54 desktop tests, 317 shared tests）
 
-## 11. 后续发行包验证计划
+## 11. 下一轮实施范围
 
-代码、架构与内嵌操作闭环均已在开发环境完成静态检查与全量自动化测试，后续任务进入桌面发行环境的安装包集成验收：
+### 11.1 基线结论
 
-1. **Windows MSI 安装包验收**：
-   - 验证构建产物安装到无开发环境的 Windows 机器上。
-   - 验证内嵌 JCEF 运行时释放、离屏渲染 (OSR) 与硬件加速兼容性。
-   - 验证原生 AWT `FileDialog` 调起与窗口置顶交互。
-2. **macOS DMG 安装包验收**：
-   - 验证打包与签名、跨架构 (Apple Silicon / Intel) 兼容性。
-   - 验证 Native WebGL 渲染管线与视口事件传递。
+用户已完成桌面发行包真机测试，并在上一提交中修复测试发现的问题。当前将 MVP 的发行环境验收视为已通过，不再将 MSI/DMG 安装和 JCEF 首次启动列为下一轮开发任务。测试覆盖的操作系统、硬件、GPU 和具体场景尚未沉淀到仓库；在需要发布审计或跨机器复现时，再按版本补充独立验收记录。
+
+### 11.2 首轮范围：Scene/Renderer 可观测性和故障恢复
+
+优先补足用户和开发者诊断 3D 启动问题及资源生命周期的能力。范围控制在运行状态、错误呈现与资源生命周期，不改变 Scene 数据格式、Bridge 协议和 ADB 业务边界。
+
+详细状态模型、生命周期线程约束、恢复流程、逐文件代码指导和验收用例见 [Scene / Renderer 生命周期可观测性与故障恢复实施方案](./3d-scene-renderer-lifecycle-plan.md)。该专项文档是下一轮编码的直接实施基线。
+
+当前代码已进入首轮落地：加入阶段化 Runtime 状态、脱敏诊断日志、Bridge Ready 超时与手动 Retry，并明确 JCEF Browser 创建的 EDT 检查。用户已确认本轮代码真机测试正常；生命周期边界的自动化回归仍待补充。真机测试的平台、构建版本和逐项结果未记录，后续如需审计可另行补全。
+
+#### 交付内容
+
+1. **生命周期状态可见**：为 Renderer Host / Scene Runtime 明确阶段状态，例如 `DISABLED`、`INITIALIZING_CEF`、`CREATING_BROWSER`、`LOADING_SCENE`、`READY`、`FAILED`、`DISPOSING`；分别表达 CEF 初始化、EDT 浏览器创建、Bridge Ready 和 Scene 加载，避免单个 `isInitializing` 布尔值覆盖多个阶段。
+2. **错误信息可诊断**：保留面向用户的简短错误提示，同时记录带阶段、异常类型和根因的结构化日志；不得无差别记录场景路径、用户数据或设备身份等敏感信息。
+3. **恢复路径明确**：失败后可回到 Classic Device Wall；重新进入 3D 时采用明确的重试/重建策略，确保旧 Browser、Bridge listener 和协程不会重复残留。
+4. **生命周期回归覆盖**：覆盖首次进入、连续离开/重进、初始化失败后重试、窗口关闭时初始化仍在进行等场景；验证 EDT 不被阻塞、dispose 幂等、关闭后异步清理不触碰已销毁 UI。
+
+#### 主要代码位置
+
+```text
+desktopApp/src/main/kotlin/fun/abbas/wps_adb/scene/SceneRuntimeHost.kt
+desktopApp/src/main/kotlin/fun/abbas/wps_adb/scene/SceneRuntimeState.kt
+desktopApp/src/main/kotlin/fun/abbas/wps_adb/spike/renderer/CefHostManager.kt
+desktopApp/src/main/kotlin/fun/abbas/wps_adb/bridge/SceneBridgeHostController.kt
+desktopApp/src/test/kotlin/fun/abbas/wps_adb/scene/SceneRuntimeHostTest.kt
+desktopApp/src/test/kotlin/fun/abbas/wps_adb/spike/renderer/CefHostManagerTest.kt
+```
+
+实施顺序：
+
+1. 盘点当前 Host 状态、错误回调和 dispose/recreate 行为，先补齐生命周期边界测试。
+2. 将 Renderer 初始化阶段建模为状态；若现有 `SceneRuntimeState` 已足够，则扩展它，避免新增重复状态源。
+3. 在 CEF 初始化、EDT 创建 Browser、Bridge 握手和 Scene 加载边界发出状态及结构化日志。
+4. 明确失败重试会重建哪些对象，并用测试验证 listener、Browser 和 Coroutine 正确释放且不会重复注册。
+5. 手工回归已验证过的真机流程，并在实现文档记录版本、平台、结果及已知限制。
+
+#### 不纳入首轮
+
+- 截图贴图、实时投屏纹理、电量/充电动画和相机书签。
+- 修改 Scene JSON schema 或扩展 Renderer Bridge 消息协议。
+- 重做 Classic Device Wall、Inspector 布局或设备身份策略。
+- 未经发布目标确认就展开 MSI/DMG CI 签名自动化。
+
+### 11.3 后续候选顺序
+
+首轮诊断和生命周期稳定后，建议逐项做小闭环：
+
+1. **相机预设与视角书签**：复用现有 `SceneCamera` 持久化，不引入复杂相机系统。
+2. **设备状态视觉增强**：先做电量/充电等低成本状态指示，继续由 Kotlin 投影设备状态，Renderer 仅负责渲染。
+3. **截图纹理**：单独评估截图更新频率、纹理资源释放、带宽与隐私，再决定是否支持实时刷新；不与基础场景渲染耦合。
+
+每项候选进入实施前，定义用户流程、数据流、资源上限和验收条件，再更新本计划与 Bridge Contract（仅在需要新增报文时）。

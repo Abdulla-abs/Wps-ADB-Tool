@@ -245,9 +245,8 @@ val dialog = FileDialog(owner, "Select GLB", FileDialog.LOAD)
 7. [x] **Transform 联动与保序**：3D 视口内 Gizmo 交互与 Inspector 数值编辑均通过 `SET_OBJECT_TRANSFORM` 实时双向同步，并由持久化协调器按序安全落盘。
 8. [x] **页面切换与状态一致**：Inspector 子页面切换不销毁或重建 JCEF 浏览器实例；导入与绑定完成后场景状态流实时响应。
 
-## 待完成项（发行环境验证）
+## 发行环境验收状态
 
-当前代码结构、组件交互与单元/集成测试已全部就绪并闭环。剩余待验证项属于发行环境层面的端到端体验验证：
+用户已完成桌面发行包真机测试，并在上一提交中修复测试发现的问题。MSI/DMG 安装后 JCEF、文件选择器和交互体验不再列为当前待办。具体平台、设备和用例结果未记录在本文档；如需可审计的发布证据，应另行记录构建版本、操作系统/架构、验收步骤和结果。
 
-- Windows MSI 安装包生成后的 JCEF 内核解压、GPU 加速与文件对话框调用手工验证。
-- macOS DMG 安装包运行时的原生文件选择器与键盘焦点兼容性验证。
+下一轮开发范围见 [3D Device Scene 实施文档 §11](./3d-device-scene-implementation.md#11-下一轮实施范围)，优先聚焦 Scene/Renderer 生命周期可观测性、错误诊断和失败恢复。
