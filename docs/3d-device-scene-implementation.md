@@ -413,6 +413,18 @@ npm test --prefix renderer-runtime
 5. [x] 补充 Stable Identity 的 USB/WiFi 切换、Emulator 动态端口以及离线恢复端到端测试覆盖。
 6. [x] 完成 `bundleRendererRuntime` 编译集成与 Desktop main classpath 资源打包验证。
 7. [x] 验证 JCEF 延迟初始化与故障隔离：未开启/未进入 3D 页面不占资源；Renderer 失败不破坏 Classic Device Wall。
+8. [x] **Scene 切换加固与桥接事件隔离**：
+   - 引入场景生命周期互斥锁 `sceneLifecycleMutex` 与代次门控计数器 `activeEpoch`。
+   - 切场景时将 `isSwitchingScene` 置为 true 并先 flush 旧场景 pending Camera/Transform save，再进入新场景。
+   - 过滤与隔离过时（stale epoch / stale sceneId）桥接事件，杜绝跨场景串话。
+   - 删除活跃场景时原子推进 fallback 场景加载，具备应急默认场景（Default fallback）自动重建与二次激活兜底。
+9. [x] **Inspector 内嵌面板交互闭环与状态收敛**：
+   - 主窗口 AWT `Window` 沿 `DeviceSceneScreen → DeviceSceneInspector → SceneImportPage / SceneAssetImportPage` 逐级显式传递，配合 `SceneUiUtils.resolveDialogOwner` 进行层级递归解析与 `KeyboardFocusManager` 受控回退，确保系统文件选择器始终正确归属。
+   - FileDialog 取消时不擦除输入框原有路径。
+   - `BindingModePanel` 移除 ExposedDropdownMenu，全面采用独立限高（max = 180.dp）的内嵌可滚动设备选择容器，避免与外层面板滚动冲突；异常捕获并保留可 Dismiss 的错误横幅；解绑与换绑支持行内操作；切场景/切 Slot 自动重置选择与错误；透传 `CancellationException`。
+   - `EditingModePanel` Asset 删除采用行内二次确认；删除失败保留确认卡片与错误横幅以支持原地重试；UI 与 `SceneRuntimeHost.deleteAsset` 均显式透传 `CancellationException`，杜绝取消被吞或被当作失败；切场景/切 Slot 自动重置；列表变化时自动清理已移除 Asset 的 pending delete。
+   - `SceneManagePage` 场景删除与激活异常处理完整闭环，删除失败保留行内确认供原地重试，显式透传 `CancellationException`；场景列表刷新时自动清理已不存在 Scene 的 pending delete；点击激活新场景时自动重置待删除状态。
+   - 顶栏 `SceneToolbar` 快捷按钮仅作为 Inspector 导航路由触点 (`onNavigate`)，无弹层、无空域 (airspace) 遮挡。
 
 ## 10. 完成定义验证结果
 
@@ -427,4 +439,16 @@ Phase 0 ~ Phase 4 MVP 验收标准核验：
 - [x] Transform 和 Camera 可以可靠、保序持久化（验证通过）
 - [x] Inspector 可以调用现有设备动作（Shell、Mirror、Logcat、Debug 等）（验证通过）
 - [x] Renderer 失败不会破坏 Classic Device Wall（验证通过）
-- [x] 单元测试、桌面测试和发行资源打包验证全部通过（验证通过：42 renderer unit tests, 50 desktop tests, 317 shared tests）
+- [x] 单元测试、桌面测试和发行资源打包验证全部通过（验证通过：42 renderer unit tests, 54 desktop tests, 317 shared tests）
+
+## 11. 后续发行包验证计划
+
+代码、架构与内嵌操作闭环均已在开发环境完成静态检查与全量自动化测试，后续任务进入桌面发行环境的安装包集成验收：
+
+1. **Windows MSI 安装包验收**：
+   - 验证构建产物安装到无开发环境的 Windows 机器上。
+   - 验证内嵌 JCEF 运行时释放、离屏渲染 (OSR) 与硬件加速兼容性。
+   - 验证原生 AWT `FileDialog` 调起与窗口置顶交互。
+2. **macOS DMG 安装包验收**：
+   - 验证打包与签名、跨架构 (Apple Silicon / Intel) 兼容性。
+   - 验证 Native WebGL 渲染管线与视口事件传递。

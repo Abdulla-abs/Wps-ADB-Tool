@@ -105,6 +105,7 @@ fun main(args: Array<String>) {
             if (isSpikeRequested) {
                 RendererSpikeView(onClose = ::exitApplication)
             } else {
+                val currentWindow = this.window
                 App(
                     initialNavTab = if (isSceneRequested) `fun`.abbas.wps_adb.model.NavTab.SCENE else null,
                     sceneContent = { vm ->
@@ -123,6 +124,7 @@ fun main(args: Array<String>) {
                         `fun`.abbas.wps_adb.scene.ui.DeviceSceneScreen(
                             runtimeHost = host,
                             viewModel = vm,
+                            window = currentWindow,
                         )
                     },
                 )

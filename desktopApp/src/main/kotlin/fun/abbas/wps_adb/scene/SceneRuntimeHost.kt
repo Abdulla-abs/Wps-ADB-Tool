@@ -317,7 +317,9 @@ class SceneRuntimeHost(
             }
             refreshScenes()
             true
-        } catch (_: Throwable) {
+        } catch (t: Throwable) {
+            if (t is CancellationException) throw t
+            System.err.println("[SceneRuntimeHost] Failed to delete asset '$assetId' from scene '$sceneId': ${t.message}")
             false
         }
     }

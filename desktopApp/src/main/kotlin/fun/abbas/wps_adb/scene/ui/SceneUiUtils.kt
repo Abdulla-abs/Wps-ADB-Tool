@@ -4,30 +4,66 @@ import java.awt.Dialog
 import java.awt.FileDialog
 import java.awt.Frame
 import java.awt.KeyboardFocusManager
+import java.awt.Window
 import java.io.File
 import java.io.FilenameFilter
 
 object SceneUiUtils {
     /**
-     * Safely opens an AWT FileDialog configured for .glb files.
-     * Handles Frame, Dialog, or falls back to null parent window.
-     * Returns null if user cancels the dialog (so existing input remains preserved).
+     * Resolves a suitable parent [Frame] or [Dialog] for an AWT [FileDialog].
+     * If the given [owner] is already a Frame or Dialog, it is returned directly.
+     * If [owner] is another Window subclass, its owner hierarchy is inspected.
+     * If [owner] is null, falls back to KeyboardFocusManager's active or focused window.
      */
-    fun showGlbFileDialog(title: String): File? {
-        val activeWindow = try {
-            KeyboardFocusManager.getCurrentKeyboardFocusManager().activeWindow
+    fun resolveDialogOwner(owner: Window?): Window? {
+        var current: Window? = owner
+        while (current != null && current !is Frame && current !is Dialog) {
+            current = current.owner
+        }
+        if (current is Frame || current is Dialog) {
+            return current
+        }
+
+        val fallback = try {
+            val kfm = KeyboardFocusManager.getCurrentKeyboardFocusManager()
+            kfm.activeWindow ?: kfm.focusedWindow
         } catch (_: Throwable) {
             null
         }
 
-        val dialog = when (activeWindow) {
-            is Frame -> FileDialog(activeWindow, title, FileDialog.LOAD)
-            is Dialog -> FileDialog(activeWindow, title, FileDialog.LOAD)
+        var fallbackCurrent: Window? = fallback
+        while (fallbackCurrent != null && fallbackCurrent !is Frame && fallbackCurrent !is Dialog) {
+            fallbackCurrent = fallbackCurrent.owner
+        }
+        return if (fallbackCurrent is Frame || fallbackCurrent is Dialog) fallbackCurrent else null
+    }
+
+    /**
+     * Creates an AWT FileDialog configured for .glb files with the resolved owner.
+     */
+    fun createGlbFileDialog(title: String, owner: Window? = null): FileDialog {
+        val resolvedOwner = resolveDialogOwner(owner)
+        val dialog = when (resolvedOwner) {
+            is Frame -> FileDialog(resolvedOwner, title, FileDialog.LOAD)
+            is Dialog -> FileDialog(resolvedOwner, title, FileDialog.LOAD)
             else -> FileDialog(null as Frame?, title, FileDialog.LOAD)
         }
-
         dialog.filenameFilter = FilenameFilter { _, name -> name.endsWith(".glb", ignoreCase = true) }
-        dialog.isVisible = true
+        return dialog
+    }
+
+    /**
+     * Safely opens an AWT FileDialog configured for .glb files.
+     * Uses [owner] as parent if valid, or falls back gracefully.
+     * Returns null if user cancels the dialog (so existing input remains preserved).
+     */
+    fun showGlbFileDialog(
+        title: String,
+        owner: Window? = null,
+        dialogRunner: (FileDialog) -> Unit = { it.isVisible = true },
+    ): File? {
+        val dialog = createGlbFileDialog(title, owner)
+        dialogRunner(dialog)
 
         val file = dialog.file
         val dir = dialog.directory

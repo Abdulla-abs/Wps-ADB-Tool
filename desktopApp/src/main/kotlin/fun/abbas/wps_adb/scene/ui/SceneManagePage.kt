@@ -18,6 +18,7 @@ import `fun`.abbas.wps_adb.model.scene.DeviceScene
 import `fun`.abbas.wps_adb.scene.SceneDeleteResult
 import `fun`.abbas.wps_adb.scene.SceneRuntimeHost
 import `fun`.abbas.wps_adb.theme.CarbonColors
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -57,6 +58,11 @@ fun SceneManagePage(
             }
             withContext(Dispatchers.Main) {
                 uiState = nextState
+                if (nextState is SceneListUiState.Success) {
+                    if (sceneIdPendingDelete != null && nextState.scenes.none { it.id == sceneIdPendingDelete }) {
+                        sceneIdPendingDelete = null
+                    }
+                }
                 runtimeHost.refreshScenes()
             }
         }
@@ -314,12 +320,18 @@ fun SceneManagePage(
                                         fontWeight = FontWeight.Medium,
                                         color = Color(0xFFEF4444),
                                     )
+                                    var isDeletingScene by remember(scene.id) { mutableStateOf(false) }
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                                        verticalAlignment = Alignment.CenterVertically,
                                     ) {
                                         OutlinedButton(
-                                            onClick = { sceneIdPendingDelete = null },
+                                            onClick = {
+                                                sceneIdPendingDelete = null
+                                                deleteErrorMessage = null
+                                            },
+                                            enabled = !isDeletingScene,
                                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                                         ) {
                                             Text("Cancel", fontSize = 11.sp)
@@ -328,28 +340,48 @@ fun SceneManagePage(
                                         Button(
                                             onClick = {
                                                 val toDeleteId = scene.id
-                                                sceneIdPendingDelete = null
+                                                isDeletingScene = true
                                                 scope.launch {
-                                                    when (val result = runtimeHost.deleteScene(toDeleteId)) {
-                                                        is SceneDeleteResult.Success -> {
-                                                            deleteErrorMessage = null
-                                                            reloadScenes(clearErrors = true)
+                                                    try {
+                                                        when (val result = runtimeHost.deleteScene(toDeleteId)) {
+                                                            is SceneDeleteResult.Success -> {
+                                                                sceneIdPendingDelete = null
+                                                                deleteErrorMessage = null
+                                                                reloadScenes(clearErrors = true)
+                                                            }
+                                                            is SceneDeleteResult.NotDeleted -> {
+                                                                deleteErrorMessage = "Failed to delete scene '$toDeleteId'${result.reason?.let { ": $it" } ?: ""}"
+                                                                reloadScenes(clearErrors = false)
+                                                            }
+                                                            is SceneDeleteResult.DeletedFallbackFailed -> {
+                                                                deleteErrorMessage = "Scene '$toDeleteId' was deleted from disk, but activating fallback scene failed: ${result.error}"
+                                                                reloadScenes(clearErrors = false)
+                                                            }
                                                         }
-                                                        is SceneDeleteResult.NotDeleted -> {
-                                                            deleteErrorMessage = "Failed to delete scene '$toDeleteId'${result.reason?.let { ": $it" } ?: ""}"
-                                                            reloadScenes(clearErrors = false)
-                                                        }
-                                                        is SceneDeleteResult.DeletedFallbackFailed -> {
-                                                            deleteErrorMessage = "Scene '$toDeleteId' was deleted from disk, but activating fallback scene failed: ${result.error}"
-                                                            reloadScenes(clearErrors = false)
-                                                        }
+                                                    } catch (t: Throwable) {
+                                                        if (t is CancellationException) throw t
+                                                        deleteErrorMessage = "Failed to delete scene '$toDeleteId': ${t.message ?: "Unknown error"}"
+                                                        reloadScenes(clearErrors = false)
+                                                    } finally {
+                                                        isDeletingScene = false
                                                     }
                                                 }
                                             },
+                                            enabled = !isDeletingScene,
                                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
                                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                                         ) {
-                                            Text("Confirm Delete", fontSize = 11.sp)
+                                            if (isDeletingScene) {
+                                                CircularProgressIndicator(
+                                                    modifier = Modifier.size(12.dp),
+                                                    strokeWidth = 2.dp,
+                                                    color = Color.White,
+                                                )
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text("Deleting...", fontSize = 11.sp)
+                                            } else {
+                                                Text("Confirm Delete", fontSize = 11.sp)
+                                            }
                                         }
                                     }
                                 }
@@ -363,10 +395,16 @@ fun SceneManagePage(
                                         FilledTonalButton(
                                             onClick = {
                                                 deleteErrorMessage = null
+                                                sceneIdPendingDelete = null
                                                 scope.launch {
-                                                    val success = runtimeHost.selectScene(scene.id)
-                                                    if (!success) {
-                                                        deleteErrorMessage = "Failed to activate scene '${scene.name}'"
+                                                    try {
+                                                        val success = runtimeHost.selectScene(scene.id)
+                                                        if (!success) {
+                                                            deleteErrorMessage = "Failed to activate scene '${scene.name}'"
+                                                        }
+                                                    } catch (t: Throwable) {
+                                                        if (t is CancellationException) throw t
+                                                        deleteErrorMessage = "Failed to activate scene '${scene.name}': ${t.message ?: "Unknown error"}"
                                                     }
                                                 }
                                             },

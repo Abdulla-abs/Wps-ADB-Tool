@@ -28,9 +28,11 @@ import `fun`.abbas.wps_adb.model.scene.SceneVector3
 import `fun`.abbas.wps_adb.scene.SceneRuntimeHost
 import `fun`.abbas.wps_adb.theme.CarbonColors
 import `fun`.abbas.wps_adb.viewmodel.AppViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlin.math.PI
+import java.awt.Window
 
 @Composable
 fun DeviceSceneInspector(
@@ -39,6 +41,7 @@ fun DeviceSceneInspector(
     actions: SceneDeviceActions,
     currentPage: InspectorPage = InspectorPage.Overview,
     onNavigate: (InspectorPage) -> Unit = {},
+    window: Window? = null,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -162,6 +165,7 @@ fun DeviceSceneInspector(
                     runtimeHost = runtimeHost,
                     onComplete = { onNavigate(InspectorPage.Overview) },
                     onCancel = { onNavigate(InspectorPage.Overview) },
+                    window = window,
                 )
             }
             InspectorPage.ManageScenes -> {
@@ -179,6 +183,7 @@ fun DeviceSceneInspector(
                         runtimeHost = runtimeHost,
                         onComplete = { onNavigate(InspectorPage.Overview) },
                         onCancel = { onNavigate(InspectorPage.Overview) },
+                        window = window,
                     )
                 } else {
                     Card(
@@ -523,6 +528,8 @@ private fun BindingModePanel(
         return
     }
 
+    var bindingErrorMessage by remember(activeSceneId, selectedObjectId) { mutableStateOf<String?>(null) }
+
     Card(
         shape = RoundedCornerShape(10.dp),
         colors = CardDefaults.cardColors(containerColor = CarbonColors.SurfaceContainer),
@@ -534,6 +541,34 @@ private fun BindingModePanel(
         ) {
             Text("Slot Binding: $selectedObjectId", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = CarbonColors.OnSurface)
             HorizontalDivider(color = CarbonColors.OutlineVariant.copy(alpha = 0.3f))
+
+            if (bindingErrorMessage != null) {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = CarbonColors.Error.copy(alpha = 0.15f)),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = bindingErrorMessage!!,
+                            color = CarbonColors.Error,
+                            fontSize = 11.sp,
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(
+                            onClick = { bindingErrorMessage = null },
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
+                        ) {
+                            Text("Dismiss", color = CarbonColors.Error, fontSize = 10.sp)
+                        }
+                    }
+                }
+            }
 
             if (matchingBinding != null) {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -547,7 +582,7 @@ private fun BindingModePanel(
                 }
 
                 // Inline Unbind Confirmation
-                var confirmingUnbind by remember(selectedObjectId) { mutableStateOf(false) }
+                var confirmingUnbind by remember(activeSceneId, selectedObjectId) { mutableStateOf(false) }
                 if (confirmingUnbind) {
                     Column(
                         modifier = Modifier
@@ -580,8 +615,14 @@ private fun BindingModePanel(
                                     val objId = selectedObjectId
                                     if (sId != null && sceneRepo != null) {
                                         scope.launch {
-                                            val updated = sceneRepo.unbindDevice(sId, objId)
-                                            runtimeController?.updateScene(updated)
+                                            try {
+                                                val updated = sceneRepo.unbindDevice(sId, objId)
+                                                runtimeController?.updateScene(updated)
+                                                bindingErrorMessage = null
+                                            } catch (t: Throwable) {
+                                                if (t is CancellationException) throw t
+                                                bindingErrorMessage = "Failed to unbind device: ${t.message ?: "Unknown error"}"
+                                            }
                                         }
                                     }
                                 },
@@ -606,25 +647,18 @@ private fun BindingModePanel(
                 HorizontalDivider(color = CarbonColors.OutlineVariant.copy(alpha = 0.2f))
 
                 // Embedded Rebind Device Picker
-                var selectedDeviceForRebind by remember(selectedObjectId) { mutableStateOf<Device?>(null) }
+                var selectedDeviceForRebind by remember(activeSceneId, selectedObjectId) { mutableStateOf<Device?>(null) }
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text("Rebind to another connected device:", fontSize = 11.sp, color = CarbonColors.Outline)
 
                     if (connectedDevices.isEmpty()) {
                         Text("No ADB devices currently connected.", fontSize = 11.sp, color = CarbonColors.OutlineVariant)
                     } else {
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            connectedDevices.forEach { dev ->
-                                DeviceSelectRow(
-                                    device = dev,
-                                    isSelected = dev.id == selectedDeviceForRebind?.id,
-                                    onClick = { selectedDeviceForRebind = dev },
-                                )
-                            }
-                        }
+                        DeviceSelectList(
+                            devices = connectedDevices,
+                            selectedDeviceId = selectedDeviceForRebind?.id,
+                            onSelect = { selectedDeviceForRebind = it },
+                        )
 
                         Button(
                             onClick = {
@@ -633,9 +667,15 @@ private fun BindingModePanel(
                                 val objId = selectedObjectId
                                 if (dev != null && sId != null && sceneRepo != null) {
                                     scope.launch {
-                                        val updated = sceneRepo.bindDevice(sId, objId, DeviceIdentityRef(dev.identity.value))
-                                        runtimeController?.updateScene(updated)
-                                        selectedDeviceForRebind = null
+                                        try {
+                                            val updated = sceneRepo.bindDevice(sId, objId, DeviceIdentityRef(dev.identity.value))
+                                            runtimeController?.updateScene(updated)
+                                            selectedDeviceForRebind = null
+                                            bindingErrorMessage = null
+                                        } catch (t: Throwable) {
+                                            if (t is CancellationException) throw t
+                                            bindingErrorMessage = "Failed to rebind device: ${t.message ?: "Unknown error"}"
+                                        }
                                     }
                                 }
                             },
@@ -654,7 +694,7 @@ private fun BindingModePanel(
                     color = CarbonColors.Outline,
                 )
 
-                var selectedDeviceForBind by remember(selectedObjectId) { mutableStateOf(connectedDevices.firstOrNull()) }
+                var selectedDeviceForBind by remember(activeSceneId, selectedObjectId) { mutableStateOf(connectedDevices.firstOrNull()) }
 
                 if (connectedDevices.isEmpty()) {
                     Text(
@@ -666,18 +706,11 @@ private fun BindingModePanel(
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text("Select Device to Bind:", fontSize = 11.sp, color = CarbonColors.Outline)
 
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            connectedDevices.forEach { dev ->
-                                DeviceSelectRow(
-                                    device = dev,
-                                    isSelected = dev.id == selectedDeviceForBind?.id,
-                                    onClick = { selectedDeviceForBind = dev },
-                                )
-                            }
-                        }
+                        DeviceSelectList(
+                            devices = connectedDevices,
+                            selectedDeviceId = selectedDeviceForBind?.id,
+                            onSelect = { selectedDeviceForBind = it },
+                        )
 
                         Button(
                             onClick = {
@@ -686,8 +719,14 @@ private fun BindingModePanel(
                                 val objId = selectedObjectId
                                 if (dev != null && sId != null && sceneRepo != null) {
                                     scope.launch {
-                                        val updated = sceneRepo.bindDevice(sId, objId, DeviceIdentityRef(dev.identity.value))
-                                        runtimeController?.updateScene(updated)
+                                        try {
+                                            val updated = sceneRepo.bindDevice(sId, objId, DeviceIdentityRef(dev.identity.value))
+                                            runtimeController?.updateScene(updated)
+                                            bindingErrorMessage = null
+                                        } catch (t: Throwable) {
+                                            if (t is CancellationException) throw t
+                                            bindingErrorMessage = "Failed to bind device: ${t.message ?: "Unknown error"}"
+                                        }
                                     }
                                 }
                             },
@@ -700,6 +739,33 @@ private fun BindingModePanel(
                     }
                 }
             }
+        }
+    }
+}
+
+/**
+ * Scrollable list with bounded height for ADB device selection.
+ */
+@Composable
+private fun DeviceSelectList(
+    devices: List<Device>,
+    selectedDeviceId: String?,
+    onSelect: (Device) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(max = 180.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        devices.forEach { dev ->
+            DeviceSelectRow(
+                device = dev,
+                isSelected = dev.id == selectedDeviceId,
+                onClick = { onSelect(dev) },
+            )
         }
     }
 }
@@ -769,7 +835,14 @@ private fun EditingModePanel(
     val hostController = runtimeHost.hostController
     val persistenceCoordinator = runtimeHost.persistenceCoordinator
 
-    var assetIdPendingDelete by remember(selectedObjectId) { mutableStateOf<String?>(null) }
+    var assetIdPendingDelete by remember(activeScene?.id, selectedObjectId) { mutableStateOf<String?>(null) }
+    var assetErrorMessage by remember(activeScene?.id, selectedObjectId) { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(activeScene?.assets) {
+        if (assetIdPendingDelete != null && activeScene?.assets?.none { it.id == assetIdPendingDelete } == true) {
+            assetIdPendingDelete = null
+        }
+    }
 
     // --- Asset List Header ---
     Card(
@@ -792,6 +865,34 @@ private fun EditingModePanel(
                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                 ) {
                     Text("+ Import Asset", fontSize = 11.sp)
+                }
+            }
+
+            if (assetErrorMessage != null) {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = CarbonColors.Error.copy(alpha = 0.15f)),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = assetErrorMessage!!,
+                            color = CarbonColors.Error,
+                            fontSize = 11.sp,
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(
+                            onClick = { assetErrorMessage = null },
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
+                        ) {
+                            Text("Dismiss", color = CarbonColors.Error, fontSize = 10.sp)
+                        }
+                    }
                 }
             }
 
@@ -855,7 +956,10 @@ private fun EditingModePanel(
 
                     if (assetIdPendingDelete != matchingAsset.id) {
                         OutlinedButton(
-                            onClick = { assetIdPendingDelete = matchingAsset.id },
+                            onClick = {
+                                assetIdPendingDelete = matchingAsset.id
+                                assetErrorMessage = null
+                            },
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = CarbonColors.Error),
                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                         ) {
@@ -880,12 +984,18 @@ private fun EditingModePanel(
                             fontWeight = FontWeight.Medium,
                             color = Color(0xFFEF4444),
                         )
+                        var isDeletingAsset by remember(activeScene?.id, selectedObjectId) { mutableStateOf(false) }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             OutlinedButton(
-                                onClick = { assetIdPendingDelete = null },
+                                onClick = {
+                                    assetIdPendingDelete = null
+                                    assetErrorMessage = null
+                                },
+                                enabled = !isDeletingAsset,
                                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                             ) {
                                 Text("Cancel", fontSize = 11.sp)
@@ -894,17 +1004,41 @@ private fun EditingModePanel(
                                 onClick = {
                                     val assetId = matchingAsset.id
                                     val sceneId = activeScene?.id
-                                    assetIdPendingDelete = null
                                     if (sceneId != null) {
+                                        isDeletingAsset = true
                                         scope.launch {
-                                            runtimeHost.deleteAsset(sceneId, assetId)
+                                            try {
+                                                val success = runtimeHost.deleteAsset(sceneId, assetId)
+                                                if (success) {
+                                                    assetIdPendingDelete = null
+                                                    assetErrorMessage = null
+                                                } else {
+                                                    assetErrorMessage = "Failed to delete asset '${matchingAsset.name}'"
+                                                }
+                                            } catch (t: Throwable) {
+                                                if (t is CancellationException) throw t
+                                                assetErrorMessage = "Failed to delete asset '${matchingAsset.name}': ${t.message ?: "Unknown error"}"
+                                            } finally {
+                                                isDeletingAsset = false
+                                            }
                                         }
                                     }
                                 },
+                                enabled = !isDeletingAsset,
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
                                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                             ) {
-                                Text("Confirm Delete", fontSize = 11.sp)
+                                if (isDeletingAsset) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(12.dp),
+                                        strokeWidth = 2.dp,
+                                        color = Color.White,
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Deleting...", fontSize = 11.sp)
+                                } else {
+                                    Text("Confirm Delete", fontSize = 11.sp)
+                                }
                             }
                         }
                     }

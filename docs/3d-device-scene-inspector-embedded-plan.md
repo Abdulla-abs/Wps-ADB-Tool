@@ -220,3 +220,34 @@ val dialog = FileDialog(owner, "Select GLB", FileDialog.LOAD)
 5. 将 Binding 的两个 dropdown 改成可见设备列表。
 6. 搜索并确认 Scene UI 内没有遗留 Dialog、AlertDialog、DropdownMenu popup。
 7. 编译并手工验收上述 8 项流程。
+
+## 实施完成状态与代码映射
+
+| 方案改造项 | 实施状态 | 对应代码位置 | 说明 |
+|---|---|---|---|
+| InspectorPage 路由状态管理 | [x] 已完成 | `desktopApp/src/main/kotlin/fun/abbas/wps_adb/scene/ui/DeviceSceneScreen.kt`<br>`desktopApp/src/main/kotlin/fun/abbas/wps_adb/scene/ui/InspectorPage.kt` | `inspectorPage` 由 Screen 统一持有与下发，页面切换不销毁 JCEF。 |
+| Scene Import 内嵌页面 | [x] 已完成 | `desktopApp/src/main/kotlin/fun/abbas/wps_adb/scene/ui/SceneImportPage.kt` | 移除弹窗，通过 Inspector 内嵌卡片编辑、校验 GLB 并提交导入。 |
+| Scene Manage 内嵌页面 | [x] 已完成 | `desktopApp/src/main/kotlin/fun/abbas/wps_adb/scene/ui/SceneManagePage.kt` | 场景列表卡片化展示；行内删除确认；列表刷新后自动清理过期 pending delete；激活其他场景时清空待删除状态；支持删除后回退到 fallback 场景。 |
+| Asset Import 内嵌页面 | [x] 已完成 | `desktopApp/src/main/kotlin/fun/abbas/wps_adb/scene/ui/SceneAssetImportPage.kt` | 移除弹窗，直接在 Inspector 中选择模型并注入当前活跃场景。 |
+| Asset 删除行内确认与状态收敛 | [x] 已完成 | `desktopApp/src/main/kotlin/fun/abbas/wps_adb/scene/ui/DeviceSceneInspector.kt` (`EditingModePanel`)<br>`desktopApp/src/main/kotlin/fun/abbas/wps_adb/scene/SceneRuntimeHost.kt` (`deleteAsset`) | 行内删除确认按钮；删除失败保留确认区与错误提示支持原地重试；Scene 切换或选中变更时自动重置确认与错误状态；列表缺失时自动清理 pending delete；UI 与 `SceneRuntimeHost` 底层均显式向外透传 `CancellationException`，避免协程取消被静默吞掉或被误报为业务失败。 |
+| Binding 设备选择内嵌化与状态收敛 | [x] 已完成 | `desktopApp/src/main/kotlin/fun/abbas/wps_adb/scene/ui/DeviceSceneInspector.kt` (`BindingModePanel`) | 移除 ExposedDropdownMenu 浮层，采用独立限制高度（max = 180.dp）并内置滚动的设备列表容器，避免外层滚动冲突；行内 Unbind 确认；异常捕获并保留可关闭的错误横幅；协程取消透传；Scene 或 Slot 切换时自动重置。 |
+| AWT Window 显式 Owner 传递与回退 | [x] 已完成 | `desktopApp/src/main/kotlin/fun/abbas/wps_adb/main.kt`<br>`desktopApp/src/main/kotlin/fun/abbas/wps_adb/scene/ui/DeviceSceneScreen.kt`<br>`desktopApp/src/main/kotlin/fun/abbas/wps_adb/scene/ui/DeviceSceneInspector.kt`<br>`desktopApp/src/main/kotlin/fun/abbas/wps_adb/scene/ui/SceneUiUtils.kt` | 主窗口 AWT `Window` 沿 `DeviceSceneScreen → DeviceSceneInspector → SceneImportPage / SceneAssetImportPage` 逐级显式传递；`SceneUiUtils.showGlbFileDialog(title, owner)` 优先使用显式 owner，若非 Frame/Dialog 则沿所有权层级解析，缺省时通过 KeyboardFocusManager 受控回退；取消时不覆盖已输入路径。 |
+| 顶栏入口决策 | [x] 已完成 | `desktopApp/src/main/kotlin/fun/abbas/wps_adb/scene/ui/ScenePicker.kt` (`SceneToolbar`) | 保留顶栏 `+ Import` 与 `Manage` 快捷入口，严格仅触发 Inspector 导航 (`onNavigate`)，不引入任何 Compose 浮层或 Native 遮挡风险，兼顾操作直达性与视觉隔离。 |
+
+## 验收标准核验结果
+
+1. [x] **点击顶栏 Import Scene / Manage**：右侧 Inspector 切换至对应内嵌页面，输入字段、校验信息与错误提示完整可见，无 Compose popup。
+2. [x] **Scene 管理与删除**：列表内激活、删除、行内确认均在 Inspector 内完成；删除当前场景后自动回退到备用或默认场景；列表刷新后清理已移除场景的 pending 状态。
+3. [x] **EDITING 模式 Asset 导入**：完成导入后 Asset 实时出现在列表中，可选择并在 Inspector 中编辑 Position / Rotation / Scale。
+4. [x] **Asset 删除确认**：删除确认显示在对应 Asset 卡片内部，支持确认与取消，删除失败保留错误提示，切换 Scene 后状态清空。
+5. [x] **BINDING 模式操作**：已连接设备列表在 Inspector 内部直观展示，选中设备后可直接 Bind / Rebind，Unbind 支持行内确认，错误横幅可关闭。
+6. [x] **JCEF 视口零遮挡**：所有场景操作面板局限在右侧 360dp Inspector 区域内，左侧 3D 视图保持交互，无浮层穿透或空域 (airspace) 遮挡问题。
+7. [x] **Transform 联动与保序**：3D 视口内 Gizmo 交互与 Inspector 数值编辑均通过 `SET_OBJECT_TRANSFORM` 实时双向同步，并由持久化协调器按序安全落盘。
+8. [x] **页面切换与状态一致**：Inspector 子页面切换不销毁或重建 JCEF 浏览器实例；导入与绑定完成后场景状态流实时响应。
+
+## 待完成项（发行环境验证）
+
+当前代码结构、组件交互与单元/集成测试已全部就绪并闭环。剩余待验证项属于发行环境层面的端到端体验验证：
+
+- Windows MSI 安装包生成后的 JCEF 内核解压、GPU 加速与文件对话框调用手工验证。
+- macOS DMG 安装包运行时的原生文件选择器与键盘焦点兼容性验证。

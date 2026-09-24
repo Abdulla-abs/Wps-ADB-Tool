@@ -68,4 +68,107 @@ class SceneUiUtilsTest {
             tempFile.delete()
         }
     }
+
+    @Test
+    fun resolveDialogOwner_resolvesFrameAndDialog() {
+        val frame = java.awt.Frame("Test Frame")
+        try {
+            val resolvedFrame = SceneUiUtils.resolveDialogOwner(frame)
+            assertEquals(frame, resolvedFrame)
+
+            val dialog = java.awt.Dialog(frame, "Test Dialog")
+            try {
+                val resolvedDialog = SceneUiUtils.resolveDialogOwner(dialog)
+                assertEquals(dialog, resolvedDialog)
+
+                val childWindow = java.awt.Window(dialog)
+                try {
+                    val resolvedChild = SceneUiUtils.resolveDialogOwner(childWindow)
+                    assertEquals(dialog, resolvedChild)
+                } finally {
+                    childWindow.dispose()
+                }
+            } finally {
+                dialog.dispose()
+            }
+        } finally {
+            frame.dispose()
+        }
+    }
+
+    @Test
+    fun resolveDialogOwner_handlesNullSafely() {
+        // When null is passed and no window is active, fallback should be null or active window without crashing
+        val resolved = SceneUiUtils.resolveDialogOwner(null)
+        // resolved may be null or currently active frame, but should not throw
+        assertTrue(resolved == null || resolved is java.awt.Frame || resolved is java.awt.Dialog)
+    }
+
+    @Test
+    fun createGlbFileDialog_configuresFilterAndMode() {
+        val frame = java.awt.Frame("Test Frame")
+        try {
+            val dialog = SceneUiUtils.createGlbFileDialog("Test GLB Dialog", owner = frame)
+            assertEquals(java.awt.FileDialog.LOAD, dialog.mode)
+            assertEquals("Test GLB Dialog", dialog.title)
+            assertEquals(frame, dialog.owner)
+
+            val filter = dialog.filenameFilter
+            assertNotNull(filter)
+            assertTrue(filter.accept(File("."), "scene.glb"))
+            assertTrue(filter.accept(File("."), "model.GLB"))
+            assertTrue(!filter.accept(File("."), "texture.png"))
+            assertTrue(!filter.accept(File("."), "scene.gltf"))
+        } finally {
+            dialogDisposeSafely(frame)
+        }
+    }
+
+    @Test
+    fun showGlbFileDialog_returnsNullOnCancel() {
+        val frame = java.awt.Frame("Test Frame")
+        try {
+            val result = SceneUiUtils.showGlbFileDialog(
+                title = "Select Model",
+                owner = frame,
+                dialogRunner = { dialog ->
+                    // Simulate user cancellation (no file/dir set)
+                }
+            )
+            assertNull(result, "Canceling dialog should return null without throwing")
+        } finally {
+            frame.dispose()
+        }
+    }
+
+    @Test
+    fun showGlbFileDialog_returnsFileWhenSelected() {
+        val frame = java.awt.Frame("Test Frame")
+        val tempDir = Files.createTempDirectory("glb_test_dir").toFile()
+        try {
+            val expectedFile = File(tempDir, "sample.glb")
+            expectedFile.writeText("sample")
+
+            val result = SceneUiUtils.showGlbFileDialog(
+                title = "Select Model",
+                owner = frame,
+                dialogRunner = { dialog ->
+                    // Simulate user choosing a file
+                    dialog.directory = tempDir.absolutePath
+                    dialog.file = "sample.glb"
+                }
+            )
+            assertNotNull(result)
+            assertEquals(expectedFile.canonicalPath, result.canonicalPath)
+        } finally {
+            tempDir.deleteRecursively()
+            frame.dispose()
+        }
+    }
+
+    private fun dialogDisposeSafely(frame: java.awt.Frame) {
+        try {
+            frame.dispose()
+        } catch (_: Throwable) {}
+    }
 }

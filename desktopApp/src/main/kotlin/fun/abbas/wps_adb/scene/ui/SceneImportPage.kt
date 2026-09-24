@@ -18,11 +18,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
+import java.awt.Window
+
 @Composable
 fun SceneImportPage(
     runtimeHost: SceneRuntimeHost,
     onComplete: () -> Unit,
     onCancel: () -> Unit,
+    window: Window? = null,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -79,7 +82,10 @@ fun SceneImportPage(
                 ) {
                     OutlinedButton(
                         onClick = {
-                            val selected = SceneUiUtils.showGlbFileDialog("Select Environment GLB File")
+                            val selected = SceneUiUtils.showGlbFileDialog(
+                                title = "Select Environment GLB File",
+                                owner = window,
+                            )
                             if (selected != null) {
                                 filePath = selected.absolutePath
                                 errorMessage = null

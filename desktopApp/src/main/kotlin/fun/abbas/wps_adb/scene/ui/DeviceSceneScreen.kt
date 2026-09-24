@@ -17,6 +17,8 @@ import `fun`.abbas.wps_adb.scene.SceneView
 import `fun`.abbas.wps_adb.theme.CarbonColors
 import `fun`.abbas.wps_adb.viewmodel.AppViewModel
 
+import java.awt.Window
+
 /**
  * Main 3D Device Scene Screen providing a split-pane layout:
  * - Top: Scene Switcher Toolbar ([SceneToolbar])
@@ -33,6 +35,7 @@ fun DeviceSceneScreen(
     runtimeHost: SceneRuntimeHost,
     viewModel: AppViewModel,
     actions: SceneDeviceActions? = null,
+    window: Window? = null,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -78,6 +81,7 @@ fun DeviceSceneScreen(
                 actions = resolvedActions,
                 currentPage = inspectorPage,
                 onNavigate = { inspectorPage = it },
+                window = window,
                 modifier = Modifier
                     .width(360.dp)
                     .fillMaxHeight(),
