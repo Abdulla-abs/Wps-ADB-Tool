@@ -54,6 +54,12 @@ class SceneRuntimeHostTest {
         var initializeCount = 0
         var browserCount = 0
         var disposeCount = 0
+        val pageLoadListeners = mutableListOf<(String) -> Unit>()
+
+        override fun setPageLoadErrorListener(listener: ((String) -> Unit)?) {
+            super.setPageLoadErrorListener(listener)
+            if (listener != null) pageLoadListeners.add(listener)
+        }
 
         override fun ensureCefAppInitialized() { initializeCount++ }
         override fun createBrowserOnEdt(): java.awt.Component {
@@ -330,6 +336,83 @@ class SceneRuntimeHostTest {
     }
 
     @Test
+    fun test_pageLoadFailure_isTypedAndRetryClearsIt() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val manager = FakeCefManager()
+        val host = SceneRuntimeHost(
+            parentScope = this,
+            cefHostManagerProvider = { manager },
+            ioDispatcher = dispatcher,
+            mainDispatcher = dispatcher,
+            rendererReadyTimeoutMs = 1_000,
+        )
+        testScheduler.runCurrent()
+        manager.pageLoadListeners.last().invoke("ERR_CONNECTION_REFUSED")
+        testScheduler.runCurrent()
+        assertEquals(SceneRuntimePhase.FAILED, host.state.value.phase)
+        assertEquals(SceneRuntimeFailureCategory.PAGE_LOAD, host.state.value.failure?.category)
+        assertTrue(host.state.value.failure?.diagnosticId?.isNotBlank() == true)
+
+        assertTrue(host.retryRenderer())
+        testScheduler.runCurrent()
+        assertEquals(SceneRuntimePhase.WAITING_BRIDGE, host.state.value.phase)
+        assertEquals(null, host.state.value.failure)
+        host.close()
+    }
+
+    @Test
+    fun test_latePageLoadFailureFromPreviousAttempt_cannotFailNewBrowser() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val manager = FakeCefManager()
+        val host = SceneRuntimeHost(
+            parentScope = this,
+            cefHostManagerProvider = { manager },
+            ioDispatcher = dispatcher,
+            mainDispatcher = dispatcher,
+            rendererReadyTimeoutMs = 1_000,
+        )
+        testScheduler.runCurrent()
+        val oldListener = manager.pageLoadListeners.last()
+        assertTrue(host.retryRenderer())
+        testScheduler.runCurrent()
+        assertEquals(2, manager.browserCount)
+
+        oldListener("ERR_FAILED")
+        testScheduler.runCurrent()
+        assertEquals(SceneRuntimePhase.WAITING_BRIDGE, host.state.value.phase)
+        assertEquals(null, host.state.value.failure)
+        host.close()
+    }
+
+    @Test
+    fun test_retryAndCloseRace_neverCreatesBrowserAfterDisposal() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val manager = FakeCefManager()
+        val host = SceneRuntimeHost(
+            parentScope = this,
+            cefHostManagerProvider = { manager },
+            ioDispatcher = dispatcher,
+            mainDispatcher = dispatcher,
+            rendererReadyTimeoutMs = 1_000,
+        )
+        testScheduler.runCurrent()
+        assertEquals(1, manager.browserCount)
+
+        val retryJob = launch { host.retryRenderer() }
+        val closeJob = launch { host.close() }
+        advanceUntilIdle()
+        retryJob.join()
+        closeJob.join()
+        assertEquals(SceneRuntimePhase.DISPOSED, host.state.value.phase)
+        assertEquals(null, host.browserComponent)
+        assertEquals(1, manager.disposeCount)
+        val browserCountAfterClose = manager.browserCount
+        advanceUntilIdle()
+        assertEquals(browserCountAfterClose, manager.browserCount)
+        assertFalse(host.retryRenderer())
+    }
+
+    @Test
     fun test_sceneRuntimeContainer_reusesSameInstanceUntilDisposed() {
         SceneRuntimeContainer.hostFactory = { scope ->
             SceneRuntimeHost(scope, customTransport = FakeBridgeTransport())
@@ -364,6 +447,7 @@ class SceneRuntimeHostTest {
                 sceneRuntimeController = controller,
                 customTransport = fakeTransport,
             )
+            awaitActiveScene(host, "scene_default")
 
             // Remote renderer emits RENDERER_READY
             fakeTransport.emitIncoming("""{"type":"RENDERER_READY","version":1,"timestamp":100,"payload":{"protocolVersion":1,"rendererVersion":"1.0"}}""")

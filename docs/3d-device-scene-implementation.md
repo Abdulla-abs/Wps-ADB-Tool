@@ -57,7 +57,7 @@
 
 ### 后续规划（MVP 之后可选演进）
 
-- Scene/Renderer 生命周期可观测性与故障诊断（下一轮建议优先）
+- Scene/Renderer 生命周期可观测性与故障诊断（桌面实现和自动化边界回归已完成；真实 JCEF 故障注入待验收）
 - 截图纹理投影与实时屏幕投屏贴图
 - 电量与充电状态 3D 视觉效果
 - 自定义相机预设位与视角书签
@@ -455,7 +455,7 @@ Phase 0 ~ Phase 4 MVP 验收标准核验：
 
 详细状态模型、生命周期线程约束、恢复流程、逐文件代码指导和验收用例见 [Scene / Renderer 生命周期可观测性与故障恢复实施方案](./3d-scene-renderer-lifecycle-plan.md)。该专项文档是下一轮编码的直接实施基线。
 
-本轮缺陷修复已完成：加入阶段化 Runtime 状态、脱敏诊断日志、Bridge Ready 超时与手动 Retry，并明确 JCEF Browser 创建的 EDT 检查；随后修复了 Bridge 超时停留在等待状态，以及导航返回 3D 时复用失效 JCEF Browser 导致灰白视口的问题。完整 `:desktopApp:test` 通过（71 项），用户已在 Windows 桌面应用连续切换导航多次并确认 3D 正常显示。更广泛的 Retry/close 并发、迟到回调和故障注入用例仍属于生命周期专项后续验收。实机测试的系统与硬件版本未记录；如需审计应补充独立验收记录。
+本轮缺陷修复及生命周期边界自动化回归已完成：加入阶段化 Runtime 状态、诊断日志、Bridge Ready 超时与手动 Retry，并明确 JCEF Browser 创建的 EDT 检查；修复 Bridge 超时停留在等待状态，以及导航返回 3D 时复用失效 JCEF Browser 导致灰白视口的问题。随后补齐 Retry/close 并发、旧 Browser 迟到回调、页面加载失败与部分清理失败的测试，并在 CEF 入口过滤旧 Browser 事件。完整 `:desktopApp:test` 通过（77 项），用户已在 Windows 桌面应用连续切换导航多次并确认 3D 正常显示。真实 JCEF 故障注入和跨平台发行包验证尚未执行；实机测试的系统与硬件版本未记录，如需审计应补充独立验收记录。
 
 #### 交付内容
 

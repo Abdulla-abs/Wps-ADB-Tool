@@ -1,12 +1,14 @@
 # Scene / Renderer 生命周期可观测性与故障恢复实施方案
 
-> 状态：本轮缺陷修复完成；完整桌面测试与导航实机回归通过。生命周期专项的更多故障注入用例待补。
+> 状态：本轮缺陷修复及生命周期边界自动化回归完成；真实 JCEF 故障注入尚未实机验证。
 > 适用模块：`desktopApp` Scene Runtime、JCEF Host、Bridge Host
 > 前置基线：3D Device Scene MVP 与发行包真机测试已完成
 
 2026-09-24 进展：新增可控 Bridge Ready 超时、fake CEF manager 生命周期测试、重复 dispose 测试，并修复超时被当作普通协程取消而使 Runtime 停留在 `WAITING_BRIDGE` 的问题。`close()` 现在等待初始化任务结束，并与 Retry 串行化后释放资源。旧 Host 测试已改为等待异步场景恢复和 Bridge 点击事件，并使用 `close()` 验证异步清理完成；完整 `:desktopApp:test` 通过（71 项）。
 
 2026-09-24 导航回归修复：离开 3D 页会卸载 `SwingPanel`，再次进入时不能复用已脱离原生窗口的 JCEF Browser 组件。`SceneView` 在重复挂载时先调用 Host 的 Renderer Retry，待旧组件失效并创建新 Browser 后再挂载；新增 fake manager 回归测试验证 Browser 实例已更换。用户在当前 Windows 桌面应用连续切换导航多次，确认每次正常显示 3D；运行日志显示各次 Browser 重建后握手与 GLB 加载成功。
+
+2026-09-24 生命周期边界补测：新增 Retry/close 并发、旧 attempt 页面加载失败回调、页面加载失败后的 Retry、正常关闭引起的 `ERR_ABORTED`、部分资源清理失败后继续执行后续清理步骤等用例。CEF 入口按 Browser 实例过滤旧 Browser 的 JS 与加载事件，避免旧回调污染新会话。完整 `:desktopApp:test` 通过（77 项）；真实 JCEF 页面加载故障注入和跨平台发行包验证尚未执行。
 
 ## 1. 目标与边界
 
@@ -19,7 +21,7 @@
 - 失败后回到可用 UI，并通过明确的重试/重建路径恢复。
 - 测试初始化、重试、重复进入和关闭竞态。
 
-当前已落地阶段状态、失败分类、诊断编号、CEF page load error 上报、Bridge Ready 超时、显式 Retry、SwingPanel Browser 组件替换和独立 cleanup scope。用户已确认本轮代码真机测试正常。自动化生命周期回归和 Retry/close 并发覆盖仍待补充；具体真机平台、构建版本和逐项结果未提供，本文不推定这些信息。
+当前已落地阶段状态、失败分类、诊断编号、CEF page load error 上报、Bridge Ready 超时、显式 Retry、SwingPanel Browser 组件替换和独立 cleanup scope。自动化测试已覆盖 Retry/close 并发、迟到页面回调、页面加载失败及部分清理失败，完整桌面测试通过。用户已确认导航连续切换时 3D 正常显示；真实 JCEF 故障注入与跨平台发行包验证尚未执行，具体实机平台和构建版本未记录。
 
 本轮不改变 Scene JSON、Stable Device Identity、Bridge wire contract 或 ADB 业务；不新增截图贴图、电量动画、相机书签等产品功能。普通运行状态通过现有 Host/Compose 状态流表达；如确需用户可见诊断面板，再单独决定是否扩展 Inspector。
 

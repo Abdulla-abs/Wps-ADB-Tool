@@ -27,6 +27,56 @@ class CefHostManagerTest {
     }
 
     @Test
+    fun test_pageLoadAbortAndDisposedManager_doNotReportFailures() {
+        val errors = mutableListOf<String>()
+        val manager = CefHostManager(
+            resourceRoot = "scene-runtime",
+            onPageLoadError = errors::add,
+        ) { }
+        try {
+            manager.reportPageLoadError("ERR_ABORTED")
+            assertTrue(errors.isEmpty())
+            manager.reportPageLoadError("ERR_CONNECTION_REFUSED")
+            assertEquals(listOf("ERR_CONNECTION_REFUSED"), errors)
+        } finally {
+            manager.dispose()
+        }
+        manager.reportPageLoadError("ERR_FAILED")
+        assertEquals(listOf("ERR_CONNECTION_REFUSED"), errors)
+    }
+
+    @Test
+    fun test_cleanupContinuesAfterAnEarlierResourceThrows() {
+        val manager = CefHostManager(resourceRoot = "scene-runtime") { }
+        try {
+            val steps = mutableListOf<String>()
+            manager.runCleanupSteps(
+                { steps.add("browser"); throw IllegalStateException("browser close failed") },
+                { steps.add("client") },
+                { steps.add("server") },
+            )
+            assertEquals(listOf("browser", "client", "server"), steps)
+        } finally {
+            manager.dispose()
+        }
+    }
+
+    @Test
+    fun test_oldBrowserCallbacksAreRejectedAfterReplacementAndDisposal() {
+        val manager = CefHostManager(resourceRoot = "scene-runtime") { }
+        val oldBrowser = Any()
+        val activeBrowser = Any()
+        try {
+            assertTrue(manager.isCurrentBrowser(activeBrowser, activeBrowser))
+            assertTrue(!manager.isCurrentBrowser(oldBrowser, activeBrowser))
+            assertTrue(!manager.isCurrentBrowser(null, activeBrowser))
+        } finally {
+            manager.dispose()
+        }
+        assertTrue(!manager.isCurrentBrowser(activeBrowser, activeBrowser))
+    }
+
+    @Test
     fun test_sceneRuntime_servesFormalRuntimeIndexHtml() {
         val manager = CefHostManager(resourceRoot = "scene-runtime") { }
         try {

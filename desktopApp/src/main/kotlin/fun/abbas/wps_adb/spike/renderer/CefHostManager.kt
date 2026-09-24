@@ -42,8 +42,14 @@ open class CefHostManager(
     val serverUrl: String
         get() = "http://127.0.0.1:$serverPort/index.html"
 
-    fun setPageLoadErrorListener(listener: ((String) -> Unit)?) {
+    open fun setPageLoadErrorListener(listener: ((String) -> Unit)?) {
         pageLoadErrorListener = listener
+    }
+
+    internal fun reportPageLoadError(code: String) {
+        if (code != "ERR_ABORTED" && !isDisposed.get()) {
+            pageLoadErrorListener?.invoke(code)
+        }
     }
 
     init {
@@ -331,7 +337,7 @@ open class CefHostManager(
                     persistent: Boolean,
                     callback: CefQueryCallback?
                 ): Boolean {
-                    if (request != null) {
+                    if (request != null && isCurrentBrowser(browser, cefBrowser)) {
                         try {
                             println("[CefHostManager] Received query from JS: $request")
                             onJsMessage(request)
@@ -360,7 +366,9 @@ open class CefHostManager(
 
             client.addLoadHandler(object : org.cef.handler.CefLoadHandlerAdapter() {
                 override fun onLoadEnd(browser: CefBrowser?, frame: CefFrame?, httpStatusCode: Int) {
-                    println("[CefHostManager] Page loaded: ${browser?.url} (status: $httpStatusCode)")
+                    if (isCurrentBrowser(browser, cefBrowser)) {
+                        println("[CefHostManager] Page loaded: ${browser?.url} (status: $httpStatusCode)")
+                    }
                 }
 
                 override fun onLoadError(
@@ -371,9 +379,7 @@ open class CefHostManager(
                     failedUrl: String?
                 ) {
                     val code = errorCode?.name ?: "UNKNOWN"
-                    if (code != "ERR_ABORTED") {
-                        pageLoadErrorListener?.invoke(code)
-                    }
+                    if (isCurrentBrowser(browser, cefBrowser)) reportPageLoadError(code)
                 }
             })
 
@@ -450,26 +456,27 @@ open class CefHostManager(
     open fun dispose() {
         if (isDisposed.compareAndSet(false, true)) {
             println("[CefHostManager] Disposing CefHostManager...")
-            try {
-                cefBrowser?.close(true)
-                cefBrowser = null
-            } catch (t: Throwable) {
-                t.printStackTrace()
-            }
+            val browser = cefBrowser.also { cefBrowser = null }
+            val client = cefClient.also { cefClient = null }
+            val server = httpServer.also { httpServer = null }
+            runCleanupSteps(
+                { browser?.close(true) },
+                { client?.dispose() },
+                { server?.stop(0) },
+            )
+        }
+    }
 
+    internal fun runCleanupSteps(vararg steps: () -> Unit) {
+        steps.forEach { step ->
             try {
-                cefClient?.dispose()
-                cefClient = null
-            } catch (t: Throwable) {
-                t.printStackTrace()
-            }
-
-            try {
-                httpServer?.stop(0)
-                httpServer = null
+                step()
             } catch (t: Throwable) {
                 t.printStackTrace()
             }
         }
     }
+
+    internal fun isCurrentBrowser(eventBrowser: Any?, activeBrowser: Any?): Boolean =
+        eventBrowser != null && eventBrowser === activeBrowser && !isDisposed.get()
 }
