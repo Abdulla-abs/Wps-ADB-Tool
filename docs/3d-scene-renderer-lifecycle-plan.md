@@ -1,8 +1,12 @@
 # Scene / Renderer 生命周期可观测性与故障恢复实施方案
 
-> 状态：首轮代码已落地，人工真机回归通过；自动化生命周期回归待补  
-> 适用模块：`desktopApp` Scene Runtime、JCEF Host、Bridge Host   
+> 状态：本轮缺陷修复完成；完整桌面测试与导航实机回归通过。生命周期专项的更多故障注入用例待补。
+> 适用模块：`desktopApp` Scene Runtime、JCEF Host、Bridge Host
 > 前置基线：3D Device Scene MVP 与发行包真机测试已完成
+
+2026-09-24 进展：新增可控 Bridge Ready 超时、fake CEF manager 生命周期测试、重复 dispose 测试，并修复超时被当作普通协程取消而使 Runtime 停留在 `WAITING_BRIDGE` 的问题。`close()` 现在等待初始化任务结束，并与 Retry 串行化后释放资源。旧 Host 测试已改为等待异步场景恢复和 Bridge 点击事件，并使用 `close()` 验证异步清理完成；完整 `:desktopApp:test` 通过（71 项）。
+
+2026-09-24 导航回归修复：离开 3D 页会卸载 `SwingPanel`，再次进入时不能复用已脱离原生窗口的 JCEF Browser 组件。`SceneView` 在重复挂载时先调用 Host 的 Renderer Retry，待旧组件失效并创建新 Browser 后再挂载；新增 fake manager 回归测试验证 Browser 实例已更换。用户在当前 Windows 桌面应用连续切换导航多次，确认每次正常显示 3D；运行日志显示各次 Browser 重建后握手与 GLB 加载成功。
 
 ## 1. 目标与边界
 

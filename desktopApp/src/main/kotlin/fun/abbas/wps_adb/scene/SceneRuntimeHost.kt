@@ -39,6 +39,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.TimeoutCancellationException
 import org.json.JSONObject
 import java.awt.Component
 import java.util.concurrent.atomic.AtomicBoolean
@@ -87,6 +88,7 @@ class SceneRuntimeHost(
     val scenesRoot: java.io.File? = null,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main,
+    private val rendererReadyTimeoutMs: Long = RENDERER_READY_TIMEOUT_MS,
 ) {
     private val hostJob = SupervisorJob(parentScope.coroutineContext[kotlinx.coroutines.Job])
     val hostScope = CoroutineScope(parentScope.coroutineContext + hostJob)
@@ -95,6 +97,7 @@ class SceneRuntimeHost(
 
     private val isDisposed = AtomicBoolean(false)
     private val rendererAttempt = AtomicLong(0L)
+    private val viewportMountedOnce = AtomicBoolean(false)
     private val rendererControlMutex = Mutex()
     @Volatile private var rendererInitJob: Job? = null
 
@@ -592,7 +595,7 @@ class SceneRuntimeHost(
                 return
             }
             stage = SceneRuntimePhase.WAITING_BRIDGE
-            val completedState = withTimeout(RENDERER_READY_TIMEOUT_MS) {
+            val completedState = withTimeout(rendererReadyTimeoutMs) {
                 state.first {
                     it.phase == SceneRuntimePhase.READY ||
                         it.phase == SceneRuntimePhase.FAILED ||
@@ -604,7 +607,7 @@ class SceneRuntimeHost(
                 "Renderer bridge entered ${completedState.connectionState} before scene synchronization"
             }
         } catch (t: Throwable) {
-            if (t is CancellationException) throw t
+            if (t is CancellationException && t !is TimeoutCancellationException) throw t
             if (!isAttemptActive(attempt)) return
             val category = when (stage) {
                 SceneRuntimePhase.INITIALIZING_CEF -> SceneRuntimeFailureCategory.CEF_INITIALIZATION
@@ -656,6 +659,13 @@ class SceneRuntimeHost(
             runRendererAttempt(attempt, reconnectChannel = true, managerToReuse = reusableManager)
         }
         true
+    }
+
+    /** A detached JCEF native component must not be reparented into a new SwingPanel. */
+    suspend fun prepareViewportMount(): Boolean {
+        if (isDisposed.get()) return false
+        if (viewportMountedOnce.compareAndSet(false, true)) return true
+        return retryRenderer()
     }
 
     private fun isAttemptActive(attempt: Long): Boolean =
@@ -730,38 +740,41 @@ class SceneRuntimeHost(
         rendererInitJob?.cancel()
         _state.update { it.copy(phase = SceneRuntimePhase.DISPOSING) }
         withContext(NonCancellable) {
-            sceneLifecycleMutex.withLock {
-                SceneRuntimeLog.transition(SceneRuntimePhase.DISPOSING, SceneRuntimePhase.DISPOSED, rendererAttempt.get())
-                synchronized(this@SceneRuntimeHost) {
-                    isSwitchingScene = true
-                    activeEpoch++
-                }
-                try {
-                    hostController.dispose()
-                } catch (t: Throwable) {
-                    SceneRuntimeLog.cleanupFailure("bridge-controller", t)
-                }
-                try {
-                    persistenceCoordinator?.close()
-                } catch (t: Throwable) {
-                    SceneRuntimeLog.cleanupFailure("persistence-coordinator", t)
-                }
-                try {
-                    channel.disconnect()
-                } catch (t: Throwable) {
-                    SceneRuntimeLog.cleanupFailure("bridge-channel", t)
-                }
-                try {
-                    cefHostManager?.dispose()
-                } catch (t: Throwable) {
-                    SceneRuntimeLog.cleanupFailure("cef-manager", t)
-                } finally {
-                    cefHostManager = null
-                    bridgeAdapter = null
-                    browserComponent = null
-                    _state.update { it.copy(phase = SceneRuntimePhase.DISPOSED) }
-                    hostJob.cancel()
-                    cleanupJob.cancel()
+            rendererControlMutex.withLock {
+                rendererInitJob?.join()
+                sceneLifecycleMutex.withLock {
+                    SceneRuntimeLog.transition(SceneRuntimePhase.DISPOSING, SceneRuntimePhase.DISPOSED, rendererAttempt.get())
+                    synchronized(this@SceneRuntimeHost) {
+                        isSwitchingScene = true
+                        activeEpoch++
+                    }
+                    try {
+                        hostController.dispose()
+                    } catch (t: Throwable) {
+                        SceneRuntimeLog.cleanupFailure("bridge-controller", t)
+                    }
+                    try {
+                        persistenceCoordinator?.close()
+                    } catch (t: Throwable) {
+                        SceneRuntimeLog.cleanupFailure("persistence-coordinator", t)
+                    }
+                    try {
+                        channel.disconnect()
+                    } catch (t: Throwable) {
+                        SceneRuntimeLog.cleanupFailure("bridge-channel", t)
+                    }
+                    try {
+                        cefHostManager?.dispose()
+                    } catch (t: Throwable) {
+                        SceneRuntimeLog.cleanupFailure("cef-manager", t)
+                    } finally {
+                        cefHostManager = null
+                        bridgeAdapter = null
+                        browserComponent = null
+                        _state.update { it.copy(phase = SceneRuntimePhase.DISPOSED) }
+                        hostJob.cancel()
+                        cleanupJob.cancel()
+                    }
                 }
             }
         }

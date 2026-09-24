@@ -15,9 +15,13 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import `fun`.abbas.wps_adb.model.scene.DeviceScene
 import `fun`.abbas.wps_adb.model.scene.SceneCamera
@@ -34,6 +38,33 @@ import kotlin.test.assertFalse
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SceneRuntimeHostTest {
+
+    private fun awaitActiveScene(host: SceneRuntimeHost, sceneId: String) {
+        val deadline = System.currentTimeMillis() + 5_000L
+        while (host.state.value.activeSceneId != sceneId && System.currentTimeMillis() < deadline) {
+            Thread.sleep(10)
+        }
+        assertEquals(sceneId, host.state.value.activeSceneId, "Initial scene restoration did not complete")
+    }
+
+    private open class FakeCefManager : `fun`.abbas.wps_adb.spike.renderer.CefHostManager(
+        resourceRoot = "scene-runtime",
+        onJsMessage = {},
+    ) {
+        var initializeCount = 0
+        var browserCount = 0
+        var disposeCount = 0
+
+        override fun ensureCefAppInitialized() { initializeCount++ }
+        override fun createBrowserOnEdt(): java.awt.Component {
+            browserCount++
+            return java.awt.Panel()
+        }
+        override fun dispose() {
+            disposeCount++
+            super.dispose()
+        }
+    }
 
     @AfterTest
     fun tearDown() {
@@ -187,9 +218,115 @@ class SceneRuntimeHostTest {
         )
 
         assertEquals(false, host.state.value.isInitializing)
-        assertTrue(host.state.value.initError?.contains("Simulated JCEF platform failure") == true)
+        assertEquals(SceneRuntimePhase.FAILED, host.state.value.phase)
+        assertEquals(SceneRuntimeFailureCategory.CEF_INITIALIZATION, host.state.value.failure?.category)
+        assertTrue(host.state.value.failure?.diagnosticId?.isNotBlank() == true)
 
         host.dispose()
+    }
+
+    @Test
+    fun test_bridgeTimeout_isTypedAndRetryRecreatesBrowser() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val manager = FakeCefManager()
+        val host = SceneRuntimeHost(
+            parentScope = this,
+            cefHostManagerProvider = { manager },
+            ioDispatcher = dispatcher,
+            mainDispatcher = dispatcher,
+            rendererReadyTimeoutMs = 100,
+        )
+
+        testScheduler.runCurrent()
+        advanceTimeBy(1_000)
+        advanceUntilIdle()
+        assertEquals(SceneRuntimePhase.FAILED, host.state.value.phase)
+        assertEquals(SceneRuntimeFailureCategory.BRIDGE_HANDSHAKE, host.state.value.failure?.category)
+        assertTrue(host.state.value.failure?.diagnosticId?.isNotBlank() == true)
+        assertEquals(1, manager.browserCount)
+
+        assertTrue(host.retryRenderer())
+        testScheduler.runCurrent()
+        advanceTimeBy(1_000)
+        advanceUntilIdle()
+        assertEquals(SceneRuntimePhase.FAILED, host.state.value.phase)
+        assertEquals(2, manager.browserCount)
+
+        host.close()
+        assertEquals(SceneRuntimePhase.DISPOSED, host.state.value.phase)
+        assertEquals(1, manager.disposeCount)
+    }
+
+    @Test
+    fun test_closeDuringBrowserCreation_rejectsLateComponentAndDisposesOnce() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val manager = FakeCefManager()
+        val host = SceneRuntimeHost(
+            parentScope = this,
+            cefHostManagerProvider = { manager },
+            ioDispatcher = dispatcher,
+            mainDispatcher = dispatcher,
+        )
+        // Let initialization start, then close before the queued browser creation resumes.
+        testScheduler.runCurrent()
+        val closeJob = launch { host.close() }
+        advanceUntilIdle()
+        closeJob.join()
+
+        assertEquals(SceneRuntimePhase.DISPOSED, host.state.value.phase)
+        assertEquals(null, host.browserComponent)
+        assertEquals(1, manager.disposeCount)
+        host.close()
+        assertEquals(1, manager.disposeCount)
+    }
+
+    @Test
+    fun test_viewportRemount_recreatesBrowserInsteadOfReusingDetachedComponent() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val manager = FakeCefManager()
+        val host = SceneRuntimeHost(
+            parentScope = this,
+            cefHostManagerProvider = { manager },
+            ioDispatcher = dispatcher,
+            mainDispatcher = dispatcher,
+            rendererReadyTimeoutMs = 100,
+        )
+        assertTrue(host.prepareViewportMount())
+        testScheduler.runCurrent()
+        assertEquals(1, manager.browserCount)
+        val oldComponent = host.browserComponent
+
+        assertTrue(host.prepareViewportMount())
+        testScheduler.runCurrent()
+        assertEquals(2, manager.browserCount)
+        assertNotSame(oldComponent, host.browserComponent)
+
+        host.close()
+        assertEquals(1, manager.disposeCount)
+    }
+
+    @Test
+    fun test_managerCleanupFailure_stillCompletesHostDisposal() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val manager = object : FakeCefManager() {
+            override fun dispose() {
+                super.dispose()
+                throw IllegalStateException("Simulated cleanup failure")
+            }
+        }
+        val host = SceneRuntimeHost(
+            parentScope = this,
+            cefHostManagerProvider = { manager },
+            ioDispatcher = dispatcher,
+            mainDispatcher = dispatcher,
+        )
+        testScheduler.runCurrent()
+        val closeJob = launch { host.close() }
+        advanceUntilIdle()
+        closeJob.join()
+        assertEquals(SceneRuntimePhase.DISPOSED, host.state.value.phase)
+        assertEquals(null, host.browserComponent)
+        assertEquals(1, manager.disposeCount)
     }
 
     @Test
@@ -253,9 +390,16 @@ class SceneRuntimeHostTest {
             fakeTransport.emitIncoming(clickFrame)
 
             // Verify controller updated selection
-            assertEquals("phone_slot_3", controller.selectedObjectId.value)
+            withTimeout(5_000) {
+                controller.selectedObjectId.first { it == "phone_slot_3" }
+            }
 
             // Verify SELECTION_CHANGE was dispatched to confirm highlight
+            withTimeout(5_000) {
+                while (fakeTransport.sentMessages.none { JSONObject(it).getString("type") == "SELECTION_CHANGE" }) {
+                    delay(10)
+                }
+            }
             val selectionMessages = fakeTransport.sentMessages.map { JSONObject(it) }.filter { it.getString("type") == "SELECTION_CHANGE" }
             assertTrue(selectionMessages.isNotEmpty(), "Expected SELECTION_CHANGE to be dispatched")
             assertEquals("phone_slot_3", selectionMessages.last().getJSONObject("payload").getString("selectedObjectId"))
@@ -371,8 +515,8 @@ class SceneRuntimeHostTest {
             assertTrue(job2.isActive)
             assertTrue(job1.isCancelled, "Rebinding must cancel previous binding job")
 
-            host.dispose()
-            assertTrue(job2.isCancelled, "Host dispose must cancel current binding job")
+            host.close()
+            assertTrue(job2.isCancelled, "Host close must cancel current binding job")
         } finally {
             controllerScope.cancel()
         }
@@ -447,6 +591,7 @@ class SceneRuntimeHostTest {
                 onActiveSceneIdChanged = { changedId = it },
                 customTransport = FakeBridgeTransport(),
             )
+            awaitActiveScene(host, "scene_2")
 
             assertEquals("scene_2", host.state.value.activeSceneId)
             assertEquals("scene_2", controller.activeScene.value?.id)
@@ -480,6 +625,7 @@ class SceneRuntimeHostTest {
                 onActiveSceneIdChanged = { writtenBackId = it },
                 customTransport = FakeBridgeTransport(),
             )
+            awaitActiveScene(host, "scene_1")
 
             assertEquals("scene_1", host.state.value.activeSceneId)
             assertEquals("scene_1", controller.activeScene.value?.id)
@@ -515,6 +661,7 @@ class SceneRuntimeHostTest {
                 onActiveSceneIdChanged = { changedId = it },
                 customTransport = FakeBridgeTransport(),
             )
+            awaitActiveScene(host, "scene_1")
 
             assertEquals("scene_1", host.state.value.activeSceneId)
             assertEquals("scene_1", controller.activeScene.value?.id)
@@ -561,6 +708,7 @@ class SceneRuntimeHostTest {
                 initialActiveSceneId = "scene_1",
                 customTransport = FakeBridgeTransport(),
             )
+            awaitActiveScene(host, "scene_1")
 
             val newCam = SceneCamera(
                 position = SceneVector3(12.0, 34.0, 56.0),
@@ -615,6 +763,7 @@ class SceneRuntimeHostTest {
                 initialActiveSceneId = "scene_1",
                 customTransport = FakeBridgeTransport(),
             )
+            awaitActiveScene(host, "scene_1")
 
             // Launch concurrent switches
             val targets = listOf("scene_2", "scene_3", "scene_1", "scene_3", "scene_2")
@@ -659,6 +808,7 @@ class SceneRuntimeHostTest {
                 initialActiveSceneId = "scene_1",
                 customTransport = FakeBridgeTransport(),
             )
+            awaitActiveScene(host, "scene_1")
 
             // Schedule a change on scene_1
             host.persistenceCoordinator?.scheduleCameraSave("scene_1", SceneCamera(position = SceneVector3(99.0, 99.0, 99.0)))
@@ -702,6 +852,7 @@ class SceneRuntimeHostTest {
                 initialActiveSceneId = "scene_1",
                 customTransport = FakeBridgeTransport(),
             )
+            awaitActiveScene(host, "scene_1")
 
             val closingCam = SceneCamera(
                 position = SceneVector3(42.0, 42.0, 42.0),
@@ -747,6 +898,7 @@ class SceneRuntimeHostTest {
                 initialActiveSceneId = "scene_1",
                 customTransport = fakeTransport,
             )
+            awaitActiveScene(host, "scene_1")
 
             // Switch to scene_2
             val switched = host.selectScene("scene_2")
@@ -804,6 +956,7 @@ class SceneRuntimeHostTest {
                 initialActiveSceneId = "scene_1",
                 customTransport = fakeTransport,
             )
+            awaitActiveScene(host, "scene_1")
 
             // Initial visit: scene_1 (activeEpoch = 0)
             assertEquals("scene_1", host.state.value.activeSceneId)
@@ -890,6 +1043,7 @@ class SceneRuntimeHostTest {
                 initialActiveSceneId = "scene_1",
                 customTransport = fakeTransport,
             )
+            awaitActiveScene(host, "scene_1")
 
             // Queue a pending camera change for scene_1
             val pendingCam = SceneCamera(
@@ -949,6 +1103,7 @@ class SceneRuntimeHostTest {
                 initialActiveSceneId = "scene_1",
                 customTransport = fakeTransport,
             )
+            awaitActiveScene(host, "scene_1")
 
             // Initial visit: scene_1, activeEpoch = 0
             assertEquals("scene_1", host.state.value.activeSceneId)
@@ -1036,6 +1191,7 @@ class SceneRuntimeHostTest {
                 initialActiveSceneId = "scene_1",
                 customTransport = fakeTransport,
             )
+            awaitActiveScene(host, "scene_1")
 
             // Queue a pending camera change so flushScene has work
             val pendingCam = SceneCamera(
@@ -1107,6 +1263,7 @@ class SceneRuntimeHostTest {
                 initialActiveSceneId = "scene_1",
                 customTransport = fakeTransport,
             )
+            awaitActiveScene(host, "scene_1")
 
             // Attempt to select scene_2 -> cancellation occurs during load
             try {
@@ -1170,6 +1327,7 @@ class SceneRuntimeHostTest {
                 initialActiveSceneId = "scene_1",
                 customTransport = fakeTransport,
             )
+            awaitActiveScene(host, "scene_1")
 
             // Queue a pending camera change for scene_1 before delete attempt
             val pendingCam = SceneCamera(
@@ -1246,6 +1404,7 @@ class SceneRuntimeHostTest {
                 initialActiveSceneId = "scene_1",
                 customTransport = fakeTransport,
             )
+            awaitActiveScene(host, "scene_1")
 
             assertEquals("scene_1", host.state.value.activeSceneId)
 
@@ -1309,6 +1468,7 @@ class SceneRuntimeHostTest {
                 initialActiveSceneId = "scene_1",
                 customTransport = fakeTransport,
             )
+            awaitActiveScene(host, "scene_1")
 
             assertEquals("scene_1", host.state.value.activeSceneId)
 
@@ -1382,6 +1542,7 @@ class SceneRuntimeHostTest {
                 initialActiveSceneId = "scene_1",
                 customTransport = fakeTransport,
             )
+            awaitActiveScene(host, "scene_1")
 
             assertEquals("scene_1", host.state.value.activeSceneId)
 
@@ -1412,5 +1573,3 @@ class SceneRuntimeHostTest {
         }
     }
 }
-
-

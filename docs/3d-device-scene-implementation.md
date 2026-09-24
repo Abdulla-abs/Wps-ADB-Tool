@@ -455,7 +455,7 @@ Phase 0 ~ Phase 4 MVP 验收标准核验：
 
 详细状态模型、生命周期线程约束、恢复流程、逐文件代码指导和验收用例见 [Scene / Renderer 生命周期可观测性与故障恢复实施方案](./3d-scene-renderer-lifecycle-plan.md)。该专项文档是下一轮编码的直接实施基线。
 
-当前代码已进入首轮落地：加入阶段化 Runtime 状态、脱敏诊断日志、Bridge Ready 超时与手动 Retry，并明确 JCEF Browser 创建的 EDT 检查。用户已确认本轮代码真机测试正常；生命周期边界的自动化回归仍待补充。真机测试的平台、构建版本和逐项结果未记录，后续如需审计可另行补全。
+本轮缺陷修复已完成：加入阶段化 Runtime 状态、脱敏诊断日志、Bridge Ready 超时与手动 Retry，并明确 JCEF Browser 创建的 EDT 检查；随后修复了 Bridge 超时停留在等待状态，以及导航返回 3D 时复用失效 JCEF Browser 导致灰白视口的问题。完整 `:desktopApp:test` 通过（71 项），用户已在 Windows 桌面应用连续切换导航多次并确认 3D 正常显示。更广泛的 Retry/close 并发、迟到回调和故障注入用例仍属于生命周期专项后续验收。实机测试的系统与硬件版本未记录；如需审计应补充独立验收记录。
 
 #### 交付内容
 

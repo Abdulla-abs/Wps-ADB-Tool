@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 /**
  * Manages the embedded local resource server and the JCEF Chromium browser lifecycle.
  */
-class CefHostManager(
+open class CefHostManager(
     val resourceRoot: String = "spike-renderer",
     val scenesRoot: File? = null,
     onPageLoadError: ((String) -> Unit)? = null,
@@ -278,7 +278,7 @@ class CefHostManager(
      * Safe to call on a background thread.
      */
     @Synchronized
-    fun ensureCefAppInitialized() {
+    open fun ensureCefAppInitialized() {
         check(!isDisposed.get()) { "CefHostManager has already been disposed" }
 
         if (cefApp == null) {
@@ -311,7 +311,7 @@ class CefHostManager(
      * causes the browser to steal all input events from the rest of the application.
      */
     @Synchronized
-    fun createBrowserOnEdt(): Component {
+    open fun createBrowserOnEdt(): Component {
         check(SwingUtilities.isEventDispatchThread()) {
             "createBrowserOnEdt() must be called on the AWT Event Dispatch Thread"
         }
@@ -447,7 +447,7 @@ class CefHostManager(
      * Shuts down the browser, HTTP server, and resources.
      */
     @Synchronized
-    fun dispose() {
+    open fun dispose() {
         if (isDisposed.compareAndSet(false, true)) {
             println("[CefHostManager] Disposing CefHostManager...")
             try {

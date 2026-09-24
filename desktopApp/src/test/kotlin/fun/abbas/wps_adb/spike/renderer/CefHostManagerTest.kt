@@ -13,6 +13,20 @@ class CefHostManagerTest {
     private val httpClient = HttpClient.newHttpClient()
 
     @Test
+    fun test_disposeTwice_stopsResourceServer() {
+        val manager = CefHostManager(resourceRoot = "scene-runtime") { }
+        val url = manager.serverUrl
+        manager.dispose()
+        manager.dispose()
+        kotlin.test.assertFails {
+            httpClient.send(
+                HttpRequest.newBuilder().uri(URI.create(url)).GET().build(),
+                HttpResponse.BodyHandlers.discarding(),
+            )
+        }
+    }
+
+    @Test
     fun test_sceneRuntime_servesFormalRuntimeIndexHtml() {
         val manager = CefHostManager(resourceRoot = "scene-runtime") { }
         try {
@@ -175,4 +189,3 @@ class CefHostManagerTest {
         }
     }
 }
-

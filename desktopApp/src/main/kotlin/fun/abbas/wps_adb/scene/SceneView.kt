@@ -10,6 +10,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,13 +39,17 @@ fun SceneView(
 ) {
     val state by host.state.collectAsState()
     val scope = rememberCoroutineScope()
+    var viewportPrepared by remember(host) { mutableStateOf(false) }
+    LaunchedEffect(host) {
+        viewportPrepared = host.prepareViewportMount()
+    }
 
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(Color(0xFF0C0E11)),
     ) {
-        if (host.browserComponent != null) {
+        if (viewportPrepared && host.browserComponent != null) {
             SwingPanel(
                 modifier = Modifier.fillMaxSize(),
                 factory = {
