@@ -267,11 +267,11 @@ class CefHostManager(
     }
 
     /**
-     * Initializes JCEF and creates the initial CefBrowser.
-     * Returns the AWT Component to be embedded in SwingPanel.
+     * Initializes the CefApp (heavy: may build/download native CEF binaries).
+     * Safe to call on a background thread.
      */
     @Synchronized
-    fun initializeBrowser(): Component {
+    fun ensureCefAppInitialized() {
         check(!isDisposed.get()) { "CefHostManager has already been disposed" }
 
         if (cefApp == null) {
@@ -294,6 +294,19 @@ class CefHostManager(
             )
             cefApp = builder.build()
         }
+    }
+
+    /**
+     * Creates the CefClient and CefBrowser, returning the AWT Component for embedding.
+     *
+     * MUST be called on the AWT Event Dispatch Thread (EDT). JCEF heavyweight components
+     * created off the EDT produce a native HWND with broken parenting/z-order, which
+     * causes the browser to steal all input events from the rest of the application.
+     */
+    @Synchronized
+    fun createBrowserOnEdt(): Component {
+        check(!isDisposed.get()) { "CefHostManager has already been disposed" }
+        check(cefApp != null) { "ensureCefAppInitialized() must be called first" }
 
         if (cefClient == null) {
             val client = cefApp!!.createClient()
@@ -363,6 +376,21 @@ class CefHostManager(
         cefBrowser = browser
         println("[CefHostManager] Created CefBrowser navigating to $serverUrl")
         return browser.uiComponent
+    }
+
+    /**
+     * Initializes JCEF and creates the initial CefBrowser.
+     * Returns the AWT Component to be embedded in SwingPanel.
+     *
+     * NOTE: This method calls both [ensureCefAppInitialized] and [createBrowserOnEdt].
+     * If calling from a background thread, split into two calls and ensure
+     * [createBrowserOnEdt] runs on the EDT (e.g. via SwingUtilities.invokeLater
+     * or Dispatchers.Main in coroutines).
+     */
+    @Synchronized
+    fun initializeBrowser(): Component {
+        ensureCefAppInitialized()
+        return createBrowserOnEdt()
     }
 
     /**

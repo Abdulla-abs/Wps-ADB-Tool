@@ -31,7 +31,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.sync.Mutex
@@ -412,41 +411,45 @@ class SceneRuntimeHost(
         if (sceneRuntimeController != null) {
             hostController.bind(sceneRuntimeController)
 
-            val initialScene = if (sceneRepository != null) {
-                val configuredScene = initialActiveSceneId?.let { id ->
-                    try {
-                        sceneRepository.loadScene(id)
-                    } catch (_: Throwable) {
-                        null
-                    }
-                }
-                if (configuredScene != null) {
-                    configuredScene
-                } else {
-                    val scenes = sceneRepository.listScenes()
-                    if (scenes.isNotEmpty()) {
-                        scenes.first()
-                    } else {
+            hostScope.launch(ioDispatcher) {
+                val initialScene = if (sceneRepository != null) {
+                    val configuredScene = initialActiveSceneId?.let { id ->
                         try {
-                            val defaultScene = createDefaultScene()
-                            sceneRepository.saveScene(defaultScene)
-                            defaultScene
+                            sceneRepository.loadScene(id)
                         } catch (_: Throwable) {
-                            createDefaultScene()
+                            null
                         }
                     }
+                    if (configuredScene != null) {
+                        configuredScene
+                    } else {
+                        val scenes = sceneRepository.listScenes()
+                        if (scenes.isNotEmpty()) {
+                            scenes.first()
+                        } else {
+                            try {
+                                val defaultScene = createDefaultScene()
+                                sceneRepository.saveScene(defaultScene)
+                                defaultScene
+                            } catch (_: Throwable) {
+                                createDefaultScene()
+                            }
+                        }
+                    }
+                } else {
+                    sceneRuntimeController.activeScene.value ?: createDefaultScene()
                 }
-            } else {
-                sceneRuntimeController.activeScene.value ?: createDefaultScene()
-            }
 
-            refreshScenes()
+                refreshScenes()
 
-            sceneRuntimeController.setScene(initialScene)
-            _state.update { it.copy(activeSceneId = initialScene.id) }
+                withContext(mainDispatcher) {
+                    sceneRuntimeController.setScene(initialScene)
+                    _state.update { it.copy(activeSceneId = initialScene.id) }
 
-            if (initialActiveSceneId != initialScene.id) {
-                onActiveSceneIdChanged?.invoke(initialScene.id)
+                    if (initialActiveSceneId != initialScene.id) {
+                        onActiveSceneIdChanged?.invoke(initialScene.id)
+                    }
+                }
             }
 
             hostScope.launch {
@@ -499,7 +502,16 @@ class SceneRuntimeHost(
                 cefHostManager = mgr
                 bridgeAdapter?.bind(mgr)
 
-                val comp = mgr.initializeBrowser()
+                // Phase 1: Heavy CEF initialization (may download/extract binaries) on IO
+                mgr.ensureCefAppInitialized()
+
+                // Phase 2: Browser creation MUST run on EDT — JCEF heavyweight AWT
+                // components created off the EDT produce a native HWND with broken
+                // parenting/z-order, which steals all input from the Compose canvas.
+                val comp = withContext(mainDispatcher) {
+                    mgr.createBrowserOnEdt()
+                }
+
                 withContext(mainDispatcher) {
                     browserComponent = comp
                     _state.update { it.copy(isInitializing = false) }
@@ -577,13 +589,14 @@ class SceneRuntimeHost(
 
     /**
      * Synchronous disposal for non-suspending callers (e.g. Window onCloseRequest).
-     * Guaranteed to be thread-safe and idempotent.
+     * Thread-safe and idempotent. Does NOT block the calling thread — cleanup
+     * runs asynchronously on [ioDispatcher] to avoid EDT deadlock.
      */
     fun dispose() {
         if (isDisposed.get()) return
-        runBlocking(ioDispatcher) {
-            close()
-        }
+        // Fire-and-forget: close() uses NonCancellable internally so cleanup
+        // completes even after hostScope is cancelled by the caller.
+        hostScope.launch(ioDispatcher) { close() }
     }
 
     /**
